@@ -51,7 +51,7 @@ def get_translation_for_key_localized(user_id: int, guild_id: int, key: str, app
         logging.warning(f"Missing translation for key {key} in language {language}")
     elif translation == "":
         logging.warning(f"Translation for key {key} is empty in language {language}")
-    elif key in en_translations and en_translations[key] == translation:
+    elif key in en_translations and en_translations[key] == translation and language != "en":
         logging.warning(f"Translation for key {key} in language {language} is the same as English")
 
     if append_tip and get_per_user_setting(user_id, "tips_enabled", "true") == "true":

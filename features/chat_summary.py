@@ -41,6 +41,16 @@ def init(msg: discord.Message):
             'MessageCount': 0,
             'Keywords': []
         })
+        client['YearlyChatSummary'].insert_one({
+            'GuildID': str(msg.guild.id),
+            'ChannelID': str(msg.channel.id),
+            'MessageCount': 0
+        })
+        client['MonthlyChatSummary'].insert_one({
+            'GuildID': str(msg.guild.id),
+            'ChannelID': str(msg.channel.id),
+            'MessageCount': 0
+        })
 
 
 def inc(msg: discord.Message):
@@ -59,6 +69,80 @@ def inc(msg: discord.Message):
             upd['$inc'][f'KeywordsCounting.{kwd}'] = 1
 
     client['ChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
+    client['YearlyChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
+    client['MonthlyChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
+
+
+async def special_chat_summary(channel, date, guild, i, override_month: bool = False, override_year: bool = False):
+    # Check for year first
+
+    now = get_now_for_server(channel.guild.id)
+
+    if (now.month == 1 and now.day == 1) or override_year: # 1st January
+        i = client['YearlyChatSummary'].find_one({'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id)})
+        return await normal_chat_summary(channel, date, guild, i, summary_title="yearly")
+    elif now.day == 1 or override_month:
+        i = client['MonthlyChatSummary'].find_one({'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id)})
+        return await normal_chat_summary(channel, date, guild, i, summary_title="monthly")
+    else:
+        return await normal_chat_summary(channel, date, guild, i)
+
+
+async def normal_chat_summary(channel, date, guild, i, summary_title: str = ""):
+    chat_summary_title_key = "chat_summary_title"
+    chat_summary_top_count_key = "chatsummary_top_count"
+    chat_summary_top_count_default = 5
+    db = "ChatSummary"
+    if summary_title == "yearly":
+        chat_summary_title_key = "yearly_chat_summary_title"
+        chat_summary_top_count_key = "chatsummary_yearly_top_count"
+        chat_summary_top_count_default = 10
+        db = "YearlyChatSummary"
+    elif summary_title == "monthly":
+        chat_summary_title_key = "monthly_chat_summary_title"
+        chat_summary_top_count_key = "chatsummary_monthly_top_count"
+        chat_summary_top_count_default = 10
+        db = "MonthlyChatSummary"
+
+    chat_summary_message = trl(0, guild.id, chat_summary_title_key).format(date=date)
+    chat_summary_message += '\n'
+    chat_summary_message += trl(0, guild.id, "chat_summary_messages").format(
+        messages=str(i['MessageCount']))
+    top_members = {k: v for k, v in sorted(i['Messages'].items(), key=lambda item: item[1], reverse=True)}
+    j = 0  # idk
+    for k, v in top_members.items():
+        j += 1
+        member = guild.get_member(int(k))
+        if member is not None:
+            chat_summary_message += trl(0, guild.id, "chat_summary_line").format(position=j,
+                                                                                 name=member.display_name,
+                                                                                 messages=v)
+        else:
+            chat_summary_message += trl(0, guild.id, "chat_summary_line_unknown_user").format(position=j,
+                                                                                              id=k,
+                                                                                              messages=v)
+
+        if j >= int(get_setting(guild.id, chat_summary_top_count_key, chat_summary_top_count_default)):
+            break
+    # Keywords
+    kwd_cnt = i.get('KeywordsCounting', {})
+    logging.debug('Getting keywords')
+    kwd_cnt = {k: v for k, v in sorted(kwd_cnt.items(), key=lambda item: item[1], reverse=True)}
+    logging.debug('Found %d keywords in the list', len(kwd_cnt))
+    if len(kwd_cnt) > 0:
+        chat_summary_message += trl(0, guild.id, "chat_summary_keywords_title")
+        for k, v in kwd_cnt.items():
+            if v == 0:
+                continue
+            logging.debug('Appending keyword %s with count %d', k, v)
+            chat_summary_message += trl(0, guild.id, "chat_summary_keywords_line").format(keyword=k,
+                                                                                          count=v)
+    try:
+        await channel.send(chat_summary_message)
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+    client[db].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
+                                     {'$set': {'Messages': {}, 'MessageCount': 0, 'KeywordsCounting': {}}})
 
 
 class ChatSummary(discord.Cog):
@@ -158,51 +242,13 @@ class ChatSummary(discord.Cog):
                 else:
                     date = f"{yesterday.year}/{month}/{day}"
 
-                chat_summary_message = trl(0, guild.id, "chat_summary_title").format(date=date)
-                chat_summary_message += '\n'
-                chat_summary_message += trl(0, guild.id, "chat_summary_messages").format(
-                    messages=str(i['MessageCount']))
+                setting = get_setting(guild.id, "chatsummary_mode", "normal")
 
-                top_members = {k: v for k, v in sorted(i['Messages'].items(), key=lambda item: item[1], reverse=True)}
+                if setting == "normal":
+                    await normal_chat_summary(channel, date, guild, i)
+                elif setting == "special":
+                    await special_chat_summary(channel, date, guild, i)
 
-                j = 0  # idk
-                for k, v in top_members.items():
-                    j += 1
-                    member = guild.get_member(int(k))
-                    if member is not None:
-                        chat_summary_message += trl(0, guild.id, "chat_summary_line").format(position=j,
-                                                                                             name=member.display_name,
-                                                                                             messages=v)
-                    else:
-                        chat_summary_message += trl(0, guild.id, "chat_summary_line_unknown_user").format(position=j,
-                                                                                                          id=k,
-                                                                                                          messages=v)
-
-                    if j >= int(get_setting(guild.id, "chatsummary_top_count", 5)):
-                        break
-
-                # Keywords
-
-                kwd_cnt = i.get('KeywordsCounting', {})
-                logging.debug('Getting keywords')
-                kwd_cnt = {k: v for k, v in sorted(kwd_cnt.items(), key=lambda item: item[1], reverse=True)}
-                logging.debug('Found %d keywords in the list', len(kwd_cnt))
-                if len(kwd_cnt) > 0:
-                    chat_summary_message += trl(0, guild.id, "chat_summary_keywords_title")
-                    for k, v in kwd_cnt.items():
-                        if v == 0:
-                            continue
-                        logging.debug('Appending keyword %s with count %d', k, v)
-                        chat_summary_message += trl(0, guild.id, "chat_summary_keywords_line").format(keyword=k,
-                                                                                                      count=v)
-
-                try:
-                    await channel.send(chat_summary_message)
-                except Exception as e:
-                    sentry_sdk.capture_exception(e)
-
-                client['ChatSummary'].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
-                                                 {'$set': {'Messages': {}, 'MessageCount': 0, 'KeywordsCounting': {}}})
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -296,6 +342,45 @@ class ChatSummary(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "chat_summary_dateformat_set", append_tip=True).format(
                     format=date_format),
                 ephemeral=True)
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+
+    @chat_summary_subcommand.command(name="top_count", description="Set the amount of people to show in summary messages.")
+    @commands_ext.guild_only()
+    @discord.default_permissions(manage_guild=True)
+    @commands_ext.has_permissions(manage_guild=True)
+    @discord.option(name='normal_count', description='The normal Chat Summary count of people')
+    @discord.option(name='monthly_count', description='The monthly Chat Summary count of people')
+    @discord.option(name='yearly_count', description='The yearly Chat Summary count of people')
+    @analytics("chatsummary top_count")
+    async def summary_top_count(self, ctx: discord.ApplicationContext, normal_count: int = -1, monthly_count: int = -1, yearly_count: int = -1):
+        try:
+            # Old settings
+            old_top_count = get_setting(ctx.guild.id, "chatsummary_top_count", 5 if normal_count == -1 else normal_count)
+            old_yearly_top_count = get_setting(ctx.guild.id, "chatsummary_yearly_top_count", 10 if yearly_count == -1 else yearly_count)
+            old_monthly_top_count = get_setting(ctx.guild.id, "chatsummary_monthly_top_count", 10 if monthly_count == -1 else monthly_count)
+
+            if normal_count == -1:
+                normal_count = old_top_count
+            if monthly_count == -1:
+                monthly_count = old_monthly_top_count
+            if yearly_count == -1:
+                yearly_count = old_yearly_top_count
+
+            # Set new settings
+            set_setting(ctx.guild.id, "chatsummary_top_count", normal_count)
+            set_setting(ctx.guild.id, "chatsummary_yearly_top_count", yearly_count)
+            set_setting(ctx.guild.id, "chatsummary_monthly_top_count", monthly_count)
+
+            # Respond
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, "chat_summary_top_count_set", append_tip=True).format(
+                    normal=str(normal_count),
+                    monthly=str(monthly_count),
+                    yearly=str(yearly_count)
+                ), ephemeral=True)
+
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
