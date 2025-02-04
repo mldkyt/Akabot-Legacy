@@ -215,6 +215,13 @@ def generate_message_content(id: str):
 **{upvotes + downvotes} votes**
 **{percent:.0f}% approval**"""
 
+import discord
+import sentry_sdk
+from discord.ext import commands
+
+from database import client
+from utils.languages import get_translation_for_key_localized as trl
+from utils.settings import get_setting, set_setting
 
 class Suggestions(discord.Cog):
     def __init__(self, bot: discord.Bot):
