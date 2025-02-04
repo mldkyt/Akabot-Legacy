@@ -1,12 +1,3 @@
-import discord
-import sentry_sdk
-from discord.ext import commands
-
-from database import client
-from utils.languages import get_translation_for_key_localized as trl
-from utils.settings import get_setting, set_setting
-
-
 #      Akabot is a general purpose bot with a ton of features.
 #      Copyright (C) 2023-2025 mldchan
 #
@@ -24,6 +15,13 @@ from utils.settings import get_setting, set_setting
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+import discord
+import sentry_sdk
+from discord.ext import commands
+
+from database import client
+from utils.languages import get_translation_for_key_localized as trl
+from utils.settings import get_setting, set_setting
 
 class Suggestions(discord.Cog):
     def __init__(self, bot: discord.Bot):
