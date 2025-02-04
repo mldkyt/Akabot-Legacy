@@ -16,6 +16,7 @@
 #
 
 import datetime
+import logging
 
 import discord
 import sentry_sdk
@@ -28,6 +29,97 @@ from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
 from utils.settings import get_setting, set_setting
 from utils.tzutil import get_now_for_server
+
+
+def init(msg: discord.Message):
+    if client['ChatSummary'].count_documents(
+            {'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}) == 0:
+        client['ChatSummary'].insert_one({
+            'GuildID': str(msg.guild.id),
+            'ChannelID': str(msg.channel.id),
+            'Enabled': False,
+            'MessageCount': 0
+        })
+        client['YearlyChatSummary'].insert_one({
+            'GuildID': str(msg.guild.id),
+            'ChannelID': str(msg.channel.id),
+            'MessageCount': 0
+        })
+        client['MonthlyChatSummary'].insert_one({
+            'GuildID': str(msg.guild.id),
+            'ChannelID': str(msg.channel.id),
+            'MessageCount': 0
+        })
+
+
+def inc(msg: discord.Message):
+    upd = {
+        '$inc': {f'Messages.{msg.author.id}': 1, 'MessageCount': 1}
+    }
+
+    client['ChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
+    client['YearlyChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
+    client['MonthlyChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
+
+
+async def special_chat_summary(channel, date, guild, i, override_month: bool = False, override_year: bool = False):
+    # Check for year first
+
+    now = get_now_for_server(channel.guild.id)
+
+    if (now.month == 1 and now.day == 1) or override_year: # 1st January
+        i = client['YearlyChatSummary'].find_one({'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id)})
+        return await normal_chat_summary(channel, date, guild, i, summary_title="yearly")
+    elif now.day == 1 or override_month:
+        i = client['MonthlyChatSummary'].find_one({'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id)})
+        return await normal_chat_summary(channel, date, guild, i, summary_title="monthly")
+    else:
+        return await normal_chat_summary(channel, date, guild, i)
+
+
+async def normal_chat_summary(channel, date, guild, i, summary_title: str = ""):
+    chat_summary_title_key = "chat_summary_title"
+    chat_summary_top_count_key = "chatsummary_top_count"
+    chat_summary_top_count_default = 5
+    db = "ChatSummary"
+    if summary_title == "yearly":
+        chat_summary_title_key = "yearly_chat_summary_title"
+        chat_summary_top_count_key = "chatsummary_yearly_top_count"
+        chat_summary_top_count_default = 10
+        db = "YearlyChatSummary"
+    elif summary_title == "monthly":
+        chat_summary_title_key = "monthly_chat_summary_title"
+        chat_summary_top_count_key = "chatsummary_monthly_top_count"
+        chat_summary_top_count_default = 10
+        db = "MonthlyChatSummary"
+
+    chat_summary_message = trl(0, guild.id, chat_summary_title_key).format(date=date)
+    chat_summary_message += '\n'
+    chat_summary_message += trl(0, guild.id, "chat_summary_messages").format(
+        messages=str(i['MessageCount']))
+    top_members = {k: v for k, v in sorted(i['Messages'].items(), key=lambda item: item[1], reverse=True)}
+    j = 0  # idk
+    for k, v in top_members.items():
+        j += 1
+        member = guild.get_member(int(k))
+        if member is not None:
+            chat_summary_message += trl(0, guild.id, "chat_summary_line").format(position=j,
+                                                                                 name=member.display_name,
+                                                                                 messages=v)
+        else:
+            chat_summary_message += trl(0, guild.id, "chat_summary_line_unknown_user").format(position=j,
+                                                                                              id=k,
+                                                                                              messages=v)
+
+        if j >= int(get_setting(guild.id, chat_summary_top_count_key, chat_summary_top_count_default)):
+            break
+
+    try:
+        await channel.send(chat_summary_message)
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+    client[db].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
+                                     {'$set': {'Messages': {}, 'MessageCount': 0}})
 
 
 class ChatSummary(discord.Cog):
@@ -48,17 +140,9 @@ class ChatSummary(discord.Cog):
             if message.author.bot:
                 return
 
-            if client['ChatSummary'].count_documents(
-                    {'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)}) == 0:
-                client['ChatSummary'].insert_one({
-                    'GuildID': str(message.guild.id),
-                    'ChannelID': str(message.channel.id),
-                    'Enabled': False,
-                    'MessageCount': 0
-                })
+            init(message)
 
-            client['ChatSummary'].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
-                                             {'$inc': {f'Messages.{message.author.id}': 1, 'MessageCount': 1}})
+            inc(message)
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -75,24 +159,15 @@ class ChatSummary(discord.Cog):
             if countedits == "False":
                 return
 
-            if client['ChatSummary'].count_documents(
-                    {'GuildID': str(new_message.guild.id), 'ChannelID': str(new_message.channel.id)}) == 0:
-                client['ChatSummary'].insert_one({
-                    'GuildID': str(new_message.guild.id),
-                    'ChannelID': str(new_message.channel.id),
-                    'Enabled': False,
-                    'MessageCount': 0
-                })
-
-            client['ChatSummary'].update_one(
-                {'GuildID': str(new_message.guild.id), 'ChannelID': str(new_message.channel.id)},
-                {'$inc': {f'Messages.{new_message.author.id}': 1, 'MessageCount': 1}})
+            init(new_message)
+            inc(new_message)
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
     @tasks.loop(minutes=1)
     async def summarize(self):
         try:
+            logging.info('Running summarize task')
             res = client['ChatSummary'].find({'Enabled': True}).to_list()
             for i in res:
                 yesterday = get_now_for_server(i['GuildID'])
@@ -102,11 +177,15 @@ class ChatSummary(discord.Cog):
 
                 guild = self.bot.get_guild(int(i['GuildID']))
                 if guild is None:
+                    logging.warning('Couldn\'t find guild %s', i['GuildID'])
                     continue
 
                 channel = guild.get_channel(int(i['ChannelID']))
                 if channel is None:
+                    logging.warning('Couldn\'t find channel %s', i['ChannelID'])
                     continue
+
+                logging.info('Summarizing %s in %s', channel.name, guild.name)
 
                 if not channel.can_send():
                     continue
@@ -140,36 +219,13 @@ class ChatSummary(discord.Cog):
                 else:
                     date = f"{yesterday.year}/{month}/{day}"
 
-                chat_summary_message = trl(0, guild.id, "chat_summary_title").format(date=date)
-                chat_summary_message += '\n'
-                chat_summary_message += trl(0, guild.id, "chat_summary_messages").format(
-                    messages=str(i['MessageCount']))
+                setting = get_setting(guild.id, "chatsummary_mode", "normal")
 
-                top_members = {k: v for k, v in sorted(i['Messages'].items(), key=lambda item: item[1], reverse=True)}
+                if setting == "normal":
+                    await normal_chat_summary(channel, date, guild, i)
+                elif setting == "special":
+                    await special_chat_summary(channel, date, guild, i)
 
-                j = 0  # idk
-                for k, v in top_members.items():
-                    j += 1
-                    member = guild.get_member(int(k))
-                    if member is not None:
-                        chat_summary_message += trl(0, guild.id, "chat_summary_line").format(position=j,
-                                                                                             name=member.display_name,
-                                                                                             messages=v)
-                    else:
-                        chat_summary_message += trl(0, guild.id, "chat_summary_line_unknown_user").format(position=j,
-                                                                                                          id=k,
-                                                                                                          messages=v)
-
-                    if j >= int(get_setting(guild.id, "chatsummary_top_count", 5)):
-                        break
-
-                try:
-                    await channel.send(chat_summary_message)
-                except Exception as e:
-                    sentry_sdk.capture_exception(e)
-
-                client['ChatSummary'].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
-                                                 {'$set': {'Messages': {}, 'MessageCount': 0}})
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -263,6 +319,45 @@ class ChatSummary(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "chat_summary_dateformat_set", append_tip=True).format(
                     format=date_format),
                 ephemeral=True)
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+
+    @chat_summary_subcommand.command(name="top_count", description="Set the amount of people to show in summary messages.")
+    @commands_ext.guild_only()
+    @discord.default_permissions(manage_guild=True)
+    @commands_ext.has_permissions(manage_guild=True)
+    @discord.option(name='normal_count', description='The normal Chat Summary count of people')
+    @discord.option(name='monthly_count', description='The monthly Chat Summary count of people')
+    @discord.option(name='yearly_count', description='The yearly Chat Summary count of people')
+    @analytics("chatsummary top_count")
+    async def summary_top_count(self, ctx: discord.ApplicationContext, normal_count: int = -1, monthly_count: int = -1, yearly_count: int = -1):
+        try:
+            # Old settings
+            old_top_count = get_setting(ctx.guild.id, "chatsummary_top_count", 5 if normal_count == -1 else normal_count)
+            old_yearly_top_count = get_setting(ctx.guild.id, "chatsummary_yearly_top_count", 10 if yearly_count == -1 else yearly_count)
+            old_monthly_top_count = get_setting(ctx.guild.id, "chatsummary_monthly_top_count", 10 if monthly_count == -1 else monthly_count)
+
+            if normal_count == -1:
+                normal_count = old_top_count
+            if monthly_count == -1:
+                monthly_count = old_monthly_top_count
+            if yearly_count == -1:
+                yearly_count = old_yearly_top_count
+
+            # Set new settings
+            set_setting(ctx.guild.id, "chatsummary_top_count", normal_count)
+            set_setting(ctx.guild.id, "chatsummary_yearly_top_count", yearly_count)
+            set_setting(ctx.guild.id, "chatsummary_monthly_top_count", monthly_count)
+
+            # Respond
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, "chat_summary_top_count_set", append_tip=True).format(
+                    normal=str(normal_count),
+                    monthly=str(monthly_count),
+                    yearly=str(yearly_count)
+                ), ephemeral=True)
+
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
