@@ -79,6 +79,7 @@ async def on_ready():
     bot.add_view(verification.VerificationView())
     bot.add_view(tickets.TicketCreateView(""))
     bot.add_view(tickets.TicketMessageView())
+    bot.add_view(chat_summary.OpenPaginatorView())
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f"v{BOT_VERSION}"))
 
 
