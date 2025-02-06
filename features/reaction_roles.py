@@ -168,12 +168,6 @@ class ReactionRoles(discord.Cog):
         try:
             if interaction.type != discord.InteractionType.component:
                 return
-
-            if not interaction.guild.me.guild_permissions.manage_roles:
-                await interaction.response.send_message(
-                    trl(interaction.user.id, interaction.guild.id, "reaction_roles_no_perm"), ephemeral=True)
-                return
-
             split = interaction.custom_id.split('-')
             if len(split) != 2:
                 return
@@ -182,6 +176,11 @@ class ReactionRoles(discord.Cog):
                 return
 
             if not split[1].isdigit():
+                return
+
+            if not interaction.guild.me.guild_permissions.manage_roles:
+                await interaction.response.send_message(
+                    trl(interaction.user.id, interaction.guild.id, "reaction_roles_no_perm"), ephemeral=True)
                 return
 
             role = interaction.guild.get_role(int(split[1]))
