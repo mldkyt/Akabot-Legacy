@@ -73,7 +73,8 @@ class OpenPaginatorView(View):
     async def view_full_list(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
             data = client['ChatSummaryLeaderboard'].find_one(
-                {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id)})
+                {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
+                 'MessageID': str(interaction.message.id)})
             if data is None:
                 await interaction.respond('Summary not found', ephemeral=True)
                 return
@@ -144,14 +145,14 @@ async def normal_chat_summary(channel, date, guild, i, summary_title: str = ""):
     if len(chat_summary_message) > 0:
         pages.append(chat_summary_message)
 
-    client['ChatSummaryLeaderboard'].insert_one({
-        'GuildID': str(guild.id),
-        'ChannelID': str(channel.id),
-        'Pages': pages
-    })
-
     try:
-        await channel.send(pages[0], view=OpenPaginatorView())
+        sent = await channel.send(pages[0], view=OpenPaginatorView())
+        client['ChatSummaryLeaderboard'].insert_one({
+            'GuildID': str(guild.id),
+            'ChannelID': str(channel.id),
+            'MessageID': str(sent.id),
+            'Pages': pages
+        })
     except Exception as e:
         sentry_sdk.capture_exception(e)
     client[db].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
