@@ -19,8 +19,9 @@ import aiohttp
 import discord
 import gitlab
 import sentry_sdk
+from discord import ButtonStyle
 from discord.ext import commands as cmds_ext
-from discord.ui import View
+from discord.ui import View, Button
 from discord.ui.input_text import InputText
 
 from utils.analytics import analytics
@@ -345,6 +346,16 @@ class DiscordJoinView(View):
         self.add_item(join_btn)
 
 
+class MastodonLinkView(View):
+    def __init__(self):
+        super().__init__(timeout=180)
+
+        mastodon_btn = Button(label='Open in Mastodon @ floss.social', style=ButtonStyle.link,
+                              url='https://floss.social/@Akabot')
+
+        self.add_item(mastodon_btn)
+
+
 class SupportCmd(discord.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
@@ -424,6 +435,13 @@ This is due to recent raids and attacks on the server due to the developer leavi
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+
+    @discord.slash_command(name='mastodon', description='Link to the Akabot\'s Mastodon profile!')
+    @analytics("mastodon")
+    async def mastodon(self, ctx: discord.ApplicationContext):
+        await ctx.respond(
+            "The official Mastodon account of Akabot is @akabot@floss.social\nIt's used for:\n- Akabot updates\n- Akabot service annoncements\n- More!",
+            ephemeral=True, view=MastodonLinkView())
 
     feedback_subcommand = discord.SlashCommandGroup(name="feedback", description="Give feedback for the bot")
 

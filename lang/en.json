@@ -487,6 +487,7 @@
   "tip_21": "You can set a timezone for your server using /server_settings timezone.",
   "tip_22": "You can set a welcome message for your server using /welcome.",
   "tip_23": "You can set a goodbye message for your server using /goodbye.",
+  "tip_24": "You can follow the official Mastodon account of Akabot! https://floss.social/@Akabot",
   "suggestions_channel_not_found": "Channel doesn't exist.",
   "suggestions_channel_added": "Channel {channel} was added to suggestion channels.",
   "suggestions_channel_removed": "Channel {channel} was removed from suggestion channels.",
