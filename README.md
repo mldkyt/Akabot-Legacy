@@ -44,8 +44,8 @@ in the next stable version. This version is always made sure to be stable and
 secure.
 
 This bot instance can be invited using [this link](https://discord.com/oauth2/authorize?client_id=1172922944033411243).
-A [terms of service](https://mldkyt.com/project/akabot/tos)
-and [privacy policy](https://mldkyt.com/project/akabot/privacy) apply.
+A [terms of service](https://mldchan.dev/project/akabot/tos)
+and [privacy policy](https://mldchan.dev/project/akabot/privacy) apply.
 
 ### 2. Less recommended version (Beta)
 
@@ -53,8 +53,8 @@ The beta instance is the latest version of Akabot. This instance is less stable 
 not recommended for production servers.
 
 This bot instance can be invited using [this link](https://discord.com/oauth2/authorize?client_id=1256907946261090354).
-A [terms of service](https://mldkyt.com/project/akabot/tos)
-and [privacy policy](https://mldkyt.com/project/akabot/privacy) apply.
+A [terms of service](https://mldchan.dev/project/akabot/tos)
+and [privacy policy](https://mldchan.dev/project/akabot/privacy) apply.
 
 ## Self-Hosting an instance of your own
 
