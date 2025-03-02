@@ -32,7 +32,8 @@ from features import welcoming, leveling, antiraid, chat_streaks, chat_revive, c
     logging_mod, admin_cmds, giveaways, feedback_cmd, moderation, verification, velky_stompies, \
     roles_on_join, heartbeat, automod_actions, power_outage_announcement, per_user_settings, server_settings, \
     auto_react, auto_response, bot_help, announcement_channels, tickets, debug_commands, birthday_announcements, \
-    send_server_count, suggestions, temporary_vc, rp, media_downloader, word_scrambler, statistics_channels
+    send_server_count, suggestions, temporary_vc, rp, media_downloader, word_scrambler, statistics_channels, \
+    anonymous_quefessions
 from utils.config import get_key
 from utils.db_converter import update
 from utils.languages import get_translation_for_key_localized as trl
@@ -82,6 +83,7 @@ async def on_ready():
     bot.add_view(tickets.TicketMessageView())
     bot.add_view(suggestions.V2SuggestionView())
     bot.add_view(chat_summary.OpenPaginatorView())
+    bot.add_view(anonymous_quefessions.InfoButtonView())
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f"v{BOT_VERSION}"))
 
 
@@ -191,5 +193,7 @@ if get_key("Feature_MediaDownloader", "false") == "true":
     bot.add_cog(media_downloader.MediaDownloader(bot))
 if get_key("Feature_StatisticChannels", "true") == "true":
     bot.add_cog(statistics_channels.StatisticChannels(bot))
+if get_key("Feature_AnonymousQuefessions", "true") == "true":
+    bot.add_cog(anonymous_quefessions.AnonymousQuefessions(bot))
 
 bot.run(get_key("Bot_Token"))
