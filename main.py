@@ -32,7 +32,7 @@ from features import welcoming, leveling, antiraid, chat_streaks, chat_revive, c
     logging_mod, admin_cmds, giveaways, feedback_cmd, moderation, verification, velky_stompies, \
     roles_on_join, heartbeat, automod_actions, power_outage_announcement, per_user_settings, server_settings, \
     bot_help, announcement_channels, tickets, debug_commands, birthday_announcements, \
-    send_server_count, suggestions, temporary_vc, rp, statistics_channels
+    send_server_count, suggestions, temporary_vc, rp, statistics_channels, anonymous_quefessions
 from utils.config import get_key
 from utils.db_converter import update
 from utils.languages import get_translation_for_key_localized as trl
@@ -79,6 +79,8 @@ async def on_ready():
     bot.add_view(verification.VerificationView())
     bot.add_view(tickets.TicketCreateView(""))
     bot.add_view(tickets.TicketMessageView())
+    bot.add_view(anonymous_quefessions.CreateButtonView())
+    bot.add_view(anonymous_quefessions.InfoButtonView())
     bot.add_view(chat_summary.OpenPaginatorView())
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f"v{BOT_VERSION}"))
 
@@ -181,5 +183,7 @@ if get_key("Feature_Roleplay", "true") == "true":
     bot.add_cog(rp.RoleplayCommands(bot))
 if get_key("Feature_StatisticChannels", "true") == "true":
     bot.add_cog(statistics_channels.StatisticChannels(bot))
+if get_key("Feature_AnonymousQuefessions", "true") == "true":
+    bot.add_cog(anonymous_quefessions.AnonymousQuefessions(bot))
 
 bot.run(get_key("Bot_Token"))

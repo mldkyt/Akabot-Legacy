@@ -1,0 +1,489 @@
+#      Akabot is a general purpose bot with a ton of features.
+#      Copyright (C) 2023-2025 mldchan
+#
+#      This program is free software: you can redistribute it and/or modify
+#      it under the terms of the GNU Affero General Public License as
+#      published by the Free Software Foundation, either version 3 of the
+#      License, or (at your option) any later version.
+#
+#      This program is distributed in the hope that it will be useful,
+#      but WITHOUT ANY WARRANTY; without even the implied warranty of
+#      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#      GNU Affero General Public License for more details.
+#
+#      You should have received a copy of the GNU Affero General Public License
+#      along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+import datetime
+import logging
+
+from discord import Cog, Bot, TextChannel, Interaction, Embed, EmbedAuthor, SlashCommandGroup, \
+    ApplicationContext, Message, ButtonStyle
+from discord.ext.commands import has_guild_permissions, guild_only
+from discord.ui import Modal, InputText, View, button, Button
+from sentry_sdk import capture_exception
+
+from database import client
+from utils.languages import get_translation_for_key_localized as trl
+from utils.logging_util import log_into_logs
+
+
+class CreateModal(Modal):
+    def __init__(self, channel: TextChannel):
+        super().__init__(
+            InputText(label=trl(0, channel.guild.id, 'quefessions_submit_modal_text_label'),
+                      placeholder=trl(0, channel.guild.id, 'quefessions_submit_modal_text_label'), min_length=1,
+                      max_length=1000, required=True),
+            title=trl(0, channel.guild.id, 'quefessions_submit_modal_title')
+        )
+
+        self.channel = channel
+
+    async def callback(self, interaction: Interaction):
+        try:
+            text = self.children[0].value
+
+            msg = await self.channel.send(
+                embed=Embed(
+                    title=trl(0, self.channel.guild.id, 'quefessions_embed_title'),
+                    description=text,
+                    author=EmbedAuthor(
+                        name=interaction.user.display_name,
+                        icon_url=interaction.user.display_avatar.url
+                    ),
+                    timestamp=datetime.datetime.now(datetime.UTC)
+                ),
+                view=InfoButtonView()
+            )
+
+            client['AnonymousQuefessions'].insert_one({
+                'GuildID': str(interaction.guild.id),
+                'ChannelID': str(interaction.channel.id),
+                'MessageID': str(msg.id),
+                'AuthorID': str(interaction.user.id),
+                'Text': text
+            })
+
+            await interaction.respond(
+                trl(interaction.user.id, interaction.guild.id, 'quefessions_created', append_tip=True), ephemeral=True)
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+
+class ReportTextModal(Modal):
+    def __init__(self, author: tuple[str, str, str], message: Message, original_content: str):
+        super().__init__(
+            InputText(label=trl(int(author[2]), message.guild.id, "quefessions_report_description_label"),
+                      placeholder=trl(int(author[2]), message.guild.id, "quefessions_report_description_placeholder")),
+            title=trl(int(author[2]), message.guild.id, 'quefessions_report_title').format(user=author[0]))
+
+        self.author = author
+        self.mod_message = message
+        self.original_content = original_content
+
+    async def callback(self, interaction: Interaction):
+        try:
+            client['AnonymousQuefessionsReports'].insert_one({
+                'GuildID': str(interaction.guild.id),
+                'ChannelID': str(interaction.channel.id),
+                'MessageID': str(self.mod_message.id),
+                'ReporterID': str(interaction.user.id)
+            })
+
+            log_embed = Embed(
+                title=trl(0, interaction.guild.id, 'quefessions_log_report_title'),
+                description=trl(0, interaction.guild.id, 'quefessions_log_report_description').format(
+                    jump_url=self.mod_message.jump_url, author=self.author[0], author_username=self.author[1],
+                    author_id=self.author[2], reporter=interaction.user.display_name,
+                    reporter_username=interaction.user.name, reporter_id=interaction.user.id,
+                    original_content=self.original_content),
+            )
+
+            await log_into_logs(interaction.guild, log_embed, view=LogsView(self.mod_message))
+            await interaction.respond(
+                trl(interaction.user.id, interaction.guild.id, 'quefessions_report_sent', append_tip=True),
+                ephemeral=True)
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+
+class CreateButtonView(View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @button(label='Submit Anonymous Quefession', custom_id='anonymous_quefession')
+    async def create_anonymous_quefession(self, button: Button, interaction: Interaction):
+        try:
+            # Let's check bans
+            del_result = client['AnonymousQuefessionsBans'].delete_many({
+                '$and': [
+                    {'BanEnd': {'$exists': True}},
+                    {'BanEnd': {'$lt': datetime.datetime.now()}}
+                ]
+            })
+
+            print(del_result)
+
+            ban = client['AnonymousQuefessionsBans'].find_one({
+                'MemberID': str(interaction.user.id)
+            })
+
+            print(ban, flush=True)
+
+            if ban is not None:
+                await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_banned'),
+                                          ephemeral=True)
+                return
+
+            await interaction.response.send_modal(CreateModal(interaction.channel))
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+
+class AdminView(View):
+    def __init__(self, message: Message):
+        super().__init__()
+        self.mod_message = message
+
+    @button(label='Delete', style=ButtonStyle.danger)
+    async def delete_quefession(self, button: Button, interaction: Interaction):
+        await self.mod_message.delete()
+        self.disable_all_items()
+        await interaction.edit(view=self)
+        self.stop()
+
+    @button(label='Quefession Ban...', style=ButtonStyle.danger)
+    async def quefession_ban(self, button: Button, interaction: Interaction):
+        await interaction.edit(view=AdminBanSelectTypeView(self.mod_message))
+        pass
+
+
+class AdminBanSelectTypeView(View):
+    def __init__(self, message: Message):
+        super().__init__()
+        self.mod_message = message
+
+    @button(label='Quefession Ban...', style=ButtonStyle.danger)
+    async def quefession_ban(self, button: Button, interaction: Interaction):
+        try:
+            await interaction.edit(view=AdminQuefessionBanDurationChoice(self.mod_message))
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+    @button(label='Server Ban', style=ButtonStyle.danger)
+    async def server_ban(self, button: Button, interaction: Interaction):
+        try:
+            await interaction.edit(view=AdminBanSelectTypeView(self.mod_message))
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+
+class AdminGuildBanConfirm(View):
+    def __init__(self, message: Message):
+        super().__init__()
+        self.mod_message = message
+
+    @button(label='Confirm Guild Ban', style=ButtonStyle.danger)
+    async def confirm_guild_ban(self, button: Button, interaction: Interaction):
+        try:
+            data = client['AnonymousQuefessions'].find_one(
+                {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
+                 'MessageID': str(self.mod_message.id)})
+            if data is None:
+                await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
+                                          ephemeral=True)
+                return
+
+            member = interaction.guild.get_member(int(data['MemberID']))
+
+            await member.ban(reason=trl(0, interaction.guild.id, 'quefessions_ban_reason'))
+
+            self.stop()
+            self.disable_all_items()
+            await interaction.edit(view=self)
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+    @button(label='Cancel Guild Ban', style=ButtonStyle.secondary)
+    async def cancel_guild_ban(self, button: Button, interaction: Interaction):
+        try:
+            await interaction.edit(view=AdminView(message=self.mod_message))
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+
+class AdminQuefessionBanDurationChoice(View):
+    def __init__(self, message: Message):
+        super().__init__()
+        self.mod_message = message
+
+    def fetch_author(self):
+        data = client['AnonymousQuefessions'].find_one({
+            'GuildID': str(self.mod_message.guild.id),
+            'ChannelID': str(self.mod_message.channel.id),
+            'MessageID': str(self.mod_message.id)
+        })
+
+        if data is None:
+            return None
+
+        return data['AuthorID']
+
+    async def ban_temp(self, minutes: int):
+        author = self.fetch_author()
+        if author is None:
+            return
+
+        client['AnonymousQuefessionsBans'].insert_one({
+            'MemberID': author,
+            'BanEnd': datetime.datetime.now() + datetime.timedelta(minutes=minutes)
+        })
+
+    async def ban_perm(self):
+        author = self.fetch_author()
+        if author is None:
+            return
+
+        client['AnonymousQuefessionsBans'].insert_one({
+            'MemberID': author,
+            'Permanent': True
+        })
+
+    @button(label='10 minutes', style=ButtonStyle.danger)
+    async def ban_10_minutes(self, button: Button, interaction: Interaction):
+        try:
+            await self.ban_temp(10)
+            self.stop()
+            self.disable_all_items()
+            await interaction.edit(view=self)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_10_minutes'),
+                                      ephemeral=True)
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+    @button(label='1 hour', style=ButtonStyle.danger)
+    async def ban_1_hour(self, button: Button, interaction: Interaction):
+        try:
+            await self.ban_temp(60)
+            self.stop()
+            self.disable_all_items()
+            await interaction.edit(view=self)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_hour'),
+                                      ephemeral=True)
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+    @button(label='12 hour', style=ButtonStyle.danger)
+    async def ban_12_hours(self, button: Button, interaction: Interaction):
+        try:
+            await self.ban_temp(720)
+            self.stop()
+            self.disable_all_items()
+            await interaction.edit(view=self)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_12_hours'),
+                                      ephemeral=True)
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+    @button(label='1 day', style=ButtonStyle.danger)
+    async def ban_1_day(self, button: Button, interaction: Interaction):
+        try:
+            await self.ban_temp(1440)
+            self.stop()
+            self.disable_all_items()
+            await interaction.edit(view=self)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_day'),
+                                      ephemeral=True)
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+    @button(label='1 week', style=ButtonStyle.danger)
+    async def ban_1_week(self, button: Button, interaction: Interaction):
+        try:
+            await self.ban_temp(10080)
+            self.stop()
+            self.disable_all_items()
+            await interaction.edit(view=self)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_week'),
+                                      ephemeral=True)
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+    @button(label='1 month', style=ButtonStyle.danger)
+    async def ban_1_month(self, button: Button, interaction: Interaction):
+        try:
+            await self.ban_temp(40320)
+            self.stop()
+            self.disable_all_items()
+            await interaction.edit(view=self)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_month'),
+                                      ephemeral=True)
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+    @button(label='Permanent', style=ButtonStyle.danger)
+    async def ban_permanent(self, button: Button, interaction: Interaction):
+        try:
+            await self.ban_perm()
+            self.stop()
+            self.disable_all_items()
+            await interaction.edit(view=self)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_permanent'),
+                                      ephemeral=True)
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+
+class InfoButtonView(View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @button(label='Admin View', custom_id='quefession_admin_view')
+    async def admin_view(self, button: Button, interaction: Interaction):
+        if not interaction.user.guild_permissions.manage_channels and not interaction.user.guild_permissions.manage_guild and \
+                not interaction.user.guild_permissions.administrator:
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'no_permission'), ephemeral=True)
+            return
+
+        data = client['AnonymousQuefessions'].find_one(
+            {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
+             'MessageID': str(interaction.message.id)})
+
+        if data is None:
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
+                                      ephemeral=True)
+            return
+
+        author = interaction.guild.get_member(int(data['AuthorID']))
+        if author is None:
+            author = ('Unknown', 'Unknown', 'Unknown')
+        else:
+            author = (author.display_name, author.name, author.id)
+
+        fmt = (f"# Anonymous Quefession by {author[0]}\n\n"
+               f"**Created by**: {author[0]} ({author[1]}; {author[2]})\n")
+
+        message = await interaction.guild.get_channel(int(data['ChannelID'])).fetch_message(int(data['MessageID']))
+        logging.info(message)
+        if message is None:
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
+                                      ephemeral=True)
+            return
+
+        await interaction.respond(fmt, ephemeral=True, view=AdminView(message=message))
+
+    @button(label='Report Quefession...', custom_id='quefession_report_view')
+    async def report_quefession(self, button: Button, interaction: Interaction):
+        try:
+            data = client['AnonymousQuefessions'].find_one(
+                {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
+                 'MessageID': str(interaction.message.id)})
+
+            if data is None:
+                await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
+                                          ephemeral=True)
+                return
+
+            author = interaction.guild.get_member(int(data['AuthorID']))
+            if author is None:
+                author = ('Unknown', 'Unknown', 'Unknown')
+            else:
+                author = (author.display_name, author.name, author.id)
+
+            await interaction.response.send_modal(modal=ReportTextModal(author, interaction.message, data['Text']))
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+
+class LogsView(View):
+    def __init__(self, message: Message):
+        super().__init__(timeout=3600, disable_on_timeout=True)
+
+        self.mod_message = message
+
+    @button(label='Delete (Ban before you delete!)', style=ButtonStyle.danger)
+    async def delete_quefession(self, button: Button, interaction: Interaction):
+        try:
+            await self.mod_message.delete()
+            self.disable_all_items()
+            await interaction.edit(view=self)
+            self.stop()
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+    @button(label='Ban', style=ButtonStyle.danger)
+    async def ban(self, button: Button, interaction: Interaction):
+        try:
+            await interaction.respond('Report actions', ephemeral=True,
+                                      view=AdminBanSelectTypeView(message=self.mod_message))
+        except Exception as e:
+            capture_exception(e)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+                                      ephemeral=True)
+
+
+class AnonymousQuefessions(Cog):
+    def __init__(self, bot: Bot):
+        self.bot = bot
+
+    anonymous_quefessions_cmd = SlashCommandGroup(name='anonymous_quefessions',
+                                                  description='Anonymous Quefessions Management')
+
+    @anonymous_quefessions_cmd.command()
+    @has_guild_permissions(manage_guild=True)
+    @guild_only()
+    async def create_quefessions_sending_msg(self, ctx: ApplicationContext):
+        try:
+            await ctx.channel.send(
+                embed=Embed(
+                    title=trl(ctx.user.id, ctx.guild.id, 'quefessions_submit_title'),
+                    description=trl(ctx.user.id, ctx.guild.id, 'quefessions_submit_description')
+                ),
+                view=CreateButtonView()
+            )
+
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'quefessions_sent_successfully'), ephemeral=True)
+
+        except Exception as e:
+            capture_exception(e)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+
+    @Cog.listener()
+    async def on_message_delete(self, message: Message):
+        client['AnonymousQuefessions'].delete_many({
+            'GuildID': str(message.guild.id),
+            'ChannelID': str(message.channel.id),
+            'MessageID': str(message.id)
+        })
