@@ -21,20 +21,6 @@ import discord
 
 from utils.analytics import analytics
 
-
-async def respond_to_help(ctx: discord.ApplicationContext, help_file: str):
-    help_file = help_file.title().replace(" ", "-")
-    file_info = os.stat(f"docs/{help_file}.md")
-    if file_info.st_size > 2000:
-        await ctx.respond(
-            f"You can read about this feature [in the documentation](<https://github.com/mldchan/Akabot/wiki/{help_file}>), as it's too large to send on Discord.",
-            ephemeral=True)
-    else:
-        with open(f"docs/{help_file}.md", "r") as f:
-            content = f.read()
-            await ctx.respond(content, ephemeral=True)
-
-
 class Help(discord.Cog):
     def __init__(self, bot: discord.Bot):
         super().__init__()
@@ -45,59 +31,54 @@ class Help(discord.Cog):
     @help_group.command(name="anti_raid", description="Help with Anti Raid feature")
     @analytics("help anti_raid")
     async def anti_raid(self, ctx: discord.ApplicationContext):
-        await respond_to_help(ctx, "Anti Raid")
+        await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Anti_Raid", ephemeral=True)
 
     @help_group.command(name="automod_actions", description="Help with Auto Role feature")
     @analytics("help automod_actions")
     async def automod_actions(self, ctx: discord.ApplicationContext):
-        await respond_to_help(ctx, "Automod Actions")
+        await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Automod_Actions", ephemeral=True)
 
     @help_group.command(name="chat_revive", description="Help with Chat Revive feature")
     @analytics("help chat_revive")
     async def chat_revive(self, ctx: discord.ApplicationContext):
-        await respond_to_help(ctx, "Chat Revive")
+        await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Chat_Revive", ephemeral=True)
 
     @help_group.command(name="chat_streaks", description="Help with Chat Streaks feature")
     @analytics("help chat_streaks")
     async def chat_streaks(self, ctx: discord.ApplicationContext):
-        await respond_to_help(ctx, "Chat Streaks")
+        await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Chat_Streaks", ephemeral=True)
 
     @help_group.command(name="chat_summary", description="Help with Chat Summary feature")
     @analytics("help chat_summary")
     async def chat_summary(self, ctx: discord.ApplicationContext):
-        await respond_to_help(ctx, "Chat Summary")
+        await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Chat_Summary", ephemeral=True)
 
     @help_group.command(name="giveaways", description="Help with Giveaways feature")
     @analytics("help giveaways")
     async def giveaways(self, ctx: discord.ApplicationContext):
-        await respond_to_help(ctx, "Giveaways")
+        await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Giveaways", ephemeral=True)
 
     @help_group.command(name="leveling", description="Help with Leveling feature")
     @analytics("help leveling")
     async def leveling(self, ctx: discord.ApplicationContext):
-        await respond_to_help(ctx, "Leveling")
+        await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Leveling", ephemeral=True)
 
     @help_group.command(name="logging", description="Help with Logging feature")
     @analytics("help logging")
     async def logging(self, ctx: discord.ApplicationContext):
-        await respond_to_help(ctx, "Logging")
+        await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Logging", ephemeral=True)
 
     @help_group.command(name="moderation", description="Help with Moderation feature")
     @analytics("help moderation")
     async def moderation(self, ctx: discord.ApplicationContext):
-        await respond_to_help(ctx, "Moderation")
+        await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Moderation", ephemeral=True)
 
     @help_group.command(name="reaction_roles", description="Help with Reaction Roles feature")
     @analytics("help reaction_roles")
     async def reaction_roles(self, ctx: discord.ApplicationContext):
-        await respond_to_help(ctx, "Reaction Roles")
+        await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Reaction_Roles", ephemeral=True)
 
     @help_group.command(name="verification", description="Help with Verification feature")
     @analytics("help verification")
     async def verification(self, ctx: discord.ApplicationContext):
-        await respond_to_help(ctx, "Verification")
-
-    @help_group.command(name="welcome_goodbye", description="Help with Welcome & Goodbye features")
-    @analytics("help welcome_goodbye")
-    async def welcome_goodbye(self, ctx: discord.ApplicationContext):
-        await respond_to_help(ctx, "Welcome & Goodbye")
+        await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Verification", ephemeral=True)
