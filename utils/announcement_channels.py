@@ -47,3 +47,9 @@ def db_get_announcement_channels(guild_id: int):
 def db_get_all_announcement_channels():
     data = client['AnnouncementChannels'].find().to_list()
     return [(i['GuildID'], i['ChannelID']) for i in data]
+
+def db_count_announcement_channels(guild_id: int):
+    data = client['AnnouncementChannels'].count_documents({
+        'GuildID': str(guild_id)
+    })
+    return data

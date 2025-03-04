@@ -19,7 +19,8 @@ import discord
 import sentry_sdk
 
 from utils.announcement_channels import db_get_announcement_channels, db_remove_announcement_channel, \
-    db_add_announcement_channel, db_is_subscribed_to_announcements
+    db_add_announcement_channel, db_is_subscribed_to_announcements, db_count_announcement_channels
+from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl, get_language
 from utils.per_user_settings import get_per_user_setting
 from utils.tips import append_tip_to_message
@@ -41,6 +42,9 @@ class AnnouncementChannels(discord.Cog):
                                   ephemeral=True)
                 return
 
+            if db_count_announcement_channels() + 1 > int(get_key("Max_Announcement_Channels", 10)):
+                await ctx.respond(trl(ctx.author.id, ctx.guild.id, "limits_max_announcement_channels"))
+                
             db_add_announcement_channel(ctx.guild.id, channel.id)
             await ctx.respond(
                 trl(ctx.user.id, ctx.guild.id, "announcement_subscribed", append_tip=True).format(

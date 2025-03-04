@@ -576,5 +576,7 @@
   "quefessions_ban_permanent": "Member banned from making quefessions permanently.",
   "quefessions_submit_title": "Anonymous Quefessions",
   "quefessions_submit_description": "Use the button on this message to submit an anonymous quefession!",
-  "quefessions_sent_successfully": "Sent successfully!"
+  "quefessions_sent_successfully": "Sent successfully!",
+  "limits_max_announcement_channels": "Maximum announcement channels were reached per server for this instance of Akabot.",
+  "limits_max_chatsummary_channels": "Maximum amount of Chat Summary channels was reached in this server for this instance of Akabot."
 }
