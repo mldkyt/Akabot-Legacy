@@ -28,6 +28,7 @@ from sentry_sdk import capture_exception
 
 from database import client
 from utils.analytics import analytics
+from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
 from utils.settings import get_setting, set_setting
@@ -301,6 +302,13 @@ class ChatSummary(discord.Cog):
     @analytics("chatsummary add")
     async def command_add(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
+            res = client['ChatSummary'].count_documents({
+                'GuildID': str(ctx.guild.id), 'Enabled': True
+            })
+            if res > int(get_key("Max_ChatSummary_Channels", "3")):
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "limits_max_chatsummary_channels"))
+                return
+            
             res = client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)},
                                                    {'$set': {'Enabled': True}})
             if res.modified_count == 0:
