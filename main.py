@@ -29,10 +29,11 @@ from sentry_sdk.integrations.pymongo import PyMongoIntegration
 load_dotenv()
 
 from features import welcoming, leveling, antiraid, chat_streaks, chat_revive, chat_summary, reaction_roles, \
-    logging_mod, admin_cmds, giveaways, feedback_cmd, moderation, verification, velky_stompies, \
-    roles_on_join, heartbeat, automod_actions, power_outage_announcement, per_user_settings, server_settings, \
-    bot_help, announcement_channels, tickets, debug_commands, birthday_announcements, \
-    send_server_count, suggestions, temporary_vc, rp, statistics_channels, anonymous_quefessions
+    logging_mod, admin_cmds, giveaways, feedback_cmd, moderation, verification, roles_on_join, \
+    heartbeat, automod_actions, power_outage_announcement, per_user_settings, server_settings, \
+    auto_react, auto_response, bot_help, announcement_channels, tickets, debug_commands, birthday_announcements, \
+    send_server_count, suggestions, temporary_vc, rp, word_scrambler, statistics_channels, \
+    anonymous_quefessions
 from utils.config import get_key
 from utils.db_converter import update
 from utils.languages import get_translation_for_key_localized as trl
@@ -67,6 +68,7 @@ if get_key("Sentry_Enabled", "false") == "true":
                     profiles_sample_rate=1.0)
 
 intents = discord.Intents.default()
+intents.message_content = get_key('Message_Intent', "false") == "true"
 intents.members = True
 
 update()
@@ -79,7 +81,10 @@ async def on_ready():
     bot.add_view(verification.VerificationView())
     bot.add_view(tickets.TicketCreateView(""))
     bot.add_view(tickets.TicketMessageView())
-    bot.add_view(anonymous_quefessions.CreateButtonView())
+    if get_key('Message_Intent', "false") == "true":
+        bot.add_view(suggestions.V2SuggestionView())
+    else:
+        bot.add_view(anonymous_quefessions.CreateButtonView())
     bot.add_view(anonymous_quefessions.InfoButtonView())
     bot.add_view(chat_summary.OpenPaginatorView())
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f"v{BOT_VERSION}"))
@@ -119,8 +124,9 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
     try:
         # respond
         await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
-    except Exception:
+    except Exception as e:
         logging.error("Failed to respond to message")
+        sentry_sdk.capture_exception(e)
     raise error
 
 
@@ -150,8 +156,6 @@ if get_key("Feature_Moderation", "true") == "true":
     bot.add_cog(moderation.Moderation(bot))
 if get_key("Feature_Verification", "true") == "true":
     bot.add_cog(verification.Verification(bot))
-if get_key("Feature_VelkyStompies", "true") == "true":
-    bot.add_cog(velky_stompies.VelkyStompies())
 if get_key("Feature_RolesOnJoin", "true") == "true":
     bot.add_cog(roles_on_join.RolesOnJoin(bot))
 if get_key("Feature_Heartbeat", "true") == "true":
@@ -164,6 +168,11 @@ if get_key("PerUserSettings_Enabled", "true") == "true":
     bot.add_cog(per_user_settings.PerUserSettings(bot))
 if get_key("Feature_ServerSettings", "true") == "true":
     bot.add_cog(server_settings.ServerSettings())
+if get_key('Message_Intent', "false") == "true":
+    if get_key("Feature_AutoReact", "true") == "true":
+        bot.add_cog(auto_react.AutoReact(bot))
+    if get_key("Feature_AutoResponse", "true") == "true":
+        bot.add_cog(auto_response.AutoResponse(bot))
 if get_key("Feature_HelpCommands", "true") == "true":
     bot.add_cog(bot_help.Help(bot))
 if get_key("Feature_AnnouncementChannels", "true") == "true":
@@ -181,6 +190,9 @@ if get_key('Feature_TemporaryVC', 'true') == 'true':
     bot.add_cog(temporary_vc.TemporaryVC(bot))
 if get_key("Feature_Roleplay", "true") == "true":
     bot.add_cog(rp.RoleplayCommands(bot))
+if get_key('Message_Intent', "false") == "true":
+    if get_key("Feature_WordScramble", "true") == "true":
+        bot.add_cog(word_scrambler.WordScrambler(bot))
 if get_key("Feature_StatisticChannels", "true") == "true":
     bot.add_cog(statistics_channels.StatisticChannels(bot))
 if get_key("Feature_AnonymousQuefessions", "true") == "true":

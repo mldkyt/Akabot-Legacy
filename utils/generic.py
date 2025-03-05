@@ -69,3 +69,43 @@ def pretty_time(seconds_since_epoch: int | float) -> str:
 def get_date_time_str(guild_id: int) -> str:
     # format: yyyy/mm/dd hh:mm
     return get_now_for_server(guild_id).strftime('%Y/%m/%d %H:%M')
+
+
+def validate_day(month: int, day: int, year: int) -> bool:
+    """
+    Validates if the given day is correct for the specified month and year.
+
+    Args:
+    - month (int): The month (1-12).
+    - day (int): The day of the month to validate.
+    - year (int): The year, used to check for leap years.
+
+    Returns:
+    - bool: True if the day is valid for the given month and year, False otherwise.
+    """
+
+    # Check for valid month
+    if not 1 <= month <= 12:
+        return False
+
+    # Check for valid day
+    if not 1 <= day <= 31:
+        return False
+
+    # Function to check if a year is a leap year
+    def is_leap_year(year: int) -> bool:
+        return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+
+    # February: check for leap year
+    if month == 2:
+        if is_leap_year(year):
+            return day <= 29
+        else:
+            return day <= 28
+
+    # April, June, September, November: 30 days
+    if month in [4, 6, 9, 11]:
+        return day <= 30
+
+    # For all other months, the day is valid if it's 31 or less
+    return True

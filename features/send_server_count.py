@@ -29,7 +29,7 @@ SEND_HOURS = int(get_key("Send_Server_Count_Hours", "0"))
 
 SEND = get_key("Send_Server_Count_API", "false") == "true"
 SEND_METHOD = get_key("Send_Server_Count_Method", "post")
-SEND_URL = get_key("Send_Server_Count_URL", "None")
+SEND_URL = get_key("Send_Server_Count_URL", "http://localhost")
 
 TOPGG_SEND = get_key("TopGG_Send", "false") == "true"
 TOPGG_TOKEN = get_key("TopGG_Token", "None")

@@ -196,7 +196,7 @@ class TicketCreateView(discord.ui.View):
 
         log_embed = discord.Embed(title="Ticket Created",
                                   description=f"Ticket created by {interaction.user.mention} in {channel.mention}")
-        log_embed.add_field(name="Ticket ID", value=channel.id)
+        log_embed.add_field(name="Ticket ID", value=str(channel.id))
         log_embed.add_field(name="Ticket Creator", value=interaction.user.mention)
         log_embed.add_field(name="Ticket Channel", value=channel.mention)
         log_embed.add_field(name="Ticket Category", value=category.name)
@@ -310,7 +310,7 @@ class Tickets(discord.Cog):
             log_embed = discord.Embed(title="Ticket Category Set",
                                       description=f"Ticket category set by {ctx.user.mention} to {category.name}")
             log_embed.add_field(name="Ticket Category", value=category.name)
-            log_embed.add_field(name="Ticket Category ID", value=category.id)
+            log_embed.add_field(name="Ticket Category ID", value=str(category.id))
             log_embed.add_field(name="Ticket Category Time", value=get_now_for_server(ctx.guild.id).isoformat())
 
             await log_into_logs(ctx.guild, log_embed)
@@ -330,7 +330,7 @@ class Tickets(discord.Cog):
 
             log_embed = discord.Embed(title="Ticket Hide Time Set",
                                       description=f"Ticket hide time set by {ctx.user.mention} to {hours} hours")
-            log_embed.add_field(name="Ticket Hide Time", value=hours)
+            log_embed.add_field(name="Ticket Hide Time", value=str(hours))
             log_embed.add_field(name="Ticket Hide Time Time", value=get_now_for_server(ctx.guild.id).isoformat())
 
             await log_into_logs(ctx.guild, log_embed)
@@ -349,7 +349,7 @@ class Tickets(discord.Cog):
 
             log_embed = discord.Embed(title="Ticket Archive Time Set",
                                       description=f"Ticket archive time set by {ctx.user.mention} to {hours} hours")
-            log_embed.add_field(name="Ticket Archive Time", value=hours)
+            log_embed.add_field(name="Ticket Archive Time", value=str(hours))
             log_embed.add_field(name="Ticket Archive Time Time", value=get_now_for_server(ctx.guild.id).isoformat())
 
             await log_into_logs(ctx.guild, log_embed)

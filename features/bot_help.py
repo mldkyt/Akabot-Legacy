@@ -15,11 +15,10 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-import os
-
 import discord
 
 from utils.analytics import analytics
+
 
 class Help(discord.Cog):
     def __init__(self, bot: discord.Bot):

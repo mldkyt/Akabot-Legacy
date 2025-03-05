@@ -16,6 +16,7 @@
 #
 
 import datetime
+import logging
 import re
 
 import discord
@@ -25,179 +26,18 @@ from discord.ext import commands as commands_ext, pages
 
 from database import client
 from utils.analytics import analytics
+from utils.config import get_key
+from utils.generic import validate_day
 from utils.languages import get_translation_for_key_localized as trl, get_language
+from utils.leveling import calc_multiplier, get_xp, add_xp, get_level_for_xp, get_xp_for_level, \
+    add_mult, mult_exists, mult_change_name, mult_change_multiplier, \
+    mult_change_start, mult_change_end, mult_del, mult_list, \
+    mult_get, update_roles_for_member
 from utils.logging_util import log_into_logs
 from utils.per_user_settings import get_per_user_setting, set_per_user_setting
 from utils.settings import get_setting, set_setting
 from utils.tips import append_tip_to_message
 from utils.tzutil import get_now_for_server
-
-
-def db_calculate_multiplier(guild_id: int):
-    multiplier = int(get_setting(guild_id, 'leveling_xp_multiplier', '1'))
-
-    multipliers = db_multiplier_getall(guild_id)
-    for m in multipliers:
-        start_month, start_day = map(int, m['StartDate'].split('-'))
-        end_month, end_day = map(int, m['EndDate'].split('-'))
-
-        now = get_now_for_server(guild_id)
-        start_date = datetime.datetime(now.year, start_month, start_day)
-        end_date = datetime.datetime(now.year, end_month, end_day, hour=23, minute=59, second=59)
-
-        if end_date < start_date:
-            end_date = end_date.replace(year=end_date.year + 1)
-
-        if start_date <= now <= end_date:
-            multiplier *= m['Multiplier']
-
-    return multiplier
-
-
-def db_get_user_xp(guild_id: int, user_id: int):
-    data = client['Leveling'].find_one({'GuildID': str(guild_id), 'UserID': str(user_id)})
-    return data['XP'] if data else 1
-
-
-def db_add_user_xp(guild_id: int, user_id: int, xp: int):
-    data = client['Leveling'].find_one({'GuildID': str(guild_id), 'UserID': str(user_id)})
-    if data:
-        current_xp = data['XP']
-        multiplier = db_calculate_multiplier(guild_id)
-        client['Leveling'].update_one({'GuildID': str(guild_id), 'UserID': str(user_id)}, {'$inc': {'XP': xp}},
-                                      upsert=True)
-    else:
-        client['Leveling'].insert_one({'GuildID': str(guild_id), 'UserID': str(user_id), 'XP': xp})
-
-
-def get_level_for_xp(guild_id: int, xp: int):
-    level = 0
-    xp_needed = db_calculate_multiplier(guild_id) * int(get_setting(guild_id, 'leveling_xp_per_level', '500'))
-    while xp >= xp_needed:
-        level += 1
-        xp -= xp_needed
-        xp_needed = db_calculate_multiplier(guild_id) * int(get_setting(guild_id, 'leveling_xp_per_level', '500'))
-
-    return level
-
-
-def get_xp_for_level(guild_id: int, level: int):
-    xp = 0
-    xp_needed = db_calculate_multiplier(guild_id) * int(get_setting(guild_id, 'leveling_xp_per_level', '500'))
-    for _ in range(level):
-        xp += xp_needed
-        xp_needed = db_calculate_multiplier(guild_id) * int(get_setting(guild_id, 'leveling_xp_per_level', '500'))
-
-    return xp
-
-
-def db_multiplier_add(guild_id: int, name: str, multiplier: int, start_date_month: int, start_date_day: int,
-                      end_date_month: int, end_date_day: int):
-    client['LevelingMultiplier'].insert_one({'GuildID': str(guild_id), 'Name': name, 'Multiplier': multiplier,
-                                             'StartDate': '{:02d}-{:02d}'.format(start_date_month, start_date_day),
-                                             'EndDate': '{:02d}-{:02d}'.format(end_date_month, end_date_day)})
-
-
-def db_multiplier_exists(guild_id: int, name: str):
-    data = client['LevelingMultiplier'].count_documents({'GuildID': str(guild_id), 'Name': name})
-    return data > 0
-
-
-def db_multiplier_change_name(guild_id: int, old_name: str, new_name: str):
-    client['LevelingMultiplier'].update_one({'GuildID': str(guild_id), 'Name': old_name}, {'$set': {'Name': new_name}})
-
-
-def db_multiplier_change_multiplier(guild_id: int, name: str, multiplier: int):
-    client['LevelingMultiplier'].update_one({'GuildID': str(guild_id), 'Name': name},
-                                            {'$set': {'Multiplier': multiplier}})
-
-
-def db_multiplier_change_start_date(guild_id: int, name: str, start_date: datetime.datetime):
-    client['LevelingMultiplier'].update_one({'GuildID': str(guild_id), 'Name': name},
-                                            {'$set': {'StartDate': start_date}})
-
-
-def db_multiplier_change_end_date(guild_id: int, name: str, end_date: datetime.datetime):
-    client['LevelingMultiplier'].update_one({'GuildID': str(guild_id), 'Name': name}, {'$set': {'EndDate': end_date}})
-
-
-def db_multiplier_remove(guild_id: int, name: str):
-    client['LevelingMultiplier'].delete_one({'GuildID': str(guild_id), 'Name': name})
-
-
-def db_multiplier_getall(guild_id: int):
-    data = client['LevelingMultiplier'].find({'GuildID': str(guild_id)}).to_list()
-    return data
-
-
-def db_multiplier_get(guild_id: int, name: str):
-    data = client['LevelingMultiplier'].find_one({'GuildID': str(guild_id), 'Name': name})
-    return data
-
-
-def validate_day(month: int, day: int, year: int) -> bool:
-    """
-    Validates if the given day is correct for the specified month and year.
-
-    Args:
-    - month (int): The month (1-12).
-    - day (int): The day of the month to validate.
-    - year (int): The year, used to check for leap years.
-
-    Returns:
-    - bool: True if the day is valid for the given month and year, False otherwise.
-    """
-
-    # Check for valid month
-    if not 1 <= month <= 12:
-        return False
-
-    # Check for valid day
-    if not 1 <= day <= 31:
-        return False
-
-    # Function to check if a year is a leap year
-    def is_leap_year(year: int) -> bool:
-        return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
-
-    # February: check for leap year
-    if month == 2:
-        if is_leap_year(year):
-            return day <= 29
-        else:
-            return day <= 28
-
-    # April, June, September, November: 30 days
-    if month in [4, 6, 9, 11]:
-        return day <= 30
-
-    # For all other months, the day is valid if it's 31 or less
-    return True
-
-
-async def update_roles_for_member(guild: discord.Guild, member: discord.Member):
-    xp = db_get_user_xp(guild.id, member.id)
-    level = get_level_for_xp(guild.id, xp)
-
-    for i in range(1, level + 1):  # Add missing roles
-        role_id = get_setting(guild.id, f'leveling_reward_{i}', '0')
-        if role_id != '0':
-            role = guild.get_role(int(role_id))
-            if role.position > guild.me.top_role.position:
-                return
-
-            if role is not None and role not in member.roles:
-                await member.add_roles(role)
-
-    for i in range(level + 1, 100):  # Remove excess roles
-        role_id = get_setting(guild.id, f'leveling_reward_{i}', '0')
-        if role_id != '0':
-            role = guild.get_role(int(role_id))
-            if role.position > guild.me.top_role.position:
-                return
-
-            if role is not None and role in member.roles:
-                await member.remove_roles(role)
 
 
 class Leveling(discord.Cog):
@@ -211,9 +51,26 @@ class Leveling(discord.Cog):
             if msg.author.bot:
                 return
 
-            before_level = get_level_for_xp(msg.guild.id, db_get_user_xp(msg.guild.id, msg.author.id))
-            db_add_user_xp(msg.guild.id, msg.author.id, 3)
-            after_level = get_level_for_xp(msg.guild.id, db_get_user_xp(msg.guild.id, msg.author.id))
+            if get_key('Message_Intent', "false") == "true":
+                xp = int(get_setting(msg.guild.id, 'leveling_initial_xp', 3))
+                extra = int(get_setting(msg.guild.id, 'leveling_extra_xp', 0))
+                extra_trigger = int(get_setting(msg.guild.id, 'leveling_extra_xp_trigger', 1))
+
+                xp += extra * (len(msg.content) // extra_trigger)
+
+                logging.debug(
+                    "Settings: Extra: %d, Extra Trigger: %d, Calculated Multiplications: %d, Calculated XP Addition: %d",
+                    extra, extra_trigger, len(msg.content) // extra_trigger, extra * (len(msg.content) // extra_trigger))
+                logging.debug("Adding %d XP to %s (Message length: %d)", xp, msg.author.name, len(msg.content))
+
+                before_level = get_level_for_xp(msg.guild.id, get_xp(msg.guild.id, msg.author.id))
+                add_xp(msg.guild.id, msg.author.id, xp)
+                after_level = get_level_for_xp(msg.guild.id, get_xp(msg.guild.id, msg.author.id))
+            else:
+                xp = int(get_setting(msg.guild.id, 'leveling_initial_xp', 3))
+                before_level = get_level_for_xp(msg.guild.id, get_xp(msg.guild.id, msg.author.id))
+                add_xp(msg.guild.id, msg.author.id, xp)
+                after_level = get_level_for_xp(msg.guild.id, get_xp(msg.guild.id, msg.author.id))
 
             if not msg.channel.permissions_for(msg.guild.me).send_messages:
                 return
@@ -236,11 +93,11 @@ class Leveling(discord.Cog):
         try:
             user = user or ctx.user
 
-            level_xp = db_get_user_xp(ctx.guild.id, user.id)
+            level_xp = get_xp(ctx.guild.id, user.id)
             level = get_level_for_xp(ctx.guild.id, level_xp)
-            multiplier = db_calculate_multiplier(ctx.guild.id)
+            multiplier = calc_multiplier(ctx.guild.id)
             next_level_xp = get_xp_for_level(ctx.guild.id, level + 1)
-            multiplier_list = db_multiplier_getall(ctx.guild.id)
+            multiplier_list = mult_list(ctx.guild.id)
 
             msg = ""
             for i in multiplier_list:
@@ -279,13 +136,12 @@ class Leveling(discord.Cog):
                 await ctx.respond(response, ephemeral=True)
             else:
                 icon = get_per_user_setting(user.id, 'leveling_icon', '')
-                response = trl(ctx.user.id, ctx.guild.id, "leveling_level_info_another").format(icon=icon,
-                                                                                                user=user.mention,
-                                                                                                level=level,
-                                                                                                level_xp=level_xp,
-                                                                                                next_level_xp=next_level_xp,
-                                                                                                next_level=level + 1,
-                                                                                                multiplier=multiplier)
+                response = (
+                    trl(ctx.user.id, ctx.guild.id, "leveling_level_info_another").format(icon=icon, user=user.mention,
+                                                                                         level=level, level_xp=level_xp,
+                                                                                         next_level_xp=next_level_xp,
+                                                                                         next_level=level + 1,
+                                                                                         multiplier=multiplier))
 
                 if len(msg) > 0:
                     response += trl(ctx.user.id, ctx.guild.id, "leveling_level_multiplier_title")
@@ -311,7 +167,7 @@ class Leveling(discord.Cog):
         try:
             leveling_xp_multiplier = get_setting(ctx.guild.id, 'leveling_xp_multiplier', '1')
 
-            multiplier_list = db_multiplier_getall(ctx.guild.id)
+            multiplier_list = mult_list(ctx.guild.id)
             multiplier_list_msg = ""
 
             for i in multiplier_list:
@@ -333,6 +189,40 @@ class Leveling(discord.Cog):
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+
+    @leveling_subcommand.command(name='set_per_message',
+                                 description='Set the XP per message, and an additional XP booster')
+    @discord.default_permissions(manage_guild=True)
+    @commands_ext.has_permissions(manage_guild=True)
+    @commands_ext.guild_only()
+    @discord.option(name="initial", description="The XP given to any user for any message, of any length and any type.",
+                    type=int)
+    @discord.option(name="extra", description="The XP given any user with more effort in their message. (Message Intent only)", type=int)
+    @discord.option(name="extra_requirement",
+                    description="Requirement of letters in a message for it to be considered high effort. (Message Intent only)", type=int)
+    @analytics("leveling multiplier")
+    async def set_per_message(self, ctx: discord.ApplicationContext, initial: int, extra: int, extra_requirement: int):
+        if 4000 < extra_requirement <= 0:
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_extra_requirement"),
+                              ephemeral=True)
+            return
+
+        if 100 < extra < 0:
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_extra"), ephemeral=True)
+            return
+
+        if 100 < initial < 0:
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_initial"), ephemeral=True)
+            return
+
+        set_setting(ctx.guild.id, 'leveling_initial_xp', str(initial))
+        set_setting(ctx.guild.id, 'leveling_extra_xp', str(extra))
+        set_setting(ctx.guild.id, 'leveling_extra_xp_trigger', str(extra_requirement))
+        await ctx.respond(
+            trl(ctx.user.id, ctx.guild.id, "leveling_set_per_message_success", append_tip=True).format(initial=initial,
+                                                                                                       extra=extra,
+                                                                                                       extra_requirement=extra_requirement),
+            ephemeral=True)
 
     @leveling_subcommand.command(name='multiplier', description='Set the leveling multiplier')
     @discord.default_permissions(manage_guild=True)
@@ -382,7 +272,7 @@ class Leveling(discord.Cog):
                 return
 
             # Verify if the multiplier already exists
-            if db_multiplier_exists(ctx.guild.id, name):
+            if mult_exists(ctx.guild.id, name):
                 await ctx.respond(
                     trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_already_exists").format(name=name),
                     ephemeral=True)
@@ -403,7 +293,7 @@ class Leveling(discord.Cog):
                 return
 
             # Multipliers apply to every year
-            db_multiplier_add(ctx.guild.id, name, multiplier, start_month, start_day, end_month, end_day)
+            add_mult(ctx.guild.id, name, multiplier, start_month, start_day, end_month, end_day)
 
             # Logging embed
             logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "leveling_add_multiplier_log_title"))
@@ -434,20 +324,20 @@ class Leveling(discord.Cog):
     @analytics("leveling change multiplier name")
     async def change_multiplier_name(self, ctx: discord.ApplicationContext, old_name: str, new_name: str):
         try:
-            if not db_multiplier_exists(ctx.guild.id, old_name):
+            if not mult_exists(ctx.guild.id, old_name):
                 await ctx.respond(
                     trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_doesnt_exist").format(name=old_name),
                     ephemeral=True)
                 return
 
-            if db_multiplier_exists(ctx.guild.id, new_name):
+            if mult_exists(ctx.guild.id, new_name):
                 await ctx.respond(
                     trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_already_exists").format(name=new_name),
                     ephemeral=True)
                 return
 
             # Set new setting
-            db_multiplier_change_name(ctx.guild.id, old_name, new_name)
+            mult_change_name(ctx.guild.id, old_name, new_name)
 
             # Logging embed
             logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "leveling_rename_multiplier_log_title"))
@@ -478,15 +368,15 @@ class Leveling(discord.Cog):
     @analytics("leveling change multiplier multiplier")
     async def change_multiplier_multiplier(self, ctx: discord.ApplicationContext, name: str, multiplier: int):
         try:
-            if not db_multiplier_exists(ctx.guild.id, name):
+            if not mult_exists(ctx.guild.id, name):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_doesnt_exist"), ephemeral=True)
                 return
 
             # Get old setting
-            old_multiplier = db_multiplier_get(ctx.guild.id, name)['Multiplier']
+            old_multiplier = mult_get(ctx.guild.id, name)['Multiplier']
 
             # Set new setting
-            db_multiplier_change_multiplier(ctx.guild.id, name, multiplier)
+            mult_change_multiplier(ctx.guild.id, name, multiplier)
 
             # Logging embed
             logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "leveling_multiplier_logs_title"))
@@ -519,7 +409,7 @@ class Leveling(discord.Cog):
     @analytics("leveling change multiplier start date")
     async def change_multiplier_start_date(self, ctx: discord.ApplicationContext, name: str, start_date: str):
         try:
-            if not db_multiplier_exists(ctx.guild.id, name):
+            if not mult_exists(ctx.guild.id, name):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_doesnt_exist").format(name=name),
                                   ephemeral=True)
                 return
@@ -541,7 +431,7 @@ class Leveling(discord.Cog):
             start_year = now.year
 
             # Set new setting
-            db_multiplier_change_start_date(ctx.guild.id, name, datetime.datetime(start_year, start_month, start_day))
+            mult_change_start(ctx.guild.id, name, datetime.datetime(start_year, start_month, start_day))
 
             # Logging embed
             logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "leveling_start_date_log_title"))
@@ -572,7 +462,7 @@ class Leveling(discord.Cog):
     @analytics("leveling change multiplier end date")
     async def change_multiplier_end_date(self, ctx: discord.ApplicationContext, name: str, end_date: str):
         try:
-            if not db_multiplier_exists(ctx.guild.id, name):
+            if not mult_exists(ctx.guild.id, name):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_doesnt_exist").format(name=name),
                                   ephemeral=True)
                 return
@@ -594,7 +484,7 @@ class Leveling(discord.Cog):
             year = now.year
 
             # Set new setting
-            db_multiplier_change_end_date(ctx.guild.id, name, datetime.datetime(year, end_month, end_day))
+            mult_change_end(ctx.guild.id, name, datetime.datetime(year, end_month, end_day))
 
             # Logging embed
             logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "leveling_end_date_log_title"))
@@ -622,16 +512,16 @@ class Leveling(discord.Cog):
     @analytics("leveling remove multiplier")
     async def remove_multiplier(self, ctx: discord.ApplicationContext, name: str):
         try:
-            if not db_multiplier_exists(ctx.guild.id, name):
+            if not mult_exists(ctx.guild.id, name):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_doesnt_exist").format(name=name),
                                   ephemeral=True)
                 return
 
             # Get old setting
-            old_multiplier = db_multiplier_get(ctx.guild.id, name)['Multiplier']
+            old_multiplier = mult_get(ctx.guild.id, name)['Multiplier']
 
             # Set new setting
-            db_multiplier_remove(ctx.guild.id, name)
+            mult_del(ctx.guild.id, name)
 
             # Logging embed
             logging_embed = discord.Embed(title=trl(ctx.user.id, ctx.guild.id, "leveling_remove_multiplier_log_title"))
@@ -658,7 +548,7 @@ class Leveling(discord.Cog):
     @analytics("leveling get multiplier")
     async def get_multiplier(self, ctx: discord.ApplicationContext):
         try:
-            multiplier = db_calculate_multiplier(ctx.guild.id)
+            multiplier = calc_multiplier(ctx.guild.id)
             await ctx.respond(
                 trl(ctx.user.id, ctx.guild.id, "leveling_get_multiplier_response", append_tip=True).format(
                     multiplier=multiplier), ephemeral=True)

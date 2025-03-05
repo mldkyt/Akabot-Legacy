@@ -42,7 +42,7 @@ class AnnouncementChannels(discord.Cog):
                                   ephemeral=True)
                 return
 
-            if db_count_announcement_channels() + 1 > int(get_key("Max_Announcement_Channels", 10)):
+            if db_count_announcement_channels(ctx.guild.id) + 1 > int(get_key("Max_Announcement_Channels", "10")):
                 await ctx.respond(trl(ctx.author.id, ctx.guild.id, "limits_max_announcement_channels"))
                 
             db_add_announcement_channel(ctx.guild.id, channel.id)

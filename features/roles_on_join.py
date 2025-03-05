@@ -57,7 +57,7 @@ class RolesOnJoin(discord.Cog):
             # check amount of roles
             res = client['RolesOnJoin'].count_documents({'GuildID': str(ctx.guild.id)})
             if res > int(get_key("Max_RolesOnJoin", "3")):
-                await ctx.respond(trl("limits_max_rolesonjoin"), ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "limits_max_rolesonjoin"), ephemeral=True)
                 return
             # check role position
             if role.position > ctx.me.top_role.position:

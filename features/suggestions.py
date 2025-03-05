@@ -14,6 +14,202 @@
 #      You should have received a copy of the GNU Affero General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+import asyncio
+import logging
+from typing import Any
+
+import discord
+from discord import Color, Interaction
+from discord.ui import View, Modal, InputText
+
+from utils.analytics import analytics
+from utils.config import get_key
+
+
+def migration_1():
+    # Convert user ID's in upvotes and downvotes to strings, if they are not already
+    for x in client['SuggestionMessagesV2'].find():
+        if all(isinstance(x, str) for x in x['Upvotes']) and all(isinstance(x, str) for x in x['Downvotes']):
+            continue
+
+        print('PERFORMING MIGRATION convert upvotes and downvotes to strings')
+
+        upvotes = x['Upvotes']
+        downvotes = x['Downvotes']
+        client['SuggestionMessagesV2'].update_one({'_id': x['_id']},
+                                                  {'$set': {'Upvotes': [str(x) for x in upvotes],
+                                                            'Downvotes': [str(x) for x in downvotes]}})
+
+
+async def perform_basic_vote_checks(interaction: discord.Interaction) -> bool | tuple[bool, Any]:
+    """
+    Perform basic checks for voting on a suggestion. Checks for DB record and if the user has already voted.
+    Args:
+        interaction: Interaction
+
+    Returns: False or True and the data when succeeded
+
+    """
+    data = client['SuggestionMessagesV2'].find_one({'MessageID': str(interaction.message.id)})
+    if not data:
+        await interaction.response.send_message('This suggestion does not exist in the database', ephemeral=True)
+        return False
+
+    if str(interaction.user.id) in data['Upvotes'] or str(interaction.user.id) in data['Downvotes']:
+        await interaction.response.send_message('You have already voted on this suggestion', ephemeral=True)
+        return False
+
+    return True, data
+
+
+async def update_existing_suggestions_message_interaction(interaction: discord.Interaction):
+    """
+    Update the existing suggestions message with the new vote count
+    Args:
+        interaction: Interaction
+
+    Returns: Nothing
+
+    """
+    suggestions_msg = client['SuggestionMessagesV2'].find_one({'MessageID': str(interaction.message.id)})
+
+    author = interaction.guild.get_member(int(suggestions_msg['AuthorID']))
+
+    new_emb = discord.Embed(title='Suggestion', color=Color.blue(),
+                            author=discord.EmbedAuthor(name=f'{author.display_name}\'s suggestion',
+                                                       icon_url=author.display_avatar.url),
+                            description=generate_message_content(str(interaction.message.id)))
+    await interaction.response.edit_message(embed=new_emb)
+
+
+async def update_existing_suggestions_message(msg: discord.Message):
+    """
+    Update the existing suggestions message with the new vote count
+    Args:
+        msg: Message object to update
+
+    Returns: Nothing
+    """
+    suggestions_msg = client['SuggestionMessagesV2'].find_one({'MessageID': str(msg.id)})
+
+    if not suggestions_msg:
+        return
+
+    logging.info('Refreshing message %s', msg.id)
+
+    author = msg.guild.get_member(int(suggestions_msg['AuthorID']))
+
+    new_emb = discord.Embed(title='Suggestion', color=Color.blue(),
+                            author=discord.EmbedAuthor(name=f'{author.display_name}\'s suggestion',
+                                                       icon_url=author.display_avatar.url),
+                            description=generate_message_content(str(msg.id)))
+
+    await msg.edit(embed=new_emb)
+
+
+class V2SuggestionView(View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label='👍', style=discord.ButtonStyle.primary, custom_id='upvote')
+    async def upvote(self, button: discord.ui.Button, interaction: discord.Interaction):
+        success, data = await perform_basic_vote_checks(interaction)
+        if not success:
+            return
+
+        client['SuggestionMessagesV2'].update_one({'MessageID': str(interaction.message.id)},
+                                                  {'$push': {'Upvotes': str(interaction.user.id)}})
+
+        await update_existing_suggestions_message_interaction(interaction)
+
+    @discord.ui.button(label='👎', style=discord.ButtonStyle.primary, custom_id='downvote')
+    async def downvote(self, button: discord.ui.Button, interaction: discord.Interaction):
+        success, data = await perform_basic_vote_checks(interaction)
+        if not success:
+            return
+
+        client['SuggestionMessagesV2'].update_one({'MessageID': str(interaction.message.id)},
+                                                  {'$push': {'Downvotes': str(interaction.user.id)}})
+
+        await update_existing_suggestions_message_interaction(interaction)
+
+    @discord.ui.button(label='See more information', style=discord.ButtonStyle.primary, custom_id='more_info')
+    async def get_info(self, button: discord.ui.Button, interaction: discord.Interaction):
+        data = client['SuggestionMessagesV2'].find_one({'MessageID': str(interaction.message.id)})
+        if not data:
+            await interaction.response.send_message('This suggestion does not exist in the database', ephemeral=True)
+            return
+
+        upvotes = data['Upvotes']
+        downvotes = data['Downvotes']
+        message = data['Suggestion']
+        author = interaction.guild.get_member(int(data['AuthorID']))
+        percent = len(upvotes) / (len(upvotes) + len(downvotes)) * 100 if len(upvotes) + len(downvotes) > 0 else 0
+
+        upvoters = [f'<@{x}>' for x in upvotes]
+        if len(upvoters) == 0:
+            upvoters = ['No upvoters']
+        downvoters = [f'<@{x}>' for x in downvotes]
+        if len(downvoters) == 0:
+            downvoters = ['No downvoters']
+
+        await interaction.response.send_message(
+            trl(interaction.user.id, interaction.guild.id, 'suggestions_v2_information', append_tip=True)
+            .format(message=message, author=author.mention, upvotes=str(len(upvotes)), downvotes=str(len(downvotes)),
+                    percent=f"{percent:.0f}",
+                    upvoters=', '.join(upvoters), downvoters=', '.join(downvoters)),
+            ephemeral=True, view=V2SuggestionAuthorExtraView(msg_id=data['MessageID'],
+                                                             ch_id=str(interaction.channel.id)) if str(
+                interaction.user.id) == data['AuthorID'] else None)
+
+
+class V2SuggestionEditMessageModal(Modal):
+    def __init__(self, msg_id: str, ch_id: str):
+        super().__init__(timeout=300, title='Edit Message')
+
+        self.msg_id = msg_id
+        self.ch_id = ch_id
+
+        self.add_item(InputText(label='New Message', placeholder='Enter the new message here', max_length=2000))
+
+    async def callback(self, interaction: Interaction):
+        client['SuggestionMessagesV2'].update_one({'MessageID': self.msg_id},
+                                                  {'$set': {'Suggestion': self.children[0].value}})
+
+        ch = interaction.guild.get_channel(int(self.ch_id))
+        msg = await ch.fetch_message(int(self.msg_id))
+
+        await update_existing_suggestions_message(msg)
+        await interaction.respond('Message updated', ephemeral=True)
+
+
+class V2SuggestionAuthorExtraView(View):
+    def __init__(self, msg_id: str, ch_id: str):
+        super().__init__(timeout=120)
+        self.msg_id = msg_id
+        self.ch_id = ch_id
+
+    @discord.ui.button(label='Update Message')
+    async def update_message(self, button: discord.ui.Button, interaction: discord.Interaction):
+        modal = V2SuggestionEditMessageModal(msg_id=self.msg_id, ch_id=self.ch_id)
+        await interaction.response.send_modal(modal)
+
+
+def generate_message_content(id: str):
+    data = client['SuggestionMessagesV2'].find_one({'MessageID': id})
+    if not data:
+        raise ValueError('Message not found')
+
+    upvotes = len(data['Upvotes'])
+    downvotes = len(data['Downvotes'])
+    message = data['Suggestion']
+
+    percent = upvotes / (upvotes + downvotes) * 100 if upvotes + downvotes > 0 else 0
+
+    return f"""{message}
+
+**{upvotes + downvotes} votes**
+**{percent:.0f}% approval**"""
 
 import discord
 import sentry_sdk
@@ -26,6 +222,10 @@ from utils.settings import get_setting, set_setting
 class Suggestions(discord.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
+        try:
+            migration_1()
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
 
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -34,18 +234,45 @@ class Suggestions(discord.Cog):
                 return
 
             if client['SuggestionChannels'].count_documents({'ChannelID': str(message.channel.id)}) > 0:
-                emojis = get_setting(message.guild.id, 'suggestion_emoji', '👍👎')
-                if emojis == '👍👎':
-                    await message.add_reaction('👍')
-                    await message.add_reaction('👎')
-                elif emojis == '✅❌':
-                    await message.add_reaction('✅')
-                    await message.add_reaction('❌')
+                if message.channel.permissions_for(message.guild.me).manage_messages and get_key('Message_Intent', "false") == "true":
+                    # Version 2
 
-                if get_setting(message.guild.id, "suggestion_reminder_enabled", "false") == "true":
-                    to_send = get_setting(message.guild.id, "suggestion_reminder_message", "")
-                    sent = await message.reply(to_send)
-                    await sent.delete(delay=5)
+                    client['SuggestionMessagesV2'].insert_one({
+                        'MessageID': str(message.id),
+                        'Suggestion': message.content,
+                        'Upvotes': [],
+                        'Downvotes': [],
+                        'AuthorID': str(message.author.id)
+                    })
+
+                    effective_avatar = message.author.default_avatar.url
+                    if message.author.avatar:
+                        effective_avatar = message.author.avatar.url
+
+                    emb = discord.Embed(title='Suggestion', color=Color.blue(),
+                                        author=discord.EmbedAuthor(
+                                            name=f'{message.author.display_name}\'s suggestion',
+                                            icon_url=effective_avatar),
+                                        description=generate_message_content(str(message.id)))
+                    new_msg = await message.channel.send(embed=emb, view=V2SuggestionView())
+
+                    client['SuggestionMessagesV2'].update_one({'MessageID': str(message.id)},
+                                                              {'$set': {'MessageID': str(new_msg.id)}})
+                    await message.delete()
+                else:
+                    # Version 1
+                    emojis = get_setting(message.guild.id, 'suggestion_emoji', '👍👎')
+                    if emojis == '👍👎':
+                        await message.add_reaction('👍')
+                        await message.add_reaction('👎')
+                    elif emojis == '✅❌':
+                        await message.add_reaction('✅')
+                        await message.add_reaction('❌')
+
+                    if get_setting(message.guild.id, "suggestion_reminder_enabled", "false") == "true":
+                        to_send = get_setting(message.guild.id, "suggestion_reminder_message", "")
+                        sent = await message.reply(to_send)
+                        await sent.delete(delay=5)
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -109,7 +336,27 @@ class Suggestions(discord.Cog):
             set_setting(ctx.guild.id, 'suggestion_reminder_message', message)
             await ctx.respond(
                 trl(ctx.user.id, ctx.guild.id, 'suggestions_message_reminder_set', append_tip=True).format(
-                    enabled=enabled, message=message), ephemeral=True)
+                    enabled=enabled, message=message),
+                ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+
+    @suggestions_group.command(name='update_message', description='Refresh all suggestions messages in this channel')
+    @commands.guild_only()
+    @analytics('suggestions update_message')
+    @commands.cooldown(1, 300, commands.BucketType.guild)  # Cooldown to prevent abuse
+    async def cmd_update_message(self, ctx: discord.ApplicationContext):
+        if get_key('Message_Intent', "false") == "false":
+            await ctx.respond("This instance of Akabot doesn\'t support the message intent.", ephemeral=True)
+            return
+
+        await ctx.defer(ephemeral=True)
+
+        tasks = []
+        async for msg in ctx.history(limit=1000):
+            tasks.append(update_existing_suggestions_message(msg))
+
+        await asyncio.gather(*tasks)
+
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'suggestions_v2_refreshed', append_tip=True))

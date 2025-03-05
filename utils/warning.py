@@ -18,6 +18,7 @@
 import datetime
 
 import discord
+import sentry_sdk
 from bson import ObjectId
 
 from database import client
@@ -41,7 +42,8 @@ async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -
         # try dm user
         try:
             await user.send(warning_message)
-        except Exception:
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
             pass
 
     warnings = db_get_warnings(guild.id, user.id)
@@ -58,7 +60,8 @@ async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -
                     await user.send(
                         trl(user.id, guild.id, "warn_actions_auto_kick_dm").format(name=guild.name,
                                                                                    warnings=action['Warnings']))
-                except Exception:
+                except Exception as e:
+                    sentry_sdk.capture_exception(e)
                     pass
                 await user.kick(
                     reason=trl(user.id, guild.id, "warn_actions_auto_kick_reason").format(warnings=action['Warnings']))
@@ -68,7 +71,8 @@ async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -
                     await user.send(
                         trl(user.id, guild.id, "warn_actions_auto_ban_dm").format(name=guild.name,
                                                                                   warnings=action['Warnings']))
-                except Exception:
+                except Exception as e:
+                    sentry_sdk.capture_exception(e)
                     pass
                 await user.ban(
                     reason=trl(user.id, guild.id, "warn_actions_auto_ban_reason").format(warnings=action['Warnings']))
@@ -93,7 +97,8 @@ async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -
                                                                                           total_seconds,
                                                                                           user_id=user.id,
                                                                                           server_id=guild.id)))
-                except Exception:
+                except Exception as e:
+                    sentry_sdk.capture_exception(e)
                     pass
 
                 await user.timeout_for(datetime.timedelta(seconds=total_seconds),

@@ -167,7 +167,7 @@ class RoleplayCommands(discord.Cog):
     async def rp_list(self, ctx):
         """List all settings for roleplay"""
         try:
-            rp_enabled = get_setting(ctx.guild.id, "roleplay_enabled")
+            rp_enabled = get_setting(ctx.guild.id, "roleplay_enabled", "false") == "true"
             embed = discord.Embed(title="Roleplay settings")
             embed.add_field(name="Enabled", value='Yes' if rp_enabled else 'No', inline=False)
             await ctx.respond(embed=embed, ephemeral=True)

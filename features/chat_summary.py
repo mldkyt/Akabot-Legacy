@@ -42,17 +42,20 @@ def init(msg: discord.Message):
             'GuildID': str(msg.guild.id),
             'ChannelID': str(msg.channel.id),
             'Enabled': False,
-            'MessageCount': 0
+            'MessageCount': 0,
+            'Keywords': []
         })
         client['YearlyChatSummary'].insert_one({
             'GuildID': str(msg.guild.id),
             'ChannelID': str(msg.channel.id),
-            'MessageCount': 0
+            'MessageCount': 0,
+            'Keywords': []
         })
         client['MonthlyChatSummary'].insert_one({
             'GuildID': str(msg.guild.id),
             'ChannelID': str(msg.channel.id),
-            'MessageCount': 0
+            'MessageCount': 0,
+            'Keywords': []
         })
 
 
@@ -60,6 +63,17 @@ def inc(msg: discord.Message):
     upd = {
         '$inc': {f'Messages.{msg.author.id}': 1, 'MessageCount': 1}
     }
+
+    if get_key('Message_Intent', "false") == "true":
+        kwds = client['ChatSummary'].find_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)})
+        if kwds is not None and 'Keywords' in kwds:
+            kwds = kwds['Keywords']
+        else:
+            kwds = []
+
+        for kwd in kwds:
+            if kwd in msg.content:
+                upd['$inc'][f'KeywordsCounting.{kwd}'] = 1
 
     client['ChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
     client['YearlyChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
@@ -146,6 +160,21 @@ async def normal_chat_summary(channel, date, guild, i, summary_title: str = ""):
     if len(chat_summary_message) > 0:
         pages.append(chat_summary_message)
 
+    if get_key('Message_Intent', "false") == "true":
+        # Keywords
+        kwd_cnt = i.get('KeywordsCounting', {})
+        logging.debug('Getting keywords')
+        kwd_cnt = {k: v for k, v in sorted(kwd_cnt.items(), key=lambda item: item[1], reverse=True)}
+        logging.debug('Found %d keywords in the list', len(kwd_cnt))
+        if len(kwd_cnt) > 0:
+            chat_summary_message += trl(0, guild.id, "chat_summary_keywords_title")
+            for k, v in kwd_cnt.items():
+                if v == 0:
+                    continue
+                logging.debug('Appending keyword %s with count %d', k, v)
+                chat_summary_message += trl(0, guild.id, "chat_summary_keywords_line").format(keyword=k,
+                                                                                              count=v)
+
     try:
         sent = await channel.send(pages[0], view=OpenPaginatorView())
         client['ChatSummaryLeaderboard'].insert_one({
@@ -157,7 +186,7 @@ async def normal_chat_summary(channel, date, guild, i, summary_title: str = ""):
     except Exception as e:
         sentry_sdk.capture_exception(e)
     client[db].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
-                          {'$set': {'Messages': {}, 'MessageCount': 0}})
+                          {'$set': {'Messages': {}, 'MessageCount': 0, 'KeywordsCounting': {}}})
 
 
 class ChatSummary(discord.Cog):
@@ -445,6 +474,66 @@ class ChatSummary(discord.Cog):
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+
+    @chat_summary_subcommand.command(name='add_keyword', description='Add a keyword to be counted')
+    @commands_ext.guild_only()
+    @discord.default_permissions(manage_guild=True)
+    @commands_ext.has_permissions(manage_guild=True)
+    @analytics("chatsummary add_keyword")
+    async def chatsummary_add_kwd(self, ctx: discord.ApplicationContext, kwd: str):
+        if get_key('Message_Intent', "false") == "false":
+            await ctx.respond("This instance doesn\'t support message intent. Keywords aren\'t available.", ephemeral=True)
+            return
+
+        if 1 < len(kwd.split(' ')) < 1:
+            logging.debug('Keyword was made of %d words', len(kwd.split(' ')))
+            await ctx.respond('Please provide a single keyword.', ephemeral=True)
+            return
+
+        res = client['ChatSummary'].update_one(
+            {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'Keywords': {'$exists': False}},
+            {'$set': {'Keywords': []}})
+        logging.debug('Added Keywords field to %s, matched %d, modified %d', ctx.guild.id, res.matched_count,
+                      res.modified_count)
+
+        res = client['ChatSummary'].find_one(
+            {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'Keywords': kwd})
+
+        if res is not None:
+            logging.debug('Keyword %s already added', kwd)
+            await ctx.respond('Keyword already added.', ephemeral=True)
+            return
+
+        res = client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id)},
+                                               {'$push': {'Keywords': kwd}})
+        logging.debug('Added keyword %s, affected %d, matched %d', kwd, res.modified_count, res.matched_count)
+
+        await ctx.respond('Keyword added.', ephemeral=True)
+
+    @chat_summary_subcommand.command(name='remove_keyword', description='Remove a keyword from being counted')
+    @commands_ext.guild_only()
+    @discord.default_permissions(manage_guild=True)
+    @commands_ext.has_permissions(manage_guild=True)
+    @analytics("chatsummary remove_keyword")
+    async def chatsummary_remove_kwd(self, ctx: discord.ApplicationContext, kwd: str):
+        if get_key('Message_Intent', "false") == "false":
+            await ctx.respond("This instance doesn\'t support message intent. Keywords aren\'t available.", ephemeral=True)
+            return
+
+        logging.debug('Removing keyword %s', kwd)
+        res = client['ChatSummary'].find_one(
+            {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'Keywords': kwd})
+
+        if res is None:
+            logging.debug('Keyword wasn\'t found')
+            await ctx.respond('Keyword not found.', ephemeral=True)
+            return
+
+        res = client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id)},
+                                               {'$pull': {'Keywords': kwd}, '$unset': {f'KeywordsCounting.{kwd}': ''}})
+        logging.debug('Removed %s, affected %d, matched %d', kwd, res.modified_count, res.matched_count)
+
+        await ctx.respond('Keyword removed.', ephemeral=True)
 
     # The commented code below is for testing purposes
     # @chat_summary_subcommand.command(name="test", description="Test command for testing purposes")

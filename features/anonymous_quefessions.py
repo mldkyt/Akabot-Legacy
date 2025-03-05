@@ -24,8 +24,10 @@ from discord.ui import Modal, InputText, View, button, Button
 from sentry_sdk import capture_exception
 
 from database import client
+from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
+from utils.settings import get_setting, set_setting
 
 
 class CreateModal(Modal):
@@ -418,7 +420,20 @@ class InfoButtonView(View):
             else:
                 author = (author.display_name, author.name, author.id)
 
-            await interaction.response.send_modal(modal=ReportTextModal(author, interaction.message, data['Text']))
+            if get_key("Message_Intent", "false") == "true":
+                channel = interaction.guild.get_channel(int(data['ChannelID']))
+                if channel is None:
+                    await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'), ephemeral=True)
+                    return
+
+                message = await channel.fetch_message(int(data['MessageID']))
+                if message is None:
+                    await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'), ephemeral=True)
+                    return
+
+                await interaction.response.send_modal(modal=ReportTextModal(author, interaction.message, message.content))
+            else: 
+                await interaction.response.send_modal(modal=ReportTextModal(author, interaction.message, data['Text']))
         except Exception as e:
             capture_exception(e)
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
@@ -462,9 +477,31 @@ class AnonymousQuefessions(Cog):
                                                   description='Anonymous Quefessions Management')
 
     @anonymous_quefessions_cmd.command()
+    @guild_only()
+    @has_guild_permissions(manage_guild=True)
+    async def set_quefessions(self, ctx: ApplicationContext, enabled: bool):
+        if get_key("Message_Intent", "false") == "false":
+            await ctx.respond("Sorry, this instance doesn\'t have message intent. Please use the `/create_quefessions_sending_msg` command instead.", ephemeral=True)
+            return
+
+        try:
+            set_setting(ctx.guild.id, f'quefessions_enabled_{ctx.channel.id}', enabled)
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, 'quefessions_channel_enabled') if enabled else
+                trl(ctx.user.id, ctx.guild.id, 'quefessions_channel_disabled'),
+                ephemeral=True)
+        except Exception as e:
+            capture_exception(e)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+
+    @anonymous_quefessions_cmd.command()
     @has_guild_permissions(manage_guild=True)
     @guild_only()
     async def create_quefessions_sending_msg(self, ctx: ApplicationContext):
+        if get_key("Message_Intent", "false") == "true":
+            await ctx.respond("This instance has message intent. Please use the `/set_quefessions` command instead.", ephemeral=True)
+            return
+
         try:
             await ctx.channel.send(
                 embed=Embed(
@@ -481,9 +518,65 @@ class AnonymousQuefessions(Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @Cog.listener()
+    async def on_message(self, message: Message):
+        if get_key('Message_Intent', "false") == "false":
+            return
+        
+        try:
+            if message.author.bot:
+                return
+
+            if not get_setting(message.guild.id, f'quefessions_enabled_{message.channel.id}', False) == True:
+                return
+
+            client['AnonymousQuefessionsBans'].delete_many({
+                '$and': [
+                    {'BanEnd': {'$exists': True}},
+                    {'BanEnd': {'$lt': datetime.datetime.now()}}
+                ]
+            })
+
+            ban = client['AnonymousQuefessionsBans'].find_one({
+                'MemberID': str(message.author.id)
+            })
+
+            if ban is not None:
+                reply = await message.reply(trl(message.author.id, message.guild.id, 'quefessions_banned'))
+                await message.delete()
+                await reply.delete(delay=5)
+                return
+
+            msg = await message.channel.send(
+                embed=Embed(
+                    title=trl(0, message.guild.id, 'quefessions_embed_title'),
+                    description=message.content,
+                    author=EmbedAuthor(
+                        name=message.author.display_name,
+                        icon_url=message.author.display_avatar.url
+                    ),
+                    timestamp=datetime.datetime.now(datetime.UTC)
+                ),
+                view=InfoButtonView()
+            )
+
+            client['AnonymousQuefessions'].insert_one({
+                'GuildID': str(message.guild.id),
+                'ChannelID': str(message.channel.id),
+                'MessageID': str(msg.id),
+                'AuthorID': str(message.author.id)
+            })
+
+            await message.delete()
+        except Exception as e:
+            capture_exception(e)
+
+    @Cog.listener()
     async def on_message_delete(self, message: Message):
-        client['AnonymousQuefessions'].delete_many({
-            'GuildID': str(message.guild.id),
-            'ChannelID': str(message.channel.id),
-            'MessageID': str(message.id)
-        })
+        try:
+            client['AnonymousQuefessions'].delete_many({
+                'GuildID': str(message.guild.id),
+                'ChannelID': str(message.channel.id),
+                'MessageID': str(message.id)
+            })
+        except Exception as e:
+            capture_exception(e)

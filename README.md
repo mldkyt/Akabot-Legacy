@@ -11,6 +11,9 @@ Individual modules have their documentation listed below.
   short period of time.
 - [Automod Actions](https://github.com/mldchan/Akabot/wiki/Automod-Actions) - Create automod actions for specific rules
   executing specific actions and perform tasks when a member triggers an automod rule.
+- Anonymous Quefessions - Have people send you anonymous quefessions in your Discord server, with moderation abilities.
+- Auto React - React to messages automatically on a keyword.
+- Auto Response - Respond with a message automatically on a keyword.
 - [Chat Revive](https://github.com/mldchan/Akabot/wiki/Chat-Revive) - The Chat Revive commands revives commands if
   there's no seen activity for a set period of time.
 - [Chat Streaks](https://github.com/mldchan/Akabot/wiki/Chat-Streaks) - The Chat Streaks module counts how many days
@@ -19,6 +22,9 @@ Individual modules have their documentation listed below.
   sends a message at the end of the day.
 - [Giveaways](https://github.com/mldchan/Akabot/wiki/Giveaways) - The Giveaways module allows server administrators to
   create and manage giveaways directly within their Discord server.
+- Heartbeat - Configure the bot to send messages to another server on intervals to let the server know it's alive and
+  online.
+- Help - Get help with the bot directly from the bot! Will direct you to a wiki anyone can contribute to.
 - [Leveling](https://github.com/mldchan/Akabot/wiki/Leveling) - The Leveling module allows server administrators to
   implement and manage a leveling system within their Discord server.
 - [Logging](https://github.com/mldchan/Akabot/wiki/Logging) - This module adds logging for a Discord server. It sends
@@ -28,8 +34,20 @@ Individual modules have their documentation listed below.
 - [Reaction Roles](https://github.com/mldchan/Akabot/wiki/Reaction-Roles) - This module allows users to assign or remove
   roles by reacting to messages containing specific buttons. It provides commands to create different types of reaction
   role setups, such as normal, add-only, remove-only, and single-choice reaction roles.
+- Roles on Join - Give members roles immediately on join.
+- Roleplay commands - When enabled by admins, allows you to roleplay with other members. Please ask for consent!
+- Send Server Count - Admins can configure the bot to send messages to top.gg and various other sites to update the
+  server count.
+- Suggestions - Akabot accepts suggestions directly from the bot! Using the public instance `/suggest` command will
+  create issues here.
+- Statistics Channels - Channels that display various server statistics.
+- Temporary Voice Channels - Create as many voice channels in your Discord server without needing to ask admins to
+  create them for you.
+- Tickets - Handle tickets in your Discord server. Let members open tickets, get help and close tickets. Comes with an
+  auto close feature and archive feature.
 - [Verification](https://github.com/mldchan/Akabot/wiki/Verification) - This module adds user verification in Discord
   servers. It prevents bots from accessing your Discord server.
+- Welcome and Goodbye messages - Welcome new members, and say goodbye to the ones who leave.
 - [Word Scramble](https://github.com/mldchan/Akabot/wiki/Word-Scramble) - Scrambles random English words or words from
   previous messagse in chat and lets your members unscramble them for extra rewards in the leveling system.
 

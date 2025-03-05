@@ -20,7 +20,6 @@ import discord
 from database import client
 from features.chat_summary import normal_chat_summary, special_chat_summary
 from utils.tzutil import get_now_for_server
-from utils.warning import add_warning
 
 
 class DebugCommands(discord.Cog):
