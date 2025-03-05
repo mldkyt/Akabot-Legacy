@@ -583,5 +583,7 @@
   "quefessions_channel_enabled": "Quefessions enabled for current channel.",
   "quefessions_channel_disabled": "Quefessions disabled for current channel.",
   "limits_max_announcement_channels": "Maximum announcement channels were reached per server for this instance of Akabot.",
-  "limits_max_chatsummary_channels": "Maximum amount of Chat Summary channels was reached in this server for this instance of Akabot."
+  "limits_max_chatsummary_channels": "Maximum amount of Chat Summary channels was reached in this server for this instance of Akabot.",
+  "limits_max_giveaways": "Maximum amount of Giveaways was reached in this server for this instance of Akabot.",
+  "limits_max_rolesonjoin": "Maximum amount of Roles on Join was reached in this server for this instance of Akabot."
 }

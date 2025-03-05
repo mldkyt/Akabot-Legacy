@@ -26,6 +26,7 @@ from discord.ext import tasks
 
 from database import client
 from utils.analytics import analytics
+from utils.config import get_key
 from utils.generic import pretty_time_delta
 from utils.languages import get_translation_for_key_localized as trl, get_language
 from utils.per_user_settings import get_per_user_setting
@@ -61,6 +62,12 @@ class Giveaways(discord.Cog):
             if days + hours < 0 or days < 0 or hours < 0 or minutes < 0 or winners < 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "giveaways_error_negative_parameters"), ephemeral=True)
                 return
+            
+            # Check if we didn't hit limit of giveaways
+            res = client['Giveaways'].count_documents({'GuildID': str(ctx.guild.id)})
+            if res > int(get_key("Max_Giveaways", "3")):
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "limits_max_giveaways"), ephemeral=True)
+                return
 
             # Determine ending date
             end_date = get_now_for_server(ctx.guild.id)
@@ -71,7 +78,7 @@ class Giveaways(discord.Cog):
             await msg1.add_reaction("🎉")
 
             res = client['Giveaways'].insert_one(
-                {'ChannelID': str(ctx.channel.id), 'MessageID': str(msg1.id), 'Item': item,
+                {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'MessageID': str(msg1.id), 'Item': item,
                  'EndDate': end_date.isoformat(), 'Winners': winners})
 
             # Send success message

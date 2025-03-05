@@ -27,6 +27,7 @@ from discord.ui.input_text import InputText
 from utils.analytics import analytics
 from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
+from database import client
 
 
 class VoteView(discord.ui.View):
@@ -442,6 +443,34 @@ This is due to recent raids and attacks on the server due to the developer leavi
         await ctx.respond(
             "The official Mastodon account of Akabot is @akabot@floss.social\nIt's used for:\n- Akabot updates\n- Akabot service annoncements\n- More!",
             ephemeral=True, view=MastodonLinkView())
+
+    @discord.slash_command(name='limits', description='Get server limits, along with usage')
+    @analytics("limits")
+    async def cmd_limits(self, ctx: discord.ApplicationContext):
+        chat_summary_usage = client['ChatSummary'].count_documents({
+            'GuildID': str(ctx.guild.id), 'Enabled': True
+        })
+        announcement_channel_usage = client['AnnouncementChannels'].count_documents({
+            'GuildID': str(ctx.guild.id)
+        })
+        roles_on_join_usage = client['RolesOnJoin'].count_documents({'GuildID': str(ctx.guild.id)})
+        giveaways_usage = client['Giveaways'].count_documents({'GuildID': str(ctx.guild.id)})
+        automod_actions_usage = client['AutomodActions'].count_documents({'GuildID': str(ctx.guild.id)})
+
+        chat_summary_limit = int(get_key("Max_ChatSummary_Channels", "3"))
+        announcement_channel_limit = int(get_key('Max_AnnouncementChannels', '10'))
+        roles_on_join_limit = int(get_key('Max_RolesOnJoin', '3'))
+        giveaways_limit = int(get_key('Max_Giveaways', '3'))
+        automod_actions_limit = int(get_key("AutomodActions_MaxActions", "5"))
+
+        await ctx.respond(f'''
+# Understanding the limits of this Akabot instance
+- **Announcement Channels**: {announcement_channel_usage} out of {announcement_channel_limit} ({round((announcement_channel_usage / announcement_channel_limit) * 100)}%)
+- **Chat Summary Channels**: {chat_summary_usage} out of {chat_summary_limit} channels ({round((chat_summary_usage / chat_summary_limit) * 100)}%)
+- **Roles on Join**: {roles_on_join_usage} out of {roles_on_join_limit} roles ({round((roles_on_join_usage / roles_on_join_limit) * 100)}%)
+- **Giveaways**: {giveaways_usage} out of {giveaways_limit} running giveaways ({round((giveaways_usage / giveaways_limit) * 100)}%)
+- **Automod Actions**: {automod_actions_usage} out of {automod_actions_limit} Automod rules ({round((automod_actions_usage / automod_actions_limit) * 100)}%)''', ephemeral=True)
+
 
     feedback_subcommand = discord.SlashCommandGroup(name="feedback", description="Give feedback for the bot")
 

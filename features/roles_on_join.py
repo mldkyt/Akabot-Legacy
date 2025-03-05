@@ -20,6 +20,7 @@ import sentry_sdk
 
 from database import client
 from utils.analytics import analytics
+from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 
 
@@ -53,6 +54,11 @@ class RolesOnJoin(discord.Cog):
     @analytics("roles_on_join add")
     async def add_role_on_join(self, ctx: discord.ApplicationContext, role: discord.Role):
         try:
+            # check amount of roles
+            res = client['RolesOnJoin'].count_documents({'GuildID': str(ctx.guild.id)})
+            if res > int(get_key("Max_RolesOnJoin", "3")):
+                await ctx.respond(trl("limits_max_rolesonjoin"), ephemeral=True)
+                return
             # check role position
             if role.position > ctx.me.top_role.position:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "roles_on_join_role_above_bot"), ephemeral=True)
