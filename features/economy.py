@@ -117,7 +117,7 @@ def claim_daily(guild_id: int, user_id: int) -> (bool, int):
     return True, add_bal
 
 
-def claim_weekly(user_id: int) -> (bool, int):
+def claim_weekly(guild_id: int, user_id: int) -> (bool, int):
     data = client['Economy'].find_one({
         'UserID': str(user_id),
     })
@@ -292,7 +292,7 @@ class Economy(discord.Cog):
 
     @economics_subcommands.command(name='weekly', description='Claim weekly reward')
     async def weekly(self, ctx: discord.ApplicationContext):
-        success, added = claim_weekly(ctx.author.id)
+        success, added = claim_weekly(ctx.guild.id, ctx.author.id)
 
         if not success:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'economy_weekly_claimed', append_tip=True), ephemeral=True)
