@@ -15,6 +15,7 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+import datetime
 import os
 
 import discord
@@ -24,6 +25,7 @@ from utils.announcement_channels import db_get_all_announcement_channels
 from utils.config import get_key
 # Let's say that trl is the short form of get_translation_for_key_localized across the codebase
 from utils.languages import get_translation_for_key_localized as trl
+from database import client
 
 ADMIN_GUILD = int(get_key("Admin_GuildID", "0"))
 OWNER_ID = int(get_key("Admin_OwnerID", "0"))
@@ -44,10 +46,17 @@ class AdminCommands(discord.Cog):
             servers = len(self.bot.guilds)
             channels = len([channel for channel in self.bot.get_all_channels()])
             members = len(set([member for member in self.bot.get_all_members()]))
+            
+            active_channels = client['AnalyticsActiveChannels'].count_documents({'LastUseTime': {'$gt': datetime.datetime.now() - datetime.timedelta(days=7)}})
+            active_users = client['AnalyticsActiveUsers'].count_documents({'LastUseTime': {'$gt': datetime.datetime.now() - datetime.timedelta(days=7)}})
+            active_akabot_users = client['AnalyticsAkabotUsers'].count_documents({'LastBotUse': {'$gt': datetime.datetime.now() - datetime.timedelta(days=7)}})
 
             await ctx.respond(
                 trl(ctx.user.id, ctx.guild.id, "bot_status_message").format(servers=str(servers),
                                                                             channels=str(channels),
+                                                                            activechannel=str(active_channels),
+                                                                            activeuser=str(active_users),
+                                                                            akabotuser=str(active_akabot_users),
                                                                             users=str(members)), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)

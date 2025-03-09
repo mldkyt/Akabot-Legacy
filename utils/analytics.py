@@ -16,6 +16,7 @@
 #
 
 
+import datetime
 from discord.ext import commands as commands_ext
 
 from database import client
@@ -27,11 +28,21 @@ def db_add_analytics(command: str):
         client['Analytics'].update_one({'Command': command}, {'$inc': {'RunCount': 1}})
     else:
         client['Analytics'].insert_one({'Command': command, 'RunCount': 1})
+        
+def db_upsert_active_user(user_id: int):
+    client['AnalyticsAkabotUsers'].update_one({
+        'UserID': str(user_id)
+    }, {
+        '$set': {
+            'LastBotUse': datetime.datetime.now()
+        }
+    }, upsert=True)
 
 
 def analytics(command: str):
     def predicate(ctx: commands_ext.Context):
         db_add_analytics(command)
+        db_upsert_active_user(ctx.author.id)
         return True
 
     return commands_ext.check(predicate)

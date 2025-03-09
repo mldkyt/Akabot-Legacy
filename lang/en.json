@@ -3,7 +3,7 @@
   "logging_name": "Name",
   "logging_user": "User",
   "no_permission": "You do not have permission to use this command.",
-  "bot_status_message": "I am currently in {servers} guilds\n-> {channels} total channels\n-> {users} total members",
+  "bot_status_message": "I am currently in {servers} guilds\n-> {activechannel} active channels, {channels} total channels\n-> {akabotuser} active Akabot users, {activeuser} active users, {users} total members",
   "antiraid_kicked_message": "You have been kicked from the server for suspected raiding. If you believe this was a mistake, try rejoining in a few minutes.",
   "antiraid_kicked_audit": "Suspected raiding",
   "logging_antiraid_join_threshold_changed": "Antiraid Join Threshold was changed",
