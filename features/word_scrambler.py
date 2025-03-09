@@ -378,6 +378,15 @@ class WordScrambler(discord.Cog):
                                                                                      level=str(after_level)))
                     await msg2.delete(delay=5)
 
+                # Economy
+                client['Economy'].update_one({
+                    'UserID': msg.author.id,
+                }, {
+                    '$inc': {
+                        'Wallet': random.randint(100, 200),
+                    }
+                })
+
                 end_word_scrambler(msg.channel.id)
         except Exception as e:
             sentry_sdk.capture_exception(e)
