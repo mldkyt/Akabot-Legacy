@@ -429,7 +429,9 @@ class Economy(discord.Cog):
         cur_page = ""
         p = []
 
-        records = client['Shop'].find().to_list()
+        records = client['Shop'].find({
+            'GuildID': str(ctx.guild.id)
+        }).to_list()
 
         if len(records) == 0:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_shop_empty", append_tip=True), ephemeral=True)
@@ -452,11 +454,11 @@ class Economy(discord.Cog):
 
     @economics_subcommands.command(name='buy', description='Buy an item')
     async def buy(self, ctx: discord.ApplicationContext, identifier: str):
-        if client['Inventory'].count_documents({'Identifier': identifier, 'UserID': str(ctx.user.id)}) > 0:
+        if client['Inventory'].count_documents({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)}) > 0:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_buy_own", append_tip=True), ephemeral=True)
             return
 
-        shop_item = client['Shop'].find_one({'Identifier': identifier})
+        shop_item = client['Shop'].find_one({'Identifier': identifier, 'GuildID': str(ctx.guild.id)})
         if not shop_item:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_buy_not_found", append_tip=True), ephemeral=True)
             return
@@ -467,6 +469,7 @@ class Economy(discord.Cog):
 
         rem_akacoins(ctx.user.id, shop_item['Price'])
         client['Inventory'].insert_one({
+            'GuildID': str(ctx.guild.id),
             'UserID': str(ctx.user.id),
             'Identifier': identifier,
             'Type': shop_item['Type'],
@@ -489,7 +492,8 @@ class Economy(discord.Cog):
         p = []
 
         records = client['Inventory'].find({
-            'UserID': str(ctx.user.id)
+            'UserID': str(ctx.user.id),
+            'GuildID': str(ctx.guild.id)
         }).to_list()
 
         if len(records) == 0:
@@ -521,7 +525,7 @@ class Economy(discord.Cog):
 
     @economics_subcommands.command(name='sell', description='Sell an item that is sellable.')
     async def sell(self, ctx: discord.ApplicationContext, identifier: str):
-        inventory = client['Inventory'].find_one({'Identifier': identifier, 'UserID': str(ctx.user.id)})
+        inventory = client['Inventory'].find_one({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
         if not inventory:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_sell_not_own", append_tip=True), ephemeral=True)
             return
@@ -532,10 +536,10 @@ class Economy(discord.Cog):
             return
 
         add_akacoins(ctx.user.id, inventory['Price'])
-        client['Inventory'].delete_one({'Identifier': identifier, 'UserID': str(ctx.user.id)})
+        client['Inventory'].delete_one({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
 
         if inventory['Type'] == 'role':
-            shop_item = client['Shop'].find_one({'Identifier': identifier})
+            shop_item = client['Shop'].find_one({'Identifier': identifier, 'GuildID': str(ctx.guild.id)})
             role = ctx.guild.get_role(int(shop_item['RoleID']))
             if role:
                 await ctx.user.remove_roles(role)
@@ -549,7 +553,7 @@ class Economy(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_send_self", append_tip=True), ephemeral=True)
             return
 
-        inventory = client['Inventory'].find_one({'Identifier': identifier, 'UserID': str(ctx.user.id)})
+        inventory = client['Inventory'].find_one({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
         if not inventory:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_sell_not_own", append_tip=True), ephemeral=True)
             return
@@ -559,8 +563,9 @@ class Economy(discord.Cog):
                               ephemeral=True)
             return
 
-        client['Inventory'].delete_one({'Identifier': identifier, 'UserID': str(ctx.user.id)})
+        client['Inventory'].delete_one({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
         client['Inventory'].insert_one({
+            'GuildID': str(ctx.guild.id),
             'UserID': str(to.id),
             'Identifier': identifier,
             'Type': inventory['Type'],
@@ -570,7 +575,7 @@ class Economy(discord.Cog):
         })
 
         if inventory['Type'] == 'role':
-            shop_item = client['Shop'].find_one({'Identifier': identifier})
+            shop_item = client['Shop'].find_one({'Identifier': identifier, 'GuildID': str(ctx.guild.id)})
             role = ctx.guild.get_role(int(shop_item['RoleID']))
             if role:
                 await ctx.user.remove_roles(role)
@@ -714,9 +719,10 @@ class Economy(discord.Cog):
             return
 
         client['Shop'].update_one({
-            'RoleID': role.id
+            'RoleID': role.id,
         }, {
             '$set': {
+                'GuildID': ctx.guild.id,
                 'Type': 'role',
                 'Identifier': identifier,
                 'Price': price,
@@ -739,6 +745,7 @@ class Economy(discord.Cog):
     async def remove_role_from_shop(self, ctx: discord.ApplicationContext, role: discord.Role):
         client['Shop'].delete_one({
             'RoleID': role.id,
+            'GuildID': ctx.guild.id,
             'Type': 'role'
         })
 
