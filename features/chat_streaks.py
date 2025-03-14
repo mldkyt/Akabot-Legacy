@@ -19,6 +19,7 @@ import datetime
 
 import discord
 import sentry_sdk
+from discord import MessageType
 from discord.ext import commands as commands_ext, pages
 
 from database import client
@@ -133,6 +134,8 @@ class ChatStreaks(discord.Cog):
                     return  # Only trigger if the user has the setting on
                 if not message.channel.can_send():
                     return  # Only send if we have permissions
+                if message.is_system():
+                    return  # Don't reply to system messages
                 msg = await message.reply(
                     trl(message.author.id, message.guild.id, "chat_streaks_updated").format(streak=new_streak))
                 if get_setting(msg.guild.id, 'chat_streaks_delete_sent_message_updated', '10') != '0':
