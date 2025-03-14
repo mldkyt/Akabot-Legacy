@@ -223,6 +223,9 @@ class Tickets(discord.Cog):
             if message.author.bot:
                 return
 
+            if message.channel.type == discord.ChannelType.private:
+                return  # Do not try to update ticket information in DM's
+
             if not db_is_ticket_channel(message.guild.id, message.channel.id):
                 return
 
