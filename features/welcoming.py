@@ -54,6 +54,9 @@ class Welcoming(discord.Cog):
             message_text = message_text.replace('{memberCount}', str(member.guild.member_count))
             message_text = message_text.replace('{mention}', member.mention)
 
+            if not target_channel.can_send():
+                return 
+
             if message_type == 'embed':
                 embed = discord.Embed(title=message_title, description=message_text,
                                       color=discord.Color.green())  # Create the embed
@@ -87,6 +90,9 @@ class Welcoming(discord.Cog):
             message_text = message_text.replace('{server}', member.guild.name)
             message_text = message_text.replace('{memberCount}', str(member.guild.member_count))
             message_text = message_text.replace('{mention}', member.mention)
+
+            if not target_channel.can_send():
+                return
 
             if message_type == 'embed':
                 embed = discord.Embed(title=message_title, description=message_text,
