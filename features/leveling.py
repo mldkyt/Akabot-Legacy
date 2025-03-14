@@ -50,6 +50,8 @@ class Leveling(discord.Cog):
         try:
             if msg.author.bot:
                 return
+            if msg.is_system():
+                return
 
             if get_key('Message_Intent', "false") == "true":
                 xp = int(get_setting(msg.guild.id, 'leveling_initial_xp', 3))
