@@ -127,6 +127,10 @@ class ChatStreaks(discord.Cog):
                     return
                 if get_per_user_setting(message.author.id, 'chat_streaks_alerts', 'on') == 'off':
                     return
+                if not message.channel.can_send():
+                    return  # Only send if we have permissions
+                if message.is_system():
+                    return  # Don't reply to system messages
                 msg = await message.reply(
                     trl(message.author.id, message.guild.id, "chat_streaks_expired").format(streak=old_streak))
                 if get_setting(msg.guild.id, 'chat_streaks_delete_sent_message_expired', '60') != '0':
