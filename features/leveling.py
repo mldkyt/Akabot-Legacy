@@ -80,7 +80,7 @@ class Leveling(discord.Cog):
             if msg.guild.me.guild_permissions.manage_roles:
                 await update_roles_for_member(msg.guild, msg.author)
 
-            if before_level != after_level and msg.channel.can_send():
+            if before_level != after_level and msg.channel.can_send() and not msg.is_system():
                 msg2 = await msg.channel.send(
                     trl(msg.author.id, msg.guild.id, "leveling_level_up").format(mention=msg.author.mention,
                                                                                  level=str(after_level)))
