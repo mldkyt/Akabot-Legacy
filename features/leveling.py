@@ -139,7 +139,7 @@ class Leveling(discord.Cog):
             else:
                 icon = get_per_user_setting(user.id, 'leveling_icon', '')
                 response = (
-                    trl(ctx.user.id, ctx.guild.id, "leveling_level_info_another").format(icon=icon, user=user.mention,
+                    trl(ctx.user.id, ctx.guild.id, "leveling_level_info_another").format(icon=icon, user=f'<@{user.id}>',
                                                                                          level=level, level_xp=level_xp,
                                                                                          next_level_xp=next_level_xp,
                                                                                          next_level=level + 1,
