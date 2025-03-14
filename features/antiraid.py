@@ -87,6 +87,9 @@ class AntiRaid(discord.Cog):
             if message.author.bot:
                 return
 
+            if message.channel.type == discord.ChannelType.private:
+                return
+
             if message.author.guild_permissions.manage_messages:
                 return
 
