@@ -29,10 +29,15 @@ from utils.generic import pretty_time_delta, pretty_time
 class PowerOutageAnnouncement(discord.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
+        self.started = False
 
     @discord.Cog.listener()
     async def on_ready(self):
         try:
+            if self.started:
+                return
+            self.started = True
+
             if not os.path.exists("data/current_time.txt"):
                 self.save_current_time.start()
                 return
