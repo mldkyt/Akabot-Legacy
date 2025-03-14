@@ -42,6 +42,9 @@ class ChatRevive(discord.Cog):
             if message.author.bot:
                 return
 
+            if message.channel.type == discord.ChannelType.private:
+                return  # Don't try update chat revive settings in a DM
+
             client['ChatRevive'].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
                                             {'$set': {'LastMessage': time.time(), 'Revived': False}})
         except Exception as e:
