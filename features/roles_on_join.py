@@ -35,9 +35,9 @@ class RolesOnJoin(discord.Cog):
             for row in roles:
                 role = member.guild.get_role(row['RoleID'])
                 # check role position
-                if role.position > member.guild.me.top_role.position:
-                    continue
                 if role is not None:
+                    if role.position > member.guild.me.top_role.position:
+                        continue
                     try:
                         await member.add_roles(role)
                     except discord.Forbidden:
