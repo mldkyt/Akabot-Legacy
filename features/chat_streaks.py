@@ -131,6 +131,8 @@ class ChatStreaks(discord.Cog):
             if state == "updated":
                 if get_per_user_setting(message.author.id, 'chat_streaks_alerts', 'on') != 'on':
                     return  # Only trigger if the user has the setting on
+                if not message.channel.can_send():
+                    return  # Only send if we have permissions
                 msg = await message.reply(
                     trl(message.author.id, message.guild.id, "chat_streaks_updated").format(streak=new_streak))
                 if get_setting(msg.guild.id, 'chat_streaks_delete_sent_message_updated', '10') != '0':
