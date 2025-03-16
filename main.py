@@ -18,6 +18,7 @@
 import logging
 
 import discord
+from discord.ui.button import B
 import sentry_sdk
 from discord.ext import commands as discord_commands_ext
 from dotenv import load_dotenv
@@ -33,7 +34,7 @@ from features import welcoming, leveling, antiraid, chat_streaks, chat_revive, c
     heartbeat, automod_actions, power_outage_announcement, per_user_settings, server_settings, \
     auto_react, auto_response, bot_help, announcement_channels, tickets, debug_commands, birthday_announcements, \
     send_server_count, suggestions, temporary_vc, rp, word_scrambler, statistics_channels, \
-    anonymous_quefessions, analytics, economy
+    anonymous_quefessions, analytics, economy, message_time_capsule
 from utils.config import get_key
 from utils.db_converter import update
 from utils.languages import get_translation_for_key_localized as trl
@@ -87,6 +88,7 @@ async def on_ready():
         bot.add_view(anonymous_quefessions.CreateButtonView())
     bot.add_view(anonymous_quefessions.InfoButtonView())
     bot.add_view(chat_summary.OpenPaginatorView())
+    bot.add_view(message_time_capsule.AddYoursView())
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f"v{BOT_VERSION}"))
 
 
@@ -118,6 +120,10 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
         await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_bot_no_perm").format(
             permissions=', '.join(error.missing_permissions)),
             ephemeral=True)
+        return
+
+    if isinstance(error, discord_commands_ext.PrivateMessageOnly):
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_private"), ephemeral=True)
         return
 
     sentry_sdk.capture_exception(error)
@@ -200,5 +206,7 @@ if get_key("Feature_AnonymousQuefessions", "true") == "true":
 bot.add_cog(analytics.Analytics(bot))
 if get_key("Feature_Economy", "true") == "true":
     bot.add_cog(economy.Economy(bot))
+if get_key("Feature_MessageTimeCapsule", "true") == "true":
+    bot.add_cog(message_time_capsule.MessageTimeCapsule(bot))
 
 bot.run(get_key("Bot_Token"))
