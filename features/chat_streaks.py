@@ -109,9 +109,74 @@ class ChatStreaks(discord.Cog):
         self.bot = bot
         self.streak_storage = ChatStreakStorage()
 
+    async def check_chat_streak_rewards(self, guild_id: int, member_id: int, streak: int):
+        try:
+            if streak == 0:
+                return
+        
+            # Rewards: GuildID, RoleID, RequiredStreak, set by admins
+            rewards = client['ChatStreaksRewards'].find({'GuildID': str(guild_id), 'RequiredStreak': {'$gte': streak}}).to_list()
+
+            for i in rewards:
+                role = self.bot.get_guild(guild_id).get_role(int(i['RoleID']))
+                if role is None:
+                    continue
+                
+                member = self.bot.get_guild(guild_id).get_member(int(member_id))
+                if member is None:
+                    continue
+
+                await member.add_roles(role)
+
+        except discord.Forbidden:
+            
+            log_embed = discord.Embed(
+                title=trl(guild_id, member_id, "logging_missing_permissions"),
+                description=trl(guild_id, member_id, "logging_missing_permissions_streak_rewards"),
+                color=discord.Color.red()
+            )
+
+            guild = self.bot.get_guild(guild_id)
+            if guild is None:
+                return
+
+            await log_into_logs(guild, log_embed)
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+
+    async def reset_rewards(self, guild: discord.Guild, member: discord.Member):
+        try:
+            # Remove any roles from the member
+            rewarded = client['ChatStreaksRewards'].find({'GuildID': str(guild.id)}).to_list()
+
+            for i in rewarded:
+                if 'RemoveOnLoss' in i and i['RemoveOnLoss'] == False:
+                    continue
+
+                role = guild.get_role(int(i['RoleID']))
+                if role is None:
+                    continue
+
+                await member.remove_roles(role)
+
+        except discord.Forbidden:
+            log_embed = discord.Embed(
+                title=trl(guild.id, member.id, "logging_missing_permissions"),
+                description=trl(guild.id, member.id, "logging_missing_permissions_streak_rewards"),
+                color=discord.Color.red()
+            )
+
+            await log_into_logs(guild, log_embed)
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+
+
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
         try:
+            if message.guild is None:
+                return
+
             if message.author.bot:
                 return
 
@@ -123,6 +188,8 @@ class ChatStreaks(discord.Cog):
             print('[Chat Streaks] Info', state, old_streak, new_streak)
 
             if state == "expired":
+                await self.reset_rewards(message.guild, message.author)
+
                 if old_streak == 0:
                     return
                 if get_per_user_setting(message.author.id, 'chat_streaks_alerts', 'on') == 'off':
@@ -137,6 +204,8 @@ class ChatStreaks(discord.Cog):
                     await msg.delete(
                         delay=int(get_setting(msg.guild.id, 'chat_streaks_delete_sent_message_expired', '60')))
             if state == "updated":
+                await self.check_chat_streak_rewards(message.guild.id, message.author.id, new_streak)
+
                 if get_per_user_setting(message.author.id, 'chat_streaks_alerts', 'on') != 'on':
                     return  # Only trigger if the user has the setting on
                 if not message.channel.can_send():
@@ -293,3 +362,34 @@ class ChatStreaks(discord.Cog):
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+
+    @streaks_subcommand.command(name="add_reward", description="Add a chat streak reward")
+    @commands_ext.guild_only()
+    @discord.default_permissions(manage_guild=True)
+    @commands_ext.has_permissions(manage_guild=True)
+    @discord.option(name='role', description='The role to give', type=discord.Role)
+    @discord.option(name='required_streak', description='The required streak to give the role', type=int)
+    @analytics("streaks add_reward")
+    async def add_reward(self, ctx: discord.ApplicationContext, role: discord.Role, required_streak: int, remove_on_loss: bool = False):
+        try:
+            client['ChatStreaksRewards'].insert_one({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id),
+                                                     'RequiredStreak': required_streak, 'RemoveOnLoss': remove_on_loss})
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_streaks_add_reward_success"), ephemeral=True)
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+
+    @streaks_subcommand.command(name="remove_reward", description="Remove a chat streak reward")
+    @commands_ext.guild_only()
+    @discord.default_permissions(manage_guild=True)
+    @commands_ext.has_permissions(manage_guild=True)
+    @discord.option(name='role', description='The role to remove', type=discord.Role)
+    @analytics("streaks remove_reward")
+    async def remove_reward(self, ctx: discord.ApplicationContext, role: discord.Role):
+        try:
+            client['ChatStreaksRewards'].delete_one({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)})
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_streaks_remove_reward_success"), ephemeral=True)
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+    

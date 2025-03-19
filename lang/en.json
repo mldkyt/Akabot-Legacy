@@ -639,5 +639,9 @@
     "economy_admin_reset": "Reset bank and wallet of {name}.",
     "economy_admin_role_on_sale": "The role {role} was put on sale with the price of {price}. {sell_str} {trade_str}",
     "economy_admin_role_removed": "The item {role} was removed from being sold.",
-    "economy_admin_role_set_limits": "Set limits:\nAmount: {amount} AkaCoins per {cooldown_hours} hours and {cooldown_minutes} minutes."
+    "economy_admin_role_set_limits": "Set limits:\nAmount: {amount} AkaCoins per {cooldown_hours} hours and {cooldown_minutes} minutes.",
+    "chat_streaks_add_reward_success": "Added chat streak reward.",
+    "chat_streaks_remove_reward_success": "Removed chat streak reward.",
+    "logging_missing_permissions": "Missing Permissions!",
+    "logging_missing_permissions_streak_rewards": "The streak rewards feature wasn't able to assign the role to a member because the bot doesn't have the permissions to do so!"
 }
