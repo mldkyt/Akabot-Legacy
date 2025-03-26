@@ -16,6 +16,7 @@
 #
 
 
+import logging
 import discord
 import sentry_sdk
 from discord.ext import commands, tasks
@@ -140,15 +141,15 @@ class TicketMessageView(discord.ui.View):
 
         # Remove permissions from the ticket creator appropriately
         hide_time = get_setting(interaction.guild.id, "ticket_hide_time", "0")
-        print('[Tickets] Auto hide time is', hide_time)
+        logging.debug('[Tickets] Auto hide time is %s', str(hide_time))
         if int(hide_time) > 0:
-            print('[Tickets] Taking away send permissions')
+            logging.debug('[Tickets] Taking away send permissions')
             member = interaction.guild.get_member(db_get_ticket_creator(interaction.guild.id, interaction.channel.id))
             await interaction.channel.set_permissions(member, view_channel=True, read_messages=True,
                                                       send_messages=False)
             db_archive_ticket(interaction.guild.id, interaction.channel.id)
         else:
-            print('[Tickets] Taking away ALL permissions')
+            logging.debug('[Tickets] Taking away ALL permissions')
             member = interaction.guild.get_member(db_get_ticket_creator(interaction.guild.id, interaction.channel.id))
             await interaction.channel.set_permissions(member, view_channel=False, read_messages=False,
                                                       send_messages=False)

@@ -16,6 +16,7 @@
 #
 
 import datetime
+import logging
 
 import discord
 import sentry_sdk
@@ -52,21 +53,21 @@ class AutomodActionsStorage:
 
     def add_event(self, rule_id, message_id):
         self.expire_events()
-        print("Adding event", rule_id, message_id)
+        logging.debug("Adding event %s, %s", str(rule_id), str(message_id))
         self.events.append((rule_id, message_id, datetime.datetime.now()))
 
     def check_event(self, rule_id, message_id):
         self.expire_events()
         for event in self.events:
             if event[0] == rule_id and event[1] == message_id:
-                print("Event already exists", event)
+                logging.debug("Event already exists %s", str(event)) 
                 return True
         return False
 
     def expire_events(self):
         for event in self.events:
             if event[2] < datetime.datetime.now() - datetime.timedelta(seconds=1):
-                print("Expired event", event)
+                logging.debug("Expired event %s", str(event))
                 self.events.remove(event)
 
 

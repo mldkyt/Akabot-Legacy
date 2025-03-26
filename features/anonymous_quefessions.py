@@ -128,13 +128,13 @@ class CreateButtonView(View):
                 ]
             })
 
-            print(del_result)
+            logging.debug(str(del_result))
 
             ban = client['AnonymousQuefessionsBans'].find_one({
                 'MemberID': str(interaction.user.id)
             })
 
-            print(ban, flush=True)
+            logging.debug(str(ban))
 
             if ban is not None:
                 await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_banned'),

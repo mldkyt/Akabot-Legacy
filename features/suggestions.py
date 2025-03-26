@@ -32,7 +32,7 @@ def migration_1():
         if all(isinstance(x, str) for x in x['Upvotes']) and all(isinstance(x, str) for x in x['Downvotes']):
             continue
 
-        print('PERFORMING MIGRATION convert upvotes and downvotes to strings')
+        logging.debug('PERFORMING MIGRATION convert upvotes and downvotes to strings')
 
         upvotes = x['Upvotes']
         downvotes = x['Downvotes']

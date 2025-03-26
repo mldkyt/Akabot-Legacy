@@ -16,6 +16,7 @@
 #
 
 import datetime
+import logging
 
 import discord
 import sentry_sdk
@@ -185,7 +186,7 @@ class ChatStreaks(discord.Cog):
 
             (state, old_streak, new_streak) = self.streak_storage.set_streak(message.guild.id, message.author.id)
 
-            print('[Chat Streaks] Info', state, old_streak, new_streak)
+            logging.debug('[Chat Streaks] Info %s, %s, %s', str(state), str(old_streak), str(new_streak))
 
             if state == "expired":
                 await self.reset_rewards(message.guild, message.author)
