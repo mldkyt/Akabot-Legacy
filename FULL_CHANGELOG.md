@@ -1,3 +1,21 @@
+# Changelog for 1.2
+
+- Added Chat Streak Rewards: Rewards for chat streaks
+- Added Message Capsule: Schedule messages or collect messages in a capsule and send out all replies at once
+
+# Changelog for 1.1
+
+- Added Economy
+- Enhanced analytics of the bot
+- Fixed 17 common errors and bugs
+
+# Changelog for 1.0
+
+- Initial release of Akabot version 1.0
+- Merged the message intent and non-intent versions of Akabot together
+- Added limits of various modules for maintainers
+- Added Anonymous Quefessions
+
 # Changelog for 3.2
 
 ## 3.2
