@@ -26,6 +26,7 @@ from discord.ext import commands as commands_ext, pages
 
 from database import client
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.config import get_key
 from utils.generic import validate_day
 from utils.languages import get_translation_for_key_localized as trl, get_language
@@ -91,6 +92,7 @@ class Leveling(discord.Cog):
     @discord.slash_command(name='level', description='Get the level of a user')
     @commands_ext.guild_only()
     @analytics("level")
+    @blocklist()
     async def get_level(self, ctx: discord.ApplicationContext, user: discord.User = None):
         try:
             user = user or ctx.user
@@ -165,6 +167,7 @@ class Leveling(discord.Cog):
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
     @analytics("leveling list")
+    @blocklist()
     async def list_settings(self, ctx: discord.ApplicationContext):
         try:
             leveling_xp_multiplier = get_setting(ctx.guild.id, 'leveling_xp_multiplier', '1')
@@ -203,6 +206,7 @@ class Leveling(discord.Cog):
     @discord.option(name="extra_requirement",
                     description="Requirement of letters in a message for it to be considered high effort. (Message Intent only)", type=int)
     @analytics("leveling multiplier")
+    @blocklist()
     async def set_per_message(self, ctx: discord.ApplicationContext, initial: int, extra: int, extra_requirement: int):
         if 4000 < extra_requirement <= 0:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_extra_requirement"),
@@ -232,6 +236,7 @@ class Leveling(discord.Cog):
     @commands_ext.guild_only()
     @discord.option(name="multiplier", description="The multiplier to set", type=int)
     @analytics("leveling multiplier")
+    @blocklist()
     async def set_multiplier(self, ctx: discord.ApplicationContext, multiplier: int):
         try:
             # Get old setting
@@ -265,6 +270,7 @@ class Leveling(discord.Cog):
     @discord.option(name='start_date', description='The start date of the multiplier, in format MM-DD', type=str)
     @discord.option(name='end_date', description='The end date of the multiplier, in format MM-DD', type=str)
     @analytics("leveling add multiplier")
+    @blocklist()
     async def add_multiplier(self, ctx: discord.ApplicationContext, name: str, multiplier: int, start_date: str,
                              end_date: str):
         try:
@@ -324,6 +330,7 @@ class Leveling(discord.Cog):
     @discord.option(name="old_name", description="The old name of the multiplier", type=str)
     @discord.option(name="new_name", description="The new name of the multiplier", type=str)
     @analytics("leveling change multiplier name")
+    @blocklist()
     async def change_multiplier_name(self, ctx: discord.ApplicationContext, old_name: str, new_name: str):
         try:
             if not mult_exists(ctx.guild.id, old_name):
@@ -368,6 +375,7 @@ class Leveling(discord.Cog):
     @discord.option(name="name", description="The name of the multiplier", type=str)
     @discord.option(name="multiplier", description="The new multiplier", type=int)
     @analytics("leveling change multiplier multiplier")
+    @blocklist()
     async def change_multiplier_multiplier(self, ctx: discord.ApplicationContext, name: str, multiplier: int):
         try:
             if not mult_exists(ctx.guild.id, name):
@@ -409,6 +417,7 @@ class Leveling(discord.Cog):
     @discord.option(name="name", description="The name of the multiplier", type=str)
     @discord.option(name="start_date", description="The new start date of the multiplier, in format MM-DD", type=str)
     @analytics("leveling change multiplier start date")
+    @blocklist()
     async def change_multiplier_start_date(self, ctx: discord.ApplicationContext, name: str, start_date: str):
         try:
             if not mult_exists(ctx.guild.id, name):
@@ -462,6 +471,7 @@ class Leveling(discord.Cog):
     @discord.option(name="name", description="The name of the multiplier", type=str)
     @discord.option(name="end_date", description="The new end date of the multiplier, in format MM-DD", type=str)
     @analytics("leveling change multiplier end date")
+    @blocklist()
     async def change_multiplier_end_date(self, ctx: discord.ApplicationContext, name: str, end_date: str):
         try:
             if not mult_exists(ctx.guild.id, name):
@@ -512,6 +522,7 @@ class Leveling(discord.Cog):
     @commands_ext.guild_only()
     @discord.option(name="name", description="The name of the multiplier", type=str)
     @analytics("leveling remove multiplier")
+    @blocklist()
     async def remove_multiplier(self, ctx: discord.ApplicationContext, name: str):
         try:
             if not mult_exists(ctx.guild.id, name):
@@ -548,6 +559,7 @@ class Leveling(discord.Cog):
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
     @analytics("leveling get multiplier")
+    @blocklist()
     async def get_multiplier(self, ctx: discord.ApplicationContext):
         try:
             multiplier = calc_multiplier(ctx.guild.id)
@@ -564,6 +576,7 @@ class Leveling(discord.Cog):
     @commands_ext.guild_only()
     @discord.option(name="xp", description="The XP to set", type=int)
     @analytics("leveling set xp per level")
+    @blocklist()
     async def set_xp_per_level(self, ctx: discord.ApplicationContext, xp: int):
         try:
             old_xp = get_setting(ctx.guild.id, 'leveling_xp_per_level', '500')
@@ -592,6 +605,7 @@ class Leveling(discord.Cog):
     @discord.option(name="level", description="The level to set the reward for", type=int)
     @discord.option(name='role', description='The role to set', type=discord.Role)
     @analytics("leveling set reward")
+    @blocklist()
     async def set_reward(self, ctx: discord.ApplicationContext, level: int, role: discord.Role):
         try:
             # Get old setting
@@ -632,6 +646,7 @@ class Leveling(discord.Cog):
     @commands_ext.guild_only()
     @discord.option(name="level", description="The level to remove the reward for", type=int)
     @analytics("leveling remove reward")
+    @blocklist()
     async def remove_reward(self, ctx: discord.ApplicationContext, level: int):
         try:
             # Get old settingF
@@ -664,6 +679,7 @@ class Leveling(discord.Cog):
 
     @leveling_subcommand.command(name="set_icon", description="Set leveling icon")
     @analytics("leveling set icon")
+    @blocklist()
     @commands_ext.guild_only()
     async def set_icon(self, ctx: discord.ApplicationContext, icon: str):
         try:

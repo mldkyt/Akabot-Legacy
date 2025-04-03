@@ -25,6 +25,7 @@ from discord.ext import commands as commands_ext, pages
 
 from database import client
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl, get_language
 from utils.logging_util import log_into_logs
 from utils.per_user_settings import get_per_user_setting
@@ -229,6 +230,7 @@ class ChatStreaks(discord.Cog):
     @commands_ext.has_permissions(manage_guild=True)
     @discord.option(name='user', description='The user to reset the streak for', type=discord.Member)
     @analytics("streaks reset")
+    @blocklist()
     async def reset_streak_command(self, ctx: discord.ApplicationContext, user: discord.Member):
         try:
             # Reset streak
@@ -257,6 +259,7 @@ class ChatStreaks(discord.Cog):
     @commands_ext.has_permissions(manage_guild=True)
     @discord.option(name='user', description='The user to get the streak for', type=discord.Member)
     @analytics("streaks streak")
+    @blocklist()
     async def get_user_streak(self, ctx: discord.ApplicationContext, user: discord.Member):
         try:
             (_, streak, _) = self.streak_storage.set_streak(ctx.guild.id, user.id)
@@ -277,6 +280,7 @@ class ChatStreaks(discord.Cog):
     @discord.option(name='delete_sent_message_updated',
                     description='Configure the "Chat Streak Updated" message. 0 = disable, seconds.', type=int)
     @analytics("streaks streak")
+    @blocklist()
     async def configure_messages(self, ctx: discord.ApplicationContext, delete_sent_message_expired: int = -1,
                                  delete_sent_message_updated: int = -1):
         try:
@@ -292,6 +296,7 @@ class ChatStreaks(discord.Cog):
 
     @discord.slash_command(name='streak', description='Get your current streak')
     @analytics("streak")
+    @blocklist()
     async def get_streak_command(self, ctx: discord.ApplicationContext):
         try:
             (_, streak, _) = self.streak_storage.set_streak(ctx.guild.id, ctx.user.id)
@@ -307,6 +312,7 @@ class ChatStreaks(discord.Cog):
     @streaks_subcommand.command(name="leaderboard", description="Get the chat streak leaderboard")
     @commands_ext.guild_only()
     @analytics("streaks leaderboard")
+    @blocklist()
     async def streaks_lb(self, ctx: discord.ApplicationContext):
         try:
             rows = client['ChatStreaks'].aggregate([
@@ -371,6 +377,7 @@ class ChatStreaks(discord.Cog):
     @discord.option(name='role', description='The role to give', type=discord.Role)
     @discord.option(name='required_streak', description='The required streak to give the role', type=int)
     @analytics("streaks add_reward")
+    @blocklist()
     async def add_reward(self, ctx: discord.ApplicationContext, role: discord.Role, required_streak: int, remove_on_loss: bool = False):
         try:
             client['ChatStreaksRewards'].insert_one({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id),
@@ -386,6 +393,7 @@ class ChatStreaks(discord.Cog):
     @commands_ext.has_permissions(manage_guild=True)
     @discord.option(name='role', description='The role to remove', type=discord.Role)
     @analytics("streaks remove_reward")
+    @blocklist()
     async def remove_reward(self, ctx: discord.ApplicationContext, role: discord.Role):
         try:
             client['ChatStreaksRewards'].delete_one({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)})

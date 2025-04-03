@@ -19,8 +19,16 @@ import discord
 
 from database import client
 from features.chat_summary import normal_chat_summary, special_chat_summary
+from utils.config import get_key
 from utils.tzutil import get_now_for_server
 
+BLOCKLIST_WORDS = [i.strip() for i in get_key("BLOCKLIST_WORDS", "", required=False).split(";") if len(i.strip()) > 0]
+BLOCKLIST_SERVERS = [i.strip() for i in get_key("BLOCKLIST_SERVERS", "", required=False).split(";") if len(i.strip()) > 0]
+BLOCKLIST_USERS = [i.strip() for i in get_key("BLOCKLIST_USERS", "", required=False).split(";") if len(i.strip()) > 0]
+
+PERM_BLOCKLIST_WORDS = [i.strip() for i in get_key("PERMANENT_BLOCKLIST_WORDS", "", required=False).split(";") if len(i.strip()) > 0]
+PERM_BLOCKLIST_SERVERS = [i.strip() for i in get_key("PERMANENT_BLOCKLIST_SERVERS", "", required=False).split(";") if len(i.strip()) > 0]
+PERM_BLOCKLIST_USERS = [i.strip() for i in get_key("PERMANENT_BLOCKLIST_USERS", "", required=False).split(";") if len(i.strip()) > 0]
 
 class DebugCommands(discord.Cog):
     def __init__(self, bot: discord.Bot):
@@ -58,3 +66,19 @@ class DebugCommands(discord.Cog):
             await special_chat_summary(channel, date, guild, i, override_year=True)
         else:
             await ctx.respond("Mode not found", ephemeral=True)
+
+    @dev_commands_group.command(name='get_blocklist_settings', description='Get Blocklist Settings')
+    async def get_blocklist_settings(self, ctx: discord.ApplicationContext):
+
+        message = (f'# Blocklist\n'
+                   f'BLOCKLIST_WORDS: {";".join(BLOCKLIST_WORDS)}\n'
+                   f'BLOCKLIST_SERVERS: {";".join(BLOCKLIST_SERVERS)}\n'
+                   f'BLOCKLIST_USERS: {";".join(BLOCKLIST_USERS)}\n'
+                   f'\n'
+                   f'PERM_BLOCKLIST_WORDS: {";".join(PERM_BLOCKLIST_WORDS)}\n'
+                   f'PERM_BLOCKLIST_USERS: {";".join(PERM_BLOCKLIST_USERS)}\n'
+                   f'PERM_BLOCKLIST_SERVERS: {";".join(PERM_BLOCKLIST_SERVERS)}\n'
+                   f'\n'
+                   f'-# Akabot 1.2.1')
+
+        await ctx.respond(message, ephemeral=True)

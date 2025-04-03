@@ -23,6 +23,7 @@ from discord import Color, Interaction
 from discord.ui import View, Modal, InputText
 
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.config import get_key
 
 

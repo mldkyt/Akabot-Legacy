@@ -26,6 +26,7 @@ from discord.ext import tasks
 
 from database import client
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.config import get_key
 from utils.generic import pretty_time_delta
 from utils.languages import get_translation_for_key_localized as trl, get_language
@@ -55,6 +56,7 @@ class Giveaways(discord.Cog):
                     description='Number of minutes until the giveaway ends. Adds up with other time parameters')
     @discord.option(name='winners', description='Number of winners')
     @analytics("giveaway new")
+    @blocklist()
     async def giveaway_new(self, ctx: discord.ApplicationContext, item: str, days: int, hours: int, minutes: int,
                            winners: int):
         try:
@@ -95,6 +97,7 @@ class Giveaways(discord.Cog):
     @commands_ext.guild_only()
     @discord.option("giveaway_id", "The ID of the giveaway to end. Given when creating a giveaway.")
     @analytics("giveaway end")
+    @blocklist()
     async def giveaway_end(self, ctx: discord.ApplicationContext, giveaway_id: str):
         try:
             if not ObjectId.is_valid(giveaway_id):
@@ -119,6 +122,7 @@ class Giveaways(discord.Cog):
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
     @analytics("giveaway list")
+    @blocklist()
     async def giveaway_list(self, ctx: discord.ApplicationContext):
         try:
             res = client['Giveaways'].find({}).to_list()

@@ -28,6 +28,7 @@ from sentry_sdk import capture_exception
 
 from database import client
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
@@ -305,6 +306,7 @@ class ChatSummary(discord.Cog):
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.bot_has_permissions(send_messages=True)
     @analytics("chatsummary add")
+    @blocklist()
     async def command_add(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
             res = client['ChatSummary'].count_documents({
@@ -339,6 +341,7 @@ class ChatSummary(discord.Cog):
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @analytics("chatsummary remove")
+    @blocklist()
     async def command_remove(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
             res = client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)},
@@ -370,6 +373,7 @@ class ChatSummary(discord.Cog):
     @discord.option(name="date_format", description="Format",
                     choices=["YYYY/MM/DD", "DD/MM/YYYY", "DD. MM. YYYY", "YYYY/DD/MM", "MM/DD/YYYY", "YYYY年MM月DD日"])
     @analytics("chatsummary dateformat")
+    @blocklist()
     async def summary_dateformat(self, ctx: discord.ApplicationContext, date_format: str):
         try:
             # Get old setting
@@ -406,6 +410,7 @@ class ChatSummary(discord.Cog):
     @discord.option(name='monthly_count', description='The monthly Chat Summary count of people')
     @discord.option(name='yearly_count', description='The yearly Chat Summary count of people')
     @analytics("chatsummary top_count")
+    @blocklist()
     async def summary_top_count(self, ctx: discord.ApplicationContext, normal_count: int = -1, monthly_count: int = -1,
                                 yearly_count: int = -1):
         try:
@@ -447,6 +452,7 @@ class ChatSummary(discord.Cog):
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @analytics("chatsummary countedits")
+    @blocklist()
     async def chatsummary_countedits(self, ctx: discord.ApplicationContext, countedits: bool):
         try:
             # Get old setting
@@ -480,6 +486,7 @@ class ChatSummary(discord.Cog):
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @analytics("chatsummary add_keyword")
+    @blocklist()
     async def chatsummary_add_kwd(self, ctx: discord.ApplicationContext, kwd: str):
         if get_key('Message_Intent', "false") == "false":
             await ctx.respond("This instance doesn\'t support message intent. Keywords aren\'t available.", ephemeral=True)
@@ -515,6 +522,7 @@ class ChatSummary(discord.Cog):
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @analytics("chatsummary remove_keyword")
+    @blocklist()
     async def chatsummary_remove_kwd(self, ctx: discord.ApplicationContext, kwd: str):
         if get_key('Message_Intent', "false") == "false":
             await ctx.respond("This instance doesn\'t support message intent. Keywords aren\'t available.", ephemeral=True)

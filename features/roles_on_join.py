@@ -20,6 +20,7 @@ import sentry_sdk
 
 from database import client
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 
@@ -52,6 +53,7 @@ class RolesOnJoin(discord.Cog):
 
     @roles_on_join_commands.command(name="add", description="Add a role on join")
     @analytics("roles_on_join add")
+    @blocklist()
     async def add_role_on_join(self, ctx: discord.ApplicationContext, role: discord.Role):
         try:
             # check amount of roles
@@ -77,6 +79,7 @@ class RolesOnJoin(discord.Cog):
 
     @roles_on_join_commands.command(name="remove", description="Remove a role on join")
     @analytics("roles_on_join remove")
+    @blocklist()
     async def remove_role_on_join(self, ctx: discord.ApplicationContext, role: discord.Role):
         try:
             if client['RolesOnJoin'].count_documents({'GuildID': str(ctx.guild.id)}) == 0:
@@ -92,6 +95,7 @@ class RolesOnJoin(discord.Cog):
 
     @roles_on_join_commands.command(name="list", description="List roles on join")
     @analytics("roles_on_join list")
+    @blocklist()
     async def list_roles_on_join(self, ctx: discord.ApplicationContext):
         try:
             res = client['RolesOnJoin'].find({'GuildID': str(ctx.guild.id)}).to_list()

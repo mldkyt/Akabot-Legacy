@@ -23,6 +23,7 @@ import sentry_sdk
 from discord.ext import commands
 
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.settings import get_setting, set_setting
 
 
@@ -76,6 +77,7 @@ class RoleplayCommands(discord.Cog):
 
     @rp_group.command(name="hug")
     @analytics("rp hug")
+    @blocklist()
     async def hug(self, ctx, member: discord.Member):
         """Hug a member"""
         try:
@@ -95,6 +97,7 @@ class RoleplayCommands(discord.Cog):
 
     @rp_group.command(name="kiss")
     @analytics("rp kiss")
+    @blocklist()
     async def kiss(self, ctx, member: discord.Member):
         """Kiss a member"""
         try:
@@ -114,6 +117,7 @@ class RoleplayCommands(discord.Cog):
 
     @rp_group.command(name="bite")
     @analytics("rp bite")
+    @blocklist()
     async def bite(self, ctx, member: discord.Member):
         """Bite a member"""
         try:
@@ -132,6 +136,7 @@ class RoleplayCommands(discord.Cog):
 
     @rp_group.command(name="unbite")
     @analytics("rp unbite")
+    @blocklist()
     async def unbite(self, ctx, member: discord.Member):
         """Unbite a member"""
         try:
@@ -149,6 +154,7 @@ class RoleplayCommands(discord.Cog):
 
     @rp_admin_group.command(name="enabled")
     @analytics("rp_admin enabled")
+    @blocklist()
     async def rp_enable(self, ctx, enable: bool):
         """Enable or disable roleplay commands"""
         try:
@@ -161,6 +167,7 @@ class RoleplayCommands(discord.Cog):
 
     @rp_admin_group.command(name="list")
     @analytics("rp_admin list")
+    @blocklist()
     @discord.default_permissions(manage_guild=True)
     @commands.has_permissions(manage_guild=True)
     @discord.guild_only()

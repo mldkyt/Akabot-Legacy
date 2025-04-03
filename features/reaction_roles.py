@@ -20,6 +20,7 @@ import sentry_sdk
 from discord.ext import commands as commands_ext
 
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 
 
@@ -83,6 +84,7 @@ class ReactionRoles(discord.Cog):
     @commands_ext.guild_only()
     @commands_ext.bot_has_permissions(send_messages=True)
     @analytics("create_reaction_role")
+    @blocklist()
     async def create_reaction_role(self, interaction: discord.ApplicationContext, type: str, message: str,
                                    role_1: discord.Role, role_2: discord.Role = None, role_3: discord.Role = None,
                                    role_4: discord.Role = None, role_5: discord.Role = None,
@@ -120,6 +122,7 @@ class ReactionRoles(discord.Cog):
     @commands_ext.guild_only()
     @commands_ext.bot_has_permissions(send_messages=True)
     @analytics("edit_reaction_role")
+    @blocklist()
     async def edit_reaction_role(self, interaction: discord.ApplicationContext, message: str, type: str,
                                  role_1: discord.Role, role_2: discord.Role = None, role_3: discord.Role = None,
                                  role_4: discord.Role = None, role_5: discord.Role = None, role_6: discord.Role = None,

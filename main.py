@@ -27,6 +27,8 @@ from sentry_sdk.integrations.asyncio import AsyncioIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.pymongo import PyMongoIntegration
 
+import utils.blocklist
+
 load_dotenv()
 
 from features import welcoming, leveling, antiraid, chat_streaks, chat_revive, chat_summary, reaction_roles, \
@@ -52,10 +54,13 @@ else:
     log_level = logging.INFO
     print('Invalid log mode, defaulting to info')
 
+print("Setting log level", log_level, flush=True)
+
 logging.basicConfig(
     level=log_level,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
+logging.getLogger().setLevel(log_level)
 
 BOT_VERSION = get_key("Bot_Version", "3.5")
 
@@ -124,6 +129,16 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
 
     if isinstance(error, discord_commands_ext.PrivateMessageOnly):
         await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_private"), ephemeral=True)
+        return
+
+    if isinstance(error, utils.blocklist.BlocklistError):
+        emb = discord.Embed(
+            title="Blocklisted",
+            description=str(error),
+            color=discord.Color.red()
+        )
+
+        await ctx.respond(embed=emb, ephemeral=True)
         return
 
     sentry_sdk.capture_exception(error)

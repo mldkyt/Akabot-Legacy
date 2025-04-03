@@ -26,6 +26,7 @@ import utils.english_words
 import utils.logging_util
 import utils.settings
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
 
@@ -265,6 +266,7 @@ class VerificationView(discord.ui.View):
         self.add_item(button_1)
 
     @analytics("\"Verify\" button click")
+    @blocklist()
     async def button_callback(self, ctx: discord.ApplicationContext):
         try:
             if await is_verified(ctx):
@@ -314,6 +316,7 @@ class Verification(discord.Cog):
     @discord.ext.commands.has_permissions(manage_roles=True)
     @discord.ext.commands.bot_has_permissions(manage_roles=True)
     @analytics("verification set_role")
+    @blocklist()
     async def set_role(self, ctx: discord.ApplicationContext, role: discord.Role):
         try:
             # Bot permission check
@@ -341,6 +344,7 @@ class Verification(discord.Cog):
     @discord.ext.commands.has_permissions(manage_roles=True)
     @discord.ext.commands.bot_has_permissions(manage_roles=True)
     @analytics("verification set_difficulty")
+    @blocklist()
     async def set_difficulty(self, ctx: discord.ApplicationContext, difficulty: str):
         try:
             # Store old difficulty
@@ -382,6 +386,7 @@ class Verification(discord.Cog):
     @discord.ext.commands.has_permissions(manage_guild=True)
     @discord.ext.commands.bot_has_permissions(manage_guild=True)
     @analytics("verification send_message")
+    @blocklist()
     async def send_message(self, ctx: discord.ApplicationContext,
                            custom_verify_message: str = "Click the verify button below to verify!",
                            custom_verify_label: str = "Verify"):

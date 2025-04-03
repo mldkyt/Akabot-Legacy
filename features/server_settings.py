@@ -21,6 +21,7 @@ import discord
 import sentry_sdk
 
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 from utils.languages import language_name_to_code, get_language_names, get_language_name
 from utils.settings import set_setting
@@ -32,6 +33,7 @@ class ServerSettings(discord.Cog):
     @server_settings_group.command(name='language', description="Change the server language.")
     @discord.option(name='lang', description="The language to set the server to.", choices=get_language_names())
     @analytics("server_settings language")
+    @blocklist()
     async def server_language(self, ctx: discord.ApplicationContext, lang: str):
         try:
             lang_code = language_name_to_code(lang)
@@ -45,6 +47,7 @@ class ServerSettings(discord.Cog):
     @server_settings_group.command(name='tz', description='Timezone setting')
     @discord.option(name='tz', description='Timezone')
     @analytics("server_settings timezone")
+    @blocklist()
     async def tz_setting(self, ctx: discord.ApplicationContext, tz: float):
         try:
             if not re.match(r"^[+-]?\d+(\.\d)?$", str(tz)):

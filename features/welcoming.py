@@ -20,6 +20,7 @@ import sentry_sdk
 from discord.ext import commands as commands_ext
 
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
 from utils.settings import get_setting, set_setting
@@ -110,6 +111,7 @@ class Welcoming(discord.Cog):
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
     @analytics("welcome list")
+    @blocklist()
     async def welcome_list_settings(self, ctx: discord.ApplicationContext):
         try:
             welcome_channel = get_setting(ctx.guild.id, 'welcome_channel', '0')
@@ -135,6 +137,7 @@ class Welcoming(discord.Cog):
     @commands_ext.guild_only()
     @commands_ext.bot_has_permissions(view_channel=True, send_messages=True)
     @analytics("welcome channel")
+    @blocklist()
     async def welcome_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
             # Get old channel
@@ -172,6 +175,7 @@ class Welcoming(discord.Cog):
     @discord.option(name="message_type", description="The type of the message (embed or text)",
                     choices=['embed', 'text'])
     @analytics("welcome type")
+    @blocklist()
     async def welcome_type(self, ctx: discord.ApplicationContext, message_type: str):
         try:
             # Get old response type
@@ -203,6 +207,7 @@ class Welcoming(discord.Cog):
     @commands_ext.guild_only()
     @discord.option(name="title", description="The title of the message")
     @analytics("welcome title")
+    @blocklist()
     async def welcome_title(self, ctx: discord.ApplicationContext, title: str):
         try:
             # Get old response title
@@ -232,6 +237,7 @@ class Welcoming(discord.Cog):
     @commands_ext.guild_only()
     @discord.option(name="text", description="The content of the message or description of the embed")
     @analytics("welcome text")
+    @blocklist()
     async def welcome_text(self, ctx: discord.ApplicationContext, text: str):
         try:
             # Get old welcome text
@@ -262,6 +268,7 @@ class Welcoming(discord.Cog):
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
     @analytics("goodbye list")
+    @blocklist()
     async def goodbye_list_settings(self, ctx: discord.ApplicationContext):
         try:
             goodbye_channel = get_setting(ctx.guild.id, 'goodbye_channel', '0')
@@ -287,6 +294,7 @@ class Welcoming(discord.Cog):
     @commands_ext.guild_only()
     @commands_ext.bot_has_permissions(view_channel=True, send_messages=True)
     @analytics("goodbye channel")
+    @blocklist()
     async def goodbye_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
             # Get old goodbye channel
@@ -319,6 +327,7 @@ class Welcoming(discord.Cog):
     @discord.option(name="message_type", description="The type of the message (embed or text)",
                     choices=['embed', 'text'])
     @analytics("goodbye type")
+    @blocklist()
     async def goodbye_type(self, ctx: discord.ApplicationContext, message_type: str):
         try:
             # Get old goodbye type
@@ -350,6 +359,7 @@ class Welcoming(discord.Cog):
     @commands_ext.guild_only()
     @discord.option(name="title", description="The title of the message")
     @analytics("goodbye title")
+    @blocklist()
     async def goodbye_title(self, ctx: discord.ApplicationContext, title: str):
         try:
             # Get old goodbye title
@@ -379,6 +389,7 @@ class Welcoming(discord.Cog):
     @commands_ext.guild_only()
     @discord.option(name="text", description="The content of the message or description of the embed")
     @analytics("goodbye text")
+    @blocklist()
     async def goodbye_text(self, ctx: discord.ApplicationContext, text: str):
         try:
             # Get old goodbye text

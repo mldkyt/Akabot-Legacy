@@ -22,6 +22,7 @@ import sentry_sdk
 from discord.ext import commands as commands_ext
 
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
 from utils.settings import get_setting, set_setting
@@ -122,6 +123,7 @@ class AntiRaid(discord.Cog):
     @discord.option(name='people', description='The number of people joining...', type=int)
     @discord.option(name='per', description='...per the number of seconds to check', type=int)
     @analytics("antiraid join threshold")
+    @blocklist()
     async def set_join_threshold(self, ctx: discord.ApplicationContext, people: int, per: int):
         try:
             # Get old settings
@@ -158,6 +160,7 @@ class AntiRaid(discord.Cog):
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
     @analytics("antiraid message threshold")
+    @blocklist()
     async def set_message_threshold(self, ctx: discord.ApplicationContext, messages: int, per: int):
         try:
             # Get old settings
@@ -195,6 +198,7 @@ class AntiRaid(discord.Cog):
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
     @analytics("antiraid list")
+    @blocklist()
     async def list_settings(self, ctx: discord.ApplicationContext):
         try:
             join_threshold = get_setting(ctx.guild.id, 'antiraid_join_threshold', '5')

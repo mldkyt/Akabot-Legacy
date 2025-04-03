@@ -23,6 +23,7 @@ from discord.ext import commands as commands_ext
 
 from database import client
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.config import get_key
 from utils.generic import pretty_time_delta
 from utils.languages import get_translation_for_key_localized as trl, get_language
@@ -56,6 +57,7 @@ class Moderation(discord.Cog):
     @discord.option(name='user', description='The user to kick', type=discord.Member)
     @discord.option(name='reason', description='The reason for kicking', type=str)
     @analytics("kick")
+    @blocklist()
     async def kick_user(self, ctx: discord.ApplicationContext, user: discord.Member, reason: str):
         try:
             if not is_a_moderator(ctx):
@@ -112,6 +114,7 @@ class Moderation(discord.Cog):
     @discord.option(name='reason', description='The reason for banning', type=str)
     @discord.option(name='send_dm', description='Send a DM to the user', type=bool)
     @analytics("ban")
+    @blocklist()
     async def ban_user(self, ctx: discord.ApplicationContext, user: discord.User, reason: str):
         try:
             if not is_a_moderator(ctx):
@@ -175,6 +178,7 @@ class Moderation(discord.Cog):
     @discord.option(name='hours', description='The number of hours to time out', type=int)
     @discord.option(name='minutes', description='The number of minutes to time out', type=int)
     @analytics("timeout")
+    @blocklist()
     async def timeout_user(self, ctx: discord.ApplicationContext, user: discord.Member, reason: str, days: int,
                            hours: int = 0, minutes: int = 0):
         try:
@@ -259,6 +263,7 @@ class Moderation(discord.Cog):
     @discord.option(name='reason', description='The reason for removing', type=str)
     @discord.option(name='send_dm', description='Send a DM to the user', type=bool)
     @analytics("remove_timeout")
+    @blocklist()
     async def remove_timeout_user(self, ctx: discord.ApplicationContext, user: discord.Member, reason: str):
         try:
             if not is_a_moderator(ctx):
@@ -317,6 +322,7 @@ class Moderation(discord.Cog):
     @discord.option(name='include_user', description='Include messages from this user')
     @discord.option(name='exclude_user', description='Exclude messages from this user')
     @analytics("purge")
+    @blocklist()
     async def purge_messages(self, ctx: discord.ApplicationContext, amount: int, include_user: discord.User = None,
                              exclude_user: discord.User = None):
         try:
@@ -370,6 +376,7 @@ class Moderation(discord.Cog):
     @discord.option(name='user', description='The user to warn', type=discord.Member)
     @discord.option(name='reason', description='The reason for warning', type=str)
     @analytics("warn add")
+    @blocklist()
     async def add_warning(self, ctx: discord.ApplicationContext, user: discord.Member, reason: str):
         try:
             if not is_a_moderator(ctx):
@@ -402,6 +409,7 @@ class Moderation(discord.Cog):
     @discord.option(name='user', description='The user to remove the warning from', type=discord.Member)
     @discord.option(name='id', description='The ID of the warning', type=str)
     @analytics("warn remove")
+    @blocklist()
     async def remove_warning(self, ctx: discord.ApplicationContext, user: discord.Member, warning_id: str):
         try:
             if not is_a_moderator(ctx):
@@ -444,6 +452,7 @@ class Moderation(discord.Cog):
     @discord.default_permissions(manage_messages=True)
     @discord.option(name='user', description='The user to list the warnings for', type=discord.Member)
     @analytics("warn list")
+    @blocklist()
     async def list_warnings(self, ctx: discord.ApplicationContext, user: discord.Member):
         try:
             if not is_a_moderator(ctx):
@@ -476,6 +485,7 @@ class Moderation(discord.Cog):
     @discord.option(name='enable', description='Enable or disable the warning message', type=bool)
     @discord.option(name='message', description='The message to send to the user.', type=str)
     @analytics("warn message")
+    @blocklist()
     async def set_warning_message(self, ctx: discord.ApplicationContext, enable: bool, message: str):
         try:
             # Get old
@@ -530,6 +540,7 @@ class Moderation(discord.Cog):
     @discord.option(name='action', description='The action to take', type=str,
                     choices=['kick', 'ban', 'timeout 12h', 'timeout 1d', 'timeout 7d', 'timeout 28d'])
     @analytics("warn_actions add")
+    @blocklist()
     async def add_warning_action(self, ctx: discord.ApplicationContext, warnings: int, action: str):
         try:
             db_add_warning_action(ctx.guild.id, action, warnings)
@@ -556,6 +567,7 @@ class Moderation(discord.Cog):
     @discord.default_permissions(manage_messages=True)
     @commands_ext.has_permissions(manage_messages=True)
     @analytics("warn_actions list")
+    @blocklist()
     async def list_warning_actions(self, ctx: discord.ApplicationContext):
         try:
             actions = db_get_warning_actions(ctx.guild.id)
@@ -585,6 +597,7 @@ class Moderation(discord.Cog):
     @commands_ext.guild_only()
     @discord.option(name='id', description='The ID of the action', type=str)
     @analytics("warn_actions remove")
+    @blocklist()
     async def remove_warning_action(self, ctx: discord.ApplicationContext, warning_action_id: str):
         try:
             if not is_a_moderator(ctx):

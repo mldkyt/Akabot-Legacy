@@ -23,6 +23,7 @@ from discord.ext import tasks, commands
 
 from database import client
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 from utils.per_user_settings import get_per_user_setting
 from utils.settings import set_setting
@@ -71,6 +72,7 @@ class BirthdayAnnouncements(discord.Cog):
     @discord.option(name="channel", description="The channel to send birthday announcements in")
     @commands.has_permissions(manage_guild=True)
     @analytics("birthday_announcements channel")
+    @blocklist()
     async def set_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         set_setting(ctx.guild.id, "birthday_announcements_channel", str(channel.id))
         await ctx.respond(
@@ -83,6 +85,7 @@ class BirthdayAnnouncements(discord.Cog):
     @discord.default_permissions(manage_guild=True)
     @commands.has_permissions(manage_guild=True)
     @analytics("birthday_announcements message")
+    @blocklist()
     async def birthday_announcements_message(self, ctx: discord.ApplicationContext, message: str):
         set_setting(ctx.guild.id, "birthday_announcements_message", message)
         await ctx.respond("Birthday announcement message set", ephemeral=True)

@@ -18,6 +18,7 @@
 import discord
 
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 
 
 class Help(discord.Cog):
@@ -29,55 +30,66 @@ class Help(discord.Cog):
 
     @help_group.command(name="anti_raid", description="Help with Anti Raid feature")
     @analytics("help anti_raid")
+    @blocklist()
     async def anti_raid(self, ctx: discord.ApplicationContext):
         await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Anti_Raid", ephemeral=True)
 
     @help_group.command(name="automod_actions", description="Help with Auto Role feature")
     @analytics("help automod_actions")
+    @blocklist()
     async def automod_actions(self, ctx: discord.ApplicationContext):
         await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Automod_Actions", ephemeral=True)
 
     @help_group.command(name="chat_revive", description="Help with Chat Revive feature")
     @analytics("help chat_revive")
+    @blocklist()
     async def chat_revive(self, ctx: discord.ApplicationContext):
         await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Chat_Revive", ephemeral=True)
 
     @help_group.command(name="chat_streaks", description="Help with Chat Streaks feature")
     @analytics("help chat_streaks")
+    @blocklist()
     async def chat_streaks(self, ctx: discord.ApplicationContext):
         await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Chat_Streaks", ephemeral=True)
 
     @help_group.command(name="chat_summary", description="Help with Chat Summary feature")
     @analytics("help chat_summary")
+    @blocklist()
     async def chat_summary(self, ctx: discord.ApplicationContext):
         await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Chat_Summary", ephemeral=True)
 
     @help_group.command(name="giveaways", description="Help with Giveaways feature")
     @analytics("help giveaways")
+    @blocklist()
     async def giveaways(self, ctx: discord.ApplicationContext):
         await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Giveaways", ephemeral=True)
 
     @help_group.command(name="leveling", description="Help with Leveling feature")
     @analytics("help leveling")
+    @blocklist()
     async def leveling(self, ctx: discord.ApplicationContext):
         await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Leveling", ephemeral=True)
 
     @help_group.command(name="logging", description="Help with Logging feature")
     @analytics("help logging")
+    @blocklist()
     async def logging(self, ctx: discord.ApplicationContext):
         await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Logging", ephemeral=True)
 
     @help_group.command(name="moderation", description="Help with Moderation feature")
     @analytics("help moderation")
+    @blocklist()
     async def moderation(self, ctx: discord.ApplicationContext):
         await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Moderation", ephemeral=True)
 
     @help_group.command(name="reaction_roles", description="Help with Reaction Roles feature")
     @analytics("help reaction_roles")
+    @blocklist()
     async def reaction_roles(self, ctx: discord.ApplicationContext):
         await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Reaction_Roles", ephemeral=True)
 
     @help_group.command(name="verification", description="Help with Verification feature")
     @analytics("help verification")
+    @blocklist()
     async def verification(self, ctx: discord.ApplicationContext):
         await ctx.respond("Please read the documentation located at this link: https://wiki.mldchan.dev//index.php/Akabot#Verification", ephemeral=True)

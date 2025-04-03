@@ -24,6 +24,7 @@ from discord.ext import tasks
 
 from database import client
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
 
@@ -85,6 +86,7 @@ class ChatRevive(discord.Cog):
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.bot_has_permissions(send_messages=True)
     @analytics("chatrevive set")
+    @blocklist()
     async def set_revive_settings(self, ctx: discord.ApplicationContext, channel: discord.TextChannel,
                                   revival_minutes: int,
                                   revival_role: discord.Role):
@@ -136,6 +138,7 @@ class ChatRevive(discord.Cog):
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @analytics("chatrevive remove")
+    @blocklist()
     async def remove_revive_settings(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
             client['ChatRevive'].delete_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})
@@ -163,6 +166,7 @@ class ChatRevive(discord.Cog):
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @analytics("chatrevive list")
+    @blocklist()
     async def list_revive_settings(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
             result = client['ChatRevive'].find_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})

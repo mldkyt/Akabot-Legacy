@@ -25,6 +25,7 @@ from discord.ui import View, Button
 from discord.ui.input_text import InputText
 
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 from database import client
@@ -363,11 +364,13 @@ class SupportCmd(discord.Cog):
 
     @discord.slash_command(name="website", help="Get the website link")
     @analytics("website")
+    @blocklist()
     async def website(self, ctx: discord.ApplicationContext):
         await ctx.respond(trl(ctx.user.id, ctx.guild.id, "feedback_visit_website", append_tip=True), ephemeral=True)
 
     @discord.slash_command(name="vote", description="Vote on the bot")
     @analytics("vote")
+    @blocklist()
     async def vote(self, ctx: discord.ApplicationContext):
         await ctx.respond(
             trl(ctx.user.id, ctx.guild.id, "feedback_vote", append_tip=True),
@@ -377,6 +380,7 @@ class SupportCmd(discord.Cog):
 
     @discord.slash_command(name="privacy", description="Privacy policy URL")
     @analytics("privacy policy")
+    @blocklist()
     async def privacy_policy(self, ctx: discord.ApplicationContext):
         await ctx.respond(
             trl(ctx.user.id, ctx.guild.id, "feedback_privacy_policy", append_tip=True),
@@ -386,6 +390,7 @@ class SupportCmd(discord.Cog):
 
     @discord.slash_command(name="donate", description="Donate to the bot to support it")
     @analytics("donate")
+    @blocklist()
     async def donate(self, ctx: discord.ApplicationContext):
         await ctx.respond(trl(ctx.user.id, ctx.guild.id, "feedback_donate", append_tip=True), ephemeral=True)
 
@@ -405,6 +410,7 @@ This is due to recent raids and attacks on the server due to the developer leavi
     @discord.option(name="version", description="The version to get the changelog for",
                     choices=["4.0", "3.4", "3.3", "3.2", "3.1"])
     @analytics("changelog")
+    @blocklist()
     async def changelog(self, ctx: discord.ApplicationContext, version: str = get_key("Bot_Version", "3.3")):
         try:
             if version == "4.0":
@@ -440,6 +446,7 @@ This is due to recent raids and attacks on the server due to the developer leavi
 
     @discord.slash_command(name='mastodon', description='Link to the Akabot\'s Mastodon profile!')
     @analytics("mastodon")
+    @blocklist()
     async def mastodon(self, ctx: discord.ApplicationContext):
         await ctx.respond(
             "The official Mastodon account of Akabot is @akabot@floss.social\nIt's used for:\n- Akabot updates\n- Akabot service annoncements\n- More!",
@@ -447,6 +454,7 @@ This is due to recent raids and attacks on the server due to the developer leavi
 
     @discord.slash_command(name='limits', description='Get server limits, along with usage')
     @analytics("limits")
+    @blocklist()
     async def cmd_limits(self, ctx: discord.ApplicationContext):
         chat_summary_usage = client['ChatSummary'].count_documents({
             'GuildID': str(ctx.guild.id), 'Enabled': True
@@ -478,6 +486,7 @@ This is due to recent raids and attacks on the server due to the developer leavi
     @feedback_subcommand.command(name="bug", description="Report a bug")
     @cmds_ext.cooldown(1, 300, cmds_ext.BucketType.user)
     @analytics("feedback bug")
+    @blocklist()
     async def report_bug(self, ctx: discord.ApplicationContext):
         await ctx.respond(content=trl(ctx.user.id, ctx.guild.id, "feedback_bug_report_disclaimer", append_tip=True),
                           ephemeral=True,
@@ -486,6 +495,7 @@ This is due to recent raids and attacks on the server due to the developer leavi
     @feedback_subcommand.command(name="feature", description="Suggest a feature")
     @cmds_ext.cooldown(1, 300, cmds_ext.BucketType.user)
     @analytics("feedback feature")
+    @blocklist()
     async def suggest_feature(self, ctx: discord.ApplicationContext):
         await ctx.respond(content=trl(ctx.user.id, ctx.guild.id, "feedback_feature_disclaimer", append_tip=True),
                           ephemeral=True,
@@ -493,5 +503,6 @@ This is due to recent raids and attacks on the server due to the developer leavi
 
     @discord.slash_command(name="about", description="Get information about the bot")
     @analytics("about")
+    @blocklist()
     async def about(self, ctx: discord.ApplicationContext):
         await ctx.respond(trl(ctx.user.id, ctx.guild.id, "feedback_about", append_tip=True), ephemeral=True)

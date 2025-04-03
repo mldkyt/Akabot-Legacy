@@ -22,6 +22,7 @@ import sentry_sdk
 
 from database import client
 from utils.analytics import analytics
+from utils.blocklist import blocklist
 from utils.languages import get_language_names, language_name_to_code, get_language_name
 from utils.languages import get_translation_for_key_localized as trl
 from utils.per_user_settings import set_per_user_setting, get_per_user_setting
@@ -47,6 +48,7 @@ class PerUserSettings(discord.Cog):
     @discord.option(name='state', description='How notifications should be sent',
                     choices=['enabled', 'only when lost', 'off'])
     @analytics("user_settings chat_streaks_alerts")
+    @blocklist()
     async def chat_streaks_alerts(self, ctx: discord.ApplicationContext, state: str):
         try:
             set_per_user_setting(ctx.user.id, 'chat_streaks_alerts', state)
@@ -67,6 +69,7 @@ class PerUserSettings(discord.Cog):
                                  description='Set your personal language, applies across servers for you')
     @discord.option(name='lang', description='Your language', choices=get_language_names())
     @analytics("user_settings language")
+    @blocklist()
     async def set_language(self, ctx: discord.ApplicationContext, lang: str):
         try:
             lang_code = language_name_to_code(lang)
@@ -81,6 +84,7 @@ class PerUserSettings(discord.Cog):
     @user_settings_group.command(name='birthday', description='Set your birthday for Birthday Announcements.')
     @discord.option(name='birthday', description='Your birthday in the format YYYY-MM-DD')
     @analytics("user_settings birthday")
+    @blocklist()
     async def set_birthdate(self, ctx: discord.ApplicationContext, year: int, month: int, day: int):
         try:
             now = datetime.datetime.now()
@@ -107,6 +111,7 @@ class PerUserSettings(discord.Cog):
     @user_settings_group.command(name="birthday_settings", description="Personalize your birthday settings")
     @discord.option(name="send_dm", type=bool, description="Whether to allow this bot to send DMs to you")
     @analytics("user_settings birthday_settings")
+    @blocklist()
     async def set_birthday_settings(self, ctx: discord.ApplicationContext, send_dm: bool | None = None):
         try:
             if send_dm is not None:
@@ -126,6 +131,7 @@ class PerUserSettings(discord.Cog):
                                  description="Whether to announce birthdays in the server you're currently in")
     @discord.option(name="state", description="Send announcements in this server")
     @analytics("user_settings birthday_announcements")
+    @blocklist()
     async def set_birthday_announcement(self, ctx: discord.ApplicationContext, state: bool):
         try:
             set_per_user_setting(ctx.user.id, f'birthday_announcements_{str(ctx.guild.id)}', str(state).lower())
@@ -140,6 +146,7 @@ class PerUserSettings(discord.Cog):
 
     @user_settings_group.command(name='clear_birthday', description='Clear all data about your birthday from the bot')
     @analytics("user_settings clear_birthday")
+    @blocklist()
     async def clear_birthday(self, ctx: discord.ApplicationContext):
         try:
             set_per_user_setting(ctx.user.id, 'birthday_date', None)
