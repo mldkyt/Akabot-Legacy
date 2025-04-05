@@ -14,6 +14,7 @@
 #      You should have received a copy of the GNU Affero General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+import datetime
 
 import discord
 import sentry_sdk
@@ -26,9 +27,37 @@ from utils.logging_util import log_into_logs
 from utils.settings import get_setting, set_setting
 
 
+class WelcomingCache:
+    def __init__(self):
+        self.cache = []
+
+    def member_join(self, member: discord.Member, welcome_message: discord.Message):
+        grace_period_minutes = get_setting(member.guild.id, "welcome_grace_period_minutes", "5")
+        self.cache.append({
+            "GuildID": str(member.guild.id),
+            "MemberID": str(member.id),
+            "GracePeriod": datetime.datetime.now() + datetime.timedelta(minutes=int(grace_period_minutes)),
+            "WelcomeMessage": welcome_message.id
+        })
+
+    def is_member_in_grace_period(self, member: discord.Member):
+        self.cache = [i for i in self.cache if i["GracePeriod"] > datetime.datetime.now()]
+        return any(i["GuildID"] == str(member.guild.id) and i["MemberID"] == str(member.id) for i in self.cache)
+
+    def get_welcome_message(self, member: discord.Member):
+        for i in self.cache:
+            if i["GuildID"] == str(member.guild.id) and i["MemberID"] == str(member.id):
+                return i["WelcomeMessage"]
+
+        return None
+
+    def remove_from_cache(self, member: discord.Member):
+        self.cache = [i for i in self.cache if i["GuildID"] != str(member.guild.id) and i["MemberID"] != str(member.id)]
+
 class Welcoming(discord.Cog):
     def __init__(self, bot: discord.Bot) -> None:
         self.bot = bot
+        self.cache = WelcomingCache()
 
     @discord.Cog.listener()
     async def on_member_join(self, member: discord.Member):
@@ -61,15 +90,55 @@ class Welcoming(discord.Cog):
             if message_type == 'embed':
                 embed = discord.Embed(title=message_title, description=message_text,
                                       color=discord.Color.green())  # Create the embed
-                await target_channel.send(embed=embed)  # Send it in the welcoming channel
+                msg = await target_channel.send(embed=embed)  # Send it in the welcoming channel
+                self.cache.member_join(member, msg)
             if message_type == 'text':
-                await target_channel.send(content=message_text)  # Send it as text only
+                msg = await target_channel.send(content=message_text)  # Send it as text only
+                self.cache.member_join(member, msg)
+
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+
+    async def delete_welcome_message(self, member: discord.Member):
+        try:
+            welcome_message_id = self.cache.get_welcome_message(member)
+            if welcome_message_id is None:
+                return
+
+            welcome_channel_id = get_setting(member.guild.id, 'welcome_channel', '0')
+            if welcome_channel_id == '0':
+                return
+
+            welcome_channel = member.guild.get_channel(int(welcome_channel_id))
+            if welcome_channel is None:
+                return
+
+            message = await welcome_channel.fetch_message(int(welcome_message_id))
+            if message is None:
+                return
+
+            grace_period_minutes = get_setting(member.guild.id, 'welcome_grace_period_minutes', '5')
+
+            await message.delete()
+            self.cache.remove_from_cache(member)
+
+            emb = discord.Embed(
+                title=trl(0, member.guild.id, "welcome_grace_period_log_title").format(minutes=str(grace_period_minutes)),
+                description=trl(0, member.guild.id, "welcome_grace_period_log_description").format(minutes=str(grace_period_minutes), mention=member.mention, displayname=member.display_name, name=member.name, id=str(member.id)),
+                color=discord.Color.red()
+            )
+
+            await log_into_logs(member.guild, emb)
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
     @discord.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
         try:
+            if self.cache.is_member_in_grace_period(member):
+                await self.delete_welcome_message(member)
+                return
+
             target_channel_id = get_setting(member.guild.id, 'goodbye_channel', '0')
             if target_channel_id == '0':
                 return  # The channel was not set and was initialised as we just ran this
@@ -260,6 +329,44 @@ class Welcoming(discord.Cog):
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+
+    @welcome_subcommands.command(name="grace_period", description="Set up a grace period. If a member leaves within this time, the welcome message is deleted")
+    @discord.default_permissions(manage_guild=True)
+    @commands_ext.has_permissions(manage_guild=True)
+    @commands_ext.guild_only()
+    @discord.option(name="minutes", description="The minutes of the grace period of the message")
+    @analytics("welcome grace period")
+    @blocklist()
+    async def welcome_grace_period(self, ctx: discord.ApplicationContext, minutes: int):
+        try:
+            # Old grace period
+            old_grace_period = get_setting(ctx.guild.id, "welcome_grace_period_minutes", '5')
+
+            # Set new grace period
+            set_setting(ctx.guild.id, 'welcome_grace_period_minutes', minutes)
+
+            # logging embed
+            emb = discord.Embed(
+                title=trl(0, ctx.guild.id, "welcome_grace_period_log_setting_title"),
+                fields=[
+                    discord.EmbedField(
+                        name=trl(0, ctx.guild.id, "welcome_grace_period_log_minutes_label"),
+                        value=f"{old_grace_period} -> {minutes}"
+                    )
+                ],
+                color=discord.Color.blurple()
+            )
+
+            # Send log
+            await log_into_logs(ctx.guild, emb)
+
+            # Respond
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "welcome_grace_period_set", append_tip=True).format(minutes=minutes), ephemeral=True)
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+
+
 
     goodbye_subcommands = discord.SlashCommandGroup(name="goodbye", description="Change the goodbye message")
 
