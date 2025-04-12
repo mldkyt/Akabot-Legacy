@@ -26,7 +26,7 @@ from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 from utils.per_user_settings import get_per_user_setting
-from utils.settings import set_setting
+from utils.settings import set_setting, get_setting
 
 
 class BirthdayAnnouncements(discord.Cog):
@@ -51,21 +51,54 @@ class BirthdayAnnouncements(discord.Cog):
         if now.hour != 12 or now.minute != 0:
             return
 
-        birthdays = client['UserBirthday'].find(
-            {'Birth.Year': now.year, 'Birth.Month': now.month, 'Birth.Day': now.day}).to_list()
+        birthdays = client['UserBirthday'].find({'Birth.Month': now.month, 'Birth.Day': now.day}).to_list()
         for birthday in birthdays:
-            # Test DM
             try:
-                member = self.bot.get_user(birthday['UserID'])
+                member = self.bot.get_user(int(birthday["UserID"]))
                 if member is None:
                     continue
+                # Test DM
+                try:
+                    if get_per_user_setting(member.id, 'birthday_send_dm', True):
+                        await member.send(trl(member.id, 0, 'birthday_dm'))
+                except discord.Forbidden:
+                    pass
 
-                if get_per_user_setting(member.id, 'birthday_send_dm', True):
-                    await member.send(trl(member.id, 0, 'birthday_dm'))
+                # Broadcast to Discord servers where this was allowed
+                for guild_id in birthday['AllowedServers']:
+                    guild = self.bot.get_guild(int(guild_id))
+                    if guild is None:
+                        continue
+
+                    channel_id = get_setting(int(guild_id), 'birthday_announcements_channel', '0')
+                    channel = guild.get_channel(int(channel_id))
+                    if channel is None:
+                        continue
+
+                    bd_msg = str(get_setting(guild_id, "birthday_announcements_message",
+                                             trl(0, guild_id, "birthday_server")))
+
+                    age = now.year - int(birthday["Birth"]["Year"])
+
+                    bd_msg = bd_msg.replace("{member}", member.mention)
+                    bd_msg = bd_msg.replace("{member_name}", member.display_name)
+                    bd_msg = bd_msg.replace("{member_display_name}", member.display_name)
+                    bd_msg = bd_msg.replace("{member_user_name}", member.name)
+                    bd_msg = bd_msg.replace("{guild}", guild.name)
+                    bd_msg = bd_msg.replace("{guild_id}", str(guild.id))
+                    bd_msg = bd_msg.replace("{member_id}", str(member.id))
+                    bd_msg = bd_msg.replace("{age}", str(age))
+                    bd_msg = bd_msg.replace("{day}", str(now.day))
+                    bd_msg = bd_msg.replace("{month}", str(now.month))
+                    bd_msg = bd_msg.replace("{year}", str(now.year))
+                    bd_msg = bd_msg.replace("{birth_year}", str(birthday["Birth"]["Year"]))
+
+                    if len(bd_msg.strip()) == 0:
+                        continue
+
+                    await channel.send(bd_msg)
             except Exception as e:
                 sentry_sdk.capture_exception(e)
-
-            # TODO: Broadcast to Discord servers
 
     @birthday_announcements_group.command(name="channel", description="Set the channel for birthday announcements")
     @discord.default_permissions(manage_guild=True)

@@ -22,6 +22,7 @@ import sentry_sdk
 
 from database import client
 from utils.analytics import analytics
+from utils.birthdays import set_broadcast
 from utils.blocklist import blocklist
 from utils.languages import get_language_names, language_name_to_code, get_language_name
 from utils.languages import get_translation_for_key_localized as trl
@@ -36,6 +37,26 @@ def days_in_month(month: int, year: int):
         return 31
     else:
         return 30
+
+
+class ConfirmDeletionView(discord.ui.View):
+    def __init__(self, member_id: int):
+        super().__init__()
+        self.member_id = member_id
+
+    @discord.ui.button(label="Confirm deletion", style=discord.ButtonStyle.danger)
+    async def confirm_delete(self, button: discord.ui.Button, interaction: discord.Interaction):
+        # Delete all data
+        client['UserBirthday'].delete_one({
+            'UserID': str(interaction.user.id)
+        })
+
+        # Disable button list
+        self.disable_all_items()
+        self.stop()
+        await interaction.edit(
+            content=trl(interaction.user.id, interaction.guild.id, "birthday_announcements_delete_success",
+                        append_tip=True), view=self)
 
 
 class PerUserSettings(discord.Cog):
@@ -88,22 +109,23 @@ class PerUserSettings(discord.Cog):
     async def set_birthdate(self, ctx: discord.ApplicationContext, year: int, month: int, day: int):
         try:
             now = datetime.datetime.now()
-            if now.year - 100 < year < now.year - 13:
+            if now.year - 100 < year > now.year - 13:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'birthday_invalid_year'), ephemeral=True)
                 return
 
-            if 1 <= month <= 12:
+            if 1 >= month <= 12:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'birthday_invalid_month'), ephemeral=True)
                 return
 
-            if 1 <= day <= days_in_month(month, year):
+            if 1 >= day <= days_in_month(month, year):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'birthday_invalid_day'), ephemeral=True)
                 return
 
             client['UserBirthday'].update_one({'UserID': str(ctx.author.id)},
                                               {'$set': {'Birth.Year': year, 'Birth.Month': month, 'Birth.Day': day}},
                                               upsert=True)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'birthday_set'), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'birthday_set', append_tip=True).format(
+                birthday=f'{year}/{month}/{day}'), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
@@ -134,7 +156,8 @@ class PerUserSettings(discord.Cog):
     @blocklist()
     async def set_birthday_announcement(self, ctx: discord.ApplicationContext, state: bool):
         try:
-            set_per_user_setting(ctx.user.id, f'birthday_announcements_{str(ctx.guild.id)}', str(state).lower())
+            set_broadcast(ctx.user.id, ctx.guild.id, state)
+
             if state:
                 state_str = trl(ctx.user.id, ctx.guild.id, "per_user_birthday_announcements_enabled", append_tip=True)
             else:
@@ -149,11 +172,10 @@ class PerUserSettings(discord.Cog):
     @blocklist()
     async def clear_birthday(self, ctx: discord.ApplicationContext):
         try:
-            set_per_user_setting(ctx.user.id, 'birthday_date', None)
-            set_per_user_setting(ctx.user.id, 'birthday_year', None)
-            set_per_user_setting(ctx.user.id, 'birthday_send_dm', None)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "per_user_birthday_cleared", append_tip=True),
-                              ephemeral=True)
+            view = ConfirmDeletionView(ctx.user.id)
+
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "per_user_birthday_question", append_tip=True),
+                              view=view, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
