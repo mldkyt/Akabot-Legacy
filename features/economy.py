@@ -5,7 +5,6 @@ from random import choices
 
 import discord
 from discord import ApplicationContext
-from requests.packages import target
 
 from database import client
 from discord.ext import commands as commands_ext
@@ -251,9 +250,9 @@ class GambleView(discord.ui.View):
             return
 
         amount_increase_min_percentage = int(
-            get_setting(guild, "economy_gambling_amount_increase_min_percentage", "110"))
+            get_setting(interaction.guild.id, "economy_gambling_amount_increase_min_percentage", "110"))
         amount_increase_max_percentage = int(
-            get_setting(guild, "economy_gambling_amount_increase_max_percentage", "200"))
+            get_setting(interaction.guild.id, "economy_gambling_amount_increase_max_percentage", "200"))
 
         self.amount = int(
             self.amount * (random.randint(amount_increase_min_percentage, amount_increase_max_percentage) / 100))
@@ -347,7 +346,7 @@ class Economy(discord.Cog):
         data = client['Economy'].find_one({'UserID': str(ctx.user.id)})
         if data['Wallet'] < amount:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_no_money", append_tip=True)
-                              .format(wallet=str(source_data['Wallet']), amount=str(amount)), ephemeral=True)
+                              .format(wallet=str(data['Wallet']), amount=str(amount)), ephemeral=True)
             return
 
         await ctx.respond(
