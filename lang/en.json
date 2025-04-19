@@ -650,5 +650,10 @@
     "chat_streaks_add_reward_success": "Added chat streak reward.",
     "chat_streaks_remove_reward_success": "Removed chat streak reward.",
     "logging_missing_permissions": "Missing Permissions!",
-    "logging_missing_permissions_streak_rewards": "The streak rewards feature wasn't able to assign the role to a member because the bot doesn't have the permissions to do so!"
+    "logging_missing_permissions_streak_rewards": "The streak rewards feature wasn't able to assign the role to a member because the bot doesn't have the permissions to do so!",
+    "counting_channel_added": "Channel was added to counting channels.",
+    "counting_channel_already_added": "Channel is already a counting channel.",
+    "counting_channel_not_found": "Channel not found or is not a counting channel.",
+    "counting_channel_removed": "Channel was removed from counting channels.",
+    "counting_failed": "Aww, {user} ruined the count at {count}! Counter is now starting from 1"
 }
