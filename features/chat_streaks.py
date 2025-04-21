@@ -20,12 +20,12 @@ import logging
 
 import discord
 import sentry_sdk
-from discord import MessageType
 from discord.ext import commands as commands_ext, pages
 
 from database import client
 from utils.analytics import analytics
 from utils.blocklist import blocklist
+from utils.denylist import queue_send_message
 from utils.languages import get_translation_for_key_localized as trl, get_language
 from utils.logging_util import log_into_logs
 from utils.per_user_settings import get_per_user_setting
@@ -115,15 +115,16 @@ class ChatStreaks(discord.Cog):
         try:
             if streak == 0:
                 return
-        
+
             # Rewards: GuildID, RoleID, RequiredStreak, set by admins
-            rewards = client['ChatStreaksRewards'].find({'GuildID': str(guild_id), 'RequiredStreak': {'$gte': streak}}).to_list()
+            rewards = client['ChatStreaksRewards'].find(
+                {'GuildID': str(guild_id), 'RequiredStreak': {'$gte': streak}}).to_list()
 
             for i in rewards:
                 role = self.bot.get_guild(guild_id).get_role(int(i['RoleID']))
                 if role is None:
                     continue
-                
+
                 member = self.bot.get_guild(guild_id).get_member(int(member_id))
                 if member is None:
                     continue
@@ -131,12 +132,11 @@ class ChatStreaks(discord.Cog):
                 await member.add_roles(role)
 
         except discord.Forbidden:
-            
-            log_embed = discord.Embed(
-                title=trl(guild_id, member_id, "logging_missing_permissions"),
-                description=trl(guild_id, member_id, "logging_missing_permissions_streak_rewards"),
-                color=discord.Color.red()
-            )
+
+            log_embed = discord.Embed(title=trl(guild_id, member_id, "logging_missing_permissions"),
+                                      description=trl(guild_id, member_id,
+                                                      "logging_missing_permissions_streak_rewards"),
+                                      color=discord.Color.red())
 
             guild = self.bot.get_guild(guild_id)
             if guild is None:
@@ -162,16 +162,14 @@ class ChatStreaks(discord.Cog):
                 await member.remove_roles(role)
 
         except discord.Forbidden:
-            log_embed = discord.Embed(
-                title=trl(guild.id, member.id, "logging_missing_permissions"),
-                description=trl(guild.id, member.id, "logging_missing_permissions_streak_rewards"),
-                color=discord.Color.red()
-            )
+            log_embed = discord.Embed(title=trl(guild.id, member.id, "logging_missing_permissions"),
+                                      description=trl(guild.id, member.id,
+                                                      "logging_missing_permissions_streak_rewards"),
+                                      color=discord.Color.red())
 
             await log_into_logs(guild, log_embed)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-
 
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -200,11 +198,15 @@ class ChatStreaks(discord.Cog):
                     return  # Only send if we have permissions
                 if message.is_system():
                     return  # Don't reply to system messages
-                msg = await message.reply(
-                    trl(message.author.id, message.guild.id, "chat_streaks_expired").format(streak=old_streak))
-                if get_setting(msg.guild.id, 'chat_streaks_delete_sent_message_expired', '60') != '0':
-                    await msg.delete(
-                        delay=int(get_setting(msg.guild.id, 'chat_streaks_delete_sent_message_expired', '60')))
+
+                # This will either send the message immediately (no blocklist)
+                # or it will send it when the member goes to a non-blocklisted
+                # channel
+                await queue_send_message(message, content=trl(message.author.id, message.guild.id,
+                                                              "chat_streaks_expired").format(streak=old_streak),
+                                         delete_after=int(
+                                             get_setting(message.guild.id, 'chat_streaks_delete_sent_message_expired',
+                                                         '60')))
             if state == "updated":
                 await self.check_chat_streak_rewards(message.guild.id, message.author.id, new_streak)
 
@@ -214,11 +216,15 @@ class ChatStreaks(discord.Cog):
                     return  # Only send if we have permissions
                 if message.is_system():
                     return  # Don't reply to system messages
-                msg = await message.reply(
-                    trl(message.author.id, message.guild.id, "chat_streaks_updated").format(streak=new_streak))
-                if get_setting(msg.guild.id, 'chat_streaks_delete_sent_message_updated', '10') != '0':
-                    await msg.delete(
-                        delay=int(get_setting(msg.guild.id, 'chat_streaks_delete_sent_message_updated', '10')))
+
+                # This will either send the message immediately (no blocklist)
+                # or it will send it when the member goes to a non-blocklisted
+                # channel
+                await queue_send_message(message, content=trl(message.author.id, message.guild.id,
+                                                              "chat_streaks_updated").format(streak=new_streak),
+                                         delete_after=int(
+                                             get_setting(message.guild.id, 'chat_streaks_delete_sent_message_updated',
+                                                         '10')))
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -315,19 +321,9 @@ class ChatStreaks(discord.Cog):
     @blocklist()
     async def streaks_lb(self, ctx: discord.ApplicationContext):
         try:
-            rows = client['ChatStreaks'].aggregate([
-                {
-                    "$match": {"GuildID": str(ctx.guild.id)}
-                },
-                {
-                    "$addFields": {
-                        "MaxStreak": {"$max": {'$divide': [{"$subtract": ["$LastMessage", "$StartTime"]}, 86400000]}}
-                    }
-                },
-                {
-                    "$sort": {"MaxStreak": -1}
-                }
-            ]).to_list()
+            rows = client['ChatStreaks'].aggregate([{"$match": {"GuildID": str(ctx.guild.id)}}, {"$addFields": {
+                "MaxStreak": {"$max": {'$divide': [{"$subtract": ["$LastMessage", "$StartTime"]}, 86400000]}}}},
+                                                    {"$sort": {"MaxStreak": -1}}]).to_list()
 
             lb_pages = []
             lb_last = False
@@ -378,10 +374,12 @@ class ChatStreaks(discord.Cog):
     @discord.option(name='required_streak', description='The required streak to give the role', type=int)
     @analytics("streaks add_reward")
     @blocklist()
-    async def add_reward(self, ctx: discord.ApplicationContext, role: discord.Role, required_streak: int, remove_on_loss: bool = False):
+    async def add_reward(self, ctx: discord.ApplicationContext, role: discord.Role, required_streak: int,
+                         remove_on_loss: bool = False):
         try:
-            client['ChatStreaksRewards'].insert_one({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id),
-                                                     'RequiredStreak': required_streak, 'RemoveOnLoss': remove_on_loss})
+            client['ChatStreaksRewards'].insert_one(
+                {'GuildID': str(ctx.guild.id), 'RoleID': str(role.id), 'RequiredStreak': required_streak,
+                 'RemoveOnLoss': remove_on_loss})
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_streaks_add_reward_success"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -401,4 +399,3 @@ class ChatStreaks(discord.Cog):
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
-    

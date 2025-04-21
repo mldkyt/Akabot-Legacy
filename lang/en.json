@@ -655,5 +655,9 @@
     "counting_channel_already_added": "Channel is already a counting channel.",
     "counting_channel_not_found": "Channel not found or is not a counting channel.",
     "counting_channel_removed": "Channel was removed from counting channels.",
-    "counting_failed": "Aww, {user} ruined the count at {count}! Counter is now starting from 1"
+    "counting_failed": "Aww, {user} ruined the count at {count}! Counter is now starting from 1",
+    "denylist_added": "Added channel {mention} to the denylist. Messages from Akabot won't be sent here.",
+    "denylist_already_added": "The channel {mention} is already in the denylist.",
+    "denylist_removed": "Removed channel {mention} from the denylist.",
+    "denylist_already_removed": "Channel {mention} is already removed from the denylist."
 }

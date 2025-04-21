@@ -28,6 +28,7 @@ from database import client
 from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.config import get_key
+from utils.denylist import queue_send_message
 from utils.generic import validate_day
 from utils.languages import get_translation_for_key_localized as trl, get_language
 from utils.leveling import calc_multiplier, get_xp, add_xp, get_level_for_xp, get_xp_for_level, \
@@ -82,10 +83,12 @@ class Leveling(discord.Cog):
                 await update_roles_for_member(msg.guild, msg.author)
 
             if before_level != after_level and msg.channel.can_send() and not msg.is_system():
-                msg2 = await msg.channel.send(
-                    trl(msg.author.id, msg.guild.id, "leveling_level_up").format(mention=msg.author.mention,
-                                                                                 level=str(after_level)))
-                await msg2.delete(delay=5)
+                # This will either send the message immediately (no blocklist)
+                # or it will send it when the member goes to a non-blocklisted
+                # channel
+                await queue_send_message(msg,
+                    content=trl(msg.author.id, msg.guild.id, "leveling_level_up").format(mention=msg.author.mention,
+                                                                                 level=str(after_level)), delete_after=5)
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
