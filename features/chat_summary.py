@@ -315,7 +315,11 @@ class ChatSummary(discord.Cog):
             if res > int(get_key("Max_ChatSummary_Channels", "3")):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "limits_max_chatsummary_channels"))
                 return
-            
+
+            # Insert chat summary element if not found
+            init(ctx.message)
+
+            # Set enabled to true
             res = client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)},
                                                    {'$set': {'Enabled': True}})
             if res.modified_count == 0:
