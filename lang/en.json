@@ -659,5 +659,7 @@
     "denylist_added": "Added channel {mention} to the denylist. Messages from Akabot won't be sent here.",
     "denylist_already_added": "The channel {mention} is already in the denylist.",
     "denylist_removed": "Removed channel {mention} from the denylist.",
-    "denylist_already_removed": "Channel {mention} is already removed from the denylist."
+    "denylist_already_removed": "Channel {mention} is already removed from the denylist.",
+    "suggestions_thread_creating_enabled": "Enabled automatic creating of threads on suggestions.",
+    "suggestions_thread_creating_disabled": "Disabled automatic creating of threads on suggestions."
 }

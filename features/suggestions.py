@@ -261,13 +261,14 @@ class Suggestions(discord.Cog):
                     client['SuggestionMessagesV2'].update_one({'MessageID': str(message.id)},
                                                               {'$set': {'MessageID': str(new_msg.id)}})
 
-                    # Name of thread is determined from the suggestion text but shortened to fit
-                    thr_name = message.content[:28]
-                    if thr_name != message.content:
-                        thr_name = f'{thr_name}...'
+                    if get_setting(message.guild.id, "suggestions_thread_creating", "true") == "true":
+                        # Name of thread is determined from the suggestion text but shortened to fit
+                        thr_name = message.content[:28]
+                        if thr_name != message.content:
+                            thr_name = f'{thr_name}...'
 
-                    # Create thread for the message
-                    await new_msg.create_thread(name=thr_name)
+                        # Create thread for the message
+                        await new_msg.create_thread(name=thr_name)
 
                     await message.delete()
                 else:
@@ -317,6 +318,18 @@ class Suggestions(discord.Cog):
                 client['SuggestionChannels'].delete_one({'ChannelID': str(ctx.guild.id)})
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "suggestions_channel_removed", append_tip=True).format(
                     channel=channel.mention), ephemeral=True)
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+
+    @suggestions_group.command(name='set_thread_creating', description='Enable/disable creating of thread when suggesting (default: true)')
+    @discord.default_permissions(manage_guild=True)
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
+    async def cmd_set_thread_creating(self, ctx: discord.ApplicationContext, thread_creating: bool):
+        try:
+            set_setting(ctx.guild.id, "suggestions_thread_creating", 'true' if thread_creating else 'false')
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "suggestions_thread_creating_enabled" if thread_creating else "suggestions_thread_creating_disabled", append_tip=True), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
