@@ -23,7 +23,6 @@ from discord import Color, Interaction
 from discord.ui import View, Modal, InputText
 
 from utils.analytics import analytics
-from utils.blocklist import blocklist
 from utils.config import get_key
 
 
@@ -233,6 +232,8 @@ class Suggestions(discord.Cog):
         try:
             if message.author.bot:
                 return
+            if message.is_system():
+                return
 
             if client['SuggestionChannels'].count_documents({'ChannelID': str(message.channel.id)}) > 0:
                 if message.channel.permissions_for(message.guild.me).manage_messages and get_key('Message_Intent', "false") == "true":
@@ -259,6 +260,15 @@ class Suggestions(discord.Cog):
 
                     client['SuggestionMessagesV2'].update_one({'MessageID': str(message.id)},
                                                               {'$set': {'MessageID': str(new_msg.id)}})
+
+                    # Name of thread is determined from the suggestion text but shortened to fit
+                    thr_name = message.content[:28]
+                    if thr_name != message.content:
+                        thr_name = f'{thr_name}...'
+
+                    # Create thread for the message
+                    await new_msg.create_thread(name=thr_name)
+
                     await message.delete()
                 else:
                     # Version 1
