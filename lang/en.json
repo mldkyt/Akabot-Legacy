@@ -661,5 +661,16 @@
     "denylist_removed": "Removed channel {mention} from the denylist.",
     "denylist_already_removed": "Channel {mention} is already removed from the denylist.",
     "suggestions_thread_creating_enabled": "Enabled automatic creating of threads on suggestions.",
-    "suggestions_thread_creating_disabled": "Disabled automatic creating of threads on suggestions."
+    "suggestions_thread_creating_disabled": "Disabled automatic creating of threads on suggestions.",
+    "message_schedule_daily_added": "Added schedule of a daily message sent at 12 PM server time. ID is {id}",
+    "message_schedule_weekly_added": "Added schedule of a weekly message sent at 12 PM server time on {day_of_week}s. ID is {id}",
+    "message_schedule_monthly_added": "Added schedule of a monthly message sent at 12 PM server time on every {day} day. ID is {id}",
+    "message_schedule_yearly_added": "Added schedule of a yearly message sent at 12 PM server time on every {month}/{day}. ID is {id}",
+    "message_schedule_invalid_id": "The ID format is invalid.",
+    "message_schedule_updated_content": "Content was updated successfully!",
+    "message_schedule_not_found": "The scheduled message was not found.",
+    "message_schedule_list_title": "# Scheduled Messages in this server",
+    "message_schedule_list_row": "- Channel {channel} - ID `{id}` - Type {type} - sends on {date} - Message: {brief_content}",
+    "message_schedule_deleted": "The message schedule was deleted successfully.",
+    "message_schedule_max_reached": "The max amount of scheduled messages you can set per server was reached."
 }
