@@ -19,7 +19,7 @@ class Counting(discord.Cog):
             trl(0, message.guild.id, "counting_failed").format(user=message.author.mention, count=str(data["Count"])))
 
         client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id), },
-            {'$set': {'Count': 1, 'LastMember': '0'}})
+                                      {'$set': {'Count': 1, 'LastMember': '0'}})
 
     async def fetch_counting_channel(self, guild_id: str, channel_id: str):
         guild = await self.bot.fetch_guild(int(guild_id))
@@ -44,30 +44,53 @@ class Counting(discord.Cog):
 
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.author.bot:
-            return
 
-        data = client["Counting"].find_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)})
+        try:
+            if message.author.bot:
+                return
 
-        if data is None:
-            return
+            data = client["Counting"].find_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)})
 
-        if re.match("^[0-9]+$", message.content) is None:
-            await self.handle_fail(message, data)
-            return
+            if data is None:
+                return
 
-        if data["Count"] != int(message.content):
-            await self.handle_fail(message, data)
-            return
+            if re.match("^[0-9]+$", message.content) is None:
+                await self.handle_fail(message, data)
+                return
 
-        if data["LastMember"] == str(message.author.id):
-            await self.handle_fail(message, data)
-            return
+            if data["Count"] != int(message.content):
+                await self.handle_fail(message, data)
+                return
 
-        await message.add_reaction('✅')
+            if data["LastMember"] == str(message.author.id):
+                await self.handle_fail(message, data)
+                return
 
-        client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
-                                      {'$inc': {'Count': 1}, '$set': {'LastMember': str(message.author.id)}})
+            if message.guild.me.guild_permissions.manage_webhooks and \
+                    message.channel.permissions_for(message.guild.me).manage_webhooks:
+                # Use a webhook to create the "profile" of the user
+
+                # Get the first webhook or create one if neccessary
+                webhooks = await message.channel.webhooks()
+                if len(webhooks) > 0:
+                    webhook = webhooks[0]
+                else:
+                    webhook = await message.channel.create_webhook(name="Counting Webhook",
+                                                                   reason="Webhook for counting messages. Created automatically.")
+
+                # Send message using webhook
+                await webhook.send(content=message.content, username=message.author.display_name,
+                                   avatar_url=message.author.display_avatar.url)
+
+                # Delete the message
+                await message.delete()
+            else:
+                await message.add_reaction('✅')
+
+            client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
+                                          {'$inc': {'Count': 1}, '$set': {'LastMember': str(message.author.id)}})
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
 
     @discord.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
