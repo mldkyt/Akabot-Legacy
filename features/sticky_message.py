@@ -85,23 +85,25 @@ class StickyMessage(discord.Cog):
             existing_settings = client['StickyMessages'].find_one({
                 'ChannelID': str(channel.id)
             })
-            if existing_settings:
-                if 'NextSendDate' in existing_settings:
-                    if datetime.datetime.fromisoformat(existing_settings['NextSendDate']).replace(tzinfo=datetime.timezone.utc) > datetime.datetime.now(datetime.timezone.utc):
-                        logging.debug("Too soon to send another sticky message")
-                        client['StickyMessages'].update_one({
-                            'ChannelID': str(channel.id),
-                        }, {
-                            '$set': {
-                                'NewMessage': True
-                            }
-                        })
-                        return
+            if existing_settings is None:
+                return
 
-                if 'ExistingMessageID' in existing_settings:
-                    existing_message = await channel.fetch_message(int(existing_settings['ExistingMessageID']))
-                    if existing_message:
-                        await existing_message.delete()
+            if 'NextSendDate' in existing_settings:
+                if datetime.datetime.fromisoformat(existing_settings['NextSendDate']).replace(tzinfo=datetime.timezone.utc) > datetime.datetime.now(datetime.timezone.utc):
+                    logging.debug("Too soon to send another sticky message")
+                    client['StickyMessages'].update_one({
+                        'ChannelID': str(channel.id),
+                    }, {
+                        '$set': {
+                            'NewMessage': True
+                        }
+                    })
+                    return
+
+            if 'ExistingMessageID' in existing_settings:
+                existing_message = await channel.fetch_message(int(existing_settings['ExistingMessageID']))
+                if existing_message:
+                    await existing_message.delete()
 
             new_message = await channel.send(existing_settings['Message'])
 
