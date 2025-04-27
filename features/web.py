@@ -4,7 +4,6 @@ import string
 
 import discord
 import sentry_sdk
-
 from discord.ext import tasks
 
 from database import client
@@ -26,6 +25,7 @@ class WebUI(discord.Cog):
     @discord.Cog.listener()
     async def on_ready(self):
         self.handle_update_channels.start()
+        self.handle_update_emojis.start()
 
     @discord.slash_command(name="settings", description="NEW! Get a link to the web UI configuration!")
     @analytics("webui")
@@ -63,7 +63,8 @@ class WebUI(discord.Cog):
         print('Handle update channels')
         for i in self.bot.guilds:
             for j in i.channels:
-                if j.type not in [discord.ChannelType.voice, discord.ChannelType.stage_voice, discord.ChannelType.text, discord.ChannelType.news]:
+                if j.type not in [discord.ChannelType.voice, discord.ChannelType.stage_voice, discord.ChannelType.text,
+                                  discord.ChannelType.news]:
                     continue
 
                 print(f'Upserting #{j.name} from {i.name}')
@@ -74,5 +75,21 @@ class WebUI(discord.Cog):
                     '$set': {
                         'ChannelName': j.name,
                         'ChannelType': str(j.type),
+                    }
+                }, upsert=True)
+
+    @tasks.loop(minutes=5)
+    async def handle_update_emojis(self):
+        print('Handle update emojis')
+        for i in self.bot.guilds:
+            for j in i.emojis:
+                print(f'Upserting {j.name} from {i.name}')
+                client['WebUIEmojis'].update_one({
+                    'GuildID': str(i.id),
+                    'ID': str(j.id),
+                }, {
+                    '$set': {
+                        'Emoji': j.name,
+                        'URL': j.url
                     }
                 }, upsert=True)
