@@ -20,6 +20,7 @@ import re
 import discord
 import sentry_sdk
 
+from database import client
 from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
@@ -70,3 +71,4 @@ class ServerSettings(discord.Cog):
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+

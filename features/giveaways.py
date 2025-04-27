@@ -218,7 +218,7 @@ class Giveaways(discord.Cog):
                 channel_id = i['ChannelID']
                 channel = await self.bot.fetch_channel(channel_id)
 
-                time = datetime.datetime.now(datetime.UTC)
+                time = datetime.datetime.now(datetime.timezone.utc)
                 if channel is not None:
                     time = get_now_for_server(channel.guild.id)
                 # Check if the giveaway ended

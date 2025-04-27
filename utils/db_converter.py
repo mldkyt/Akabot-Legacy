@@ -53,7 +53,7 @@ def update():
     for i in cur.fetchall():
         client['ChatRevive'].update_one({'GuildID': str(i[0]), 'ChannelID': str(i[1])},
                                         {'$set': {'RoleID': i[2], 'RevivalTime': i[3],
-                                                  'LastMessage': datetime.datetime.now(datetime.UTC),
+                                                  'LastMessage': datetime.datetime.now(datetime.timezone.utc),
                                                   'Revived': True if str(i[5]) == '1' else False}}, upsert=True)
 
     # Chat Summary

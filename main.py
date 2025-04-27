@@ -34,10 +34,10 @@ load_dotenv()
 from features import welcoming, leveling, antiraid, chat_streaks, chat_revive, chat_summary, reaction_roles, \
     logging_mod, admin_cmds, giveaways, feedback_cmd, moderation, verification, roles_on_join, \
     heartbeat, automod_actions, power_outage_announcement, per_user_settings, server_settings, \
-    auto_react, auto_response, bot_help, announcement_channels, tickets, debug_commands, birthday_announcements, \
+    auto_react, auto_response, bot_help, tickets, debug_commands, birthday_announcements, \
     send_server_count, suggestions, temporary_vc, rp, word_scrambler, statistics_channels, \
     anonymous_quefessions, analytics, economy, message_time_capsule, sticky_message, counting, denylist, \
-    message_schedule
+    message_schedule, web
 from utils.config import get_key
 from utils.db_converter import update
 from utils.languages import get_translation_for_key_localized as trl
@@ -197,8 +197,6 @@ if get_key('Message_Intent', "false") == "true":
         bot.add_cog(auto_response.AutoResponse(bot))
 if get_key("Feature_HelpCommands", "true") == "true":
     bot.add_cog(bot_help.Help(bot))
-if get_key("Feature_AnnouncementChannels", "true") == "true":
-    bot.add_cog(announcement_channels.AnnouncementChannels(bot))
 if get_key("Feature_Tickets", "true") == "true":
     bot.add_cog(tickets.Tickets(bot))
 if get_key("Feature_DebugCommands", "false") == "true":
@@ -232,5 +230,6 @@ if get_key("Feature_Denylist", "true") == "true":
     bot.add_cog(denylist.ChannelDenylist(bot))
 if get_key("Feature_MessageSchedule", "true") == "true":
     bot.add_cog(message_schedule.MessageSchedule(bot))
+bot.add_cog(web.WebUI(bot))
 
 bot.run(get_key("Bot_Token"))
