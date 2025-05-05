@@ -24,6 +24,7 @@ from discord.ext import commands as commands_ext
 from discord.ext import tasks
 from discord.ext.pages import Paginator
 from discord.ui import button, View
+from pyexpat.errors import messages
 from sentry_sdk import capture_exception
 
 from database import client
@@ -36,39 +37,47 @@ from utils.settings import get_setting, set_setting
 from utils.tzutil import get_now_for_server
 
 
-def init(msg: discord.Message):
+def init(guild_id: str, channel_id: str):
     if client['ChatSummary'].count_documents(
-            {'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}) == 0:
+            {'GuildID': guild_id, 'ChannelID': channel_id}) == 0:
         client['ChatSummary'].insert_one({
-            'GuildID': str(msg.guild.id),
-            'ChannelID': str(msg.channel.id),
+            'GuildID': guild_id,
+            'ChannelID': channel_id,
             'Enabled': False,
             'MessageCount': 0,
             'Keywords': []
         })
         client['YearlyChatSummary'].insert_one({
-            'GuildID': str(msg.guild.id),
-            'ChannelID': str(msg.channel.id),
+            'GuildID': guild_id,
+            'ChannelID': channel_id,
             'MessageCount': 0,
             'Keywords': []
         })
         client['MonthlyChatSummary'].insert_one({
-            'GuildID': str(msg.guild.id),
-            'ChannelID': str(msg.channel.id),
+            'GuildID': guild_id,
+            'ChannelID': channel_id,
             'MessageCount': 0,
             'Keywords': []
         })
 
 
 def inc(msg: discord.Message):
+    data = client['ChatSummary'].find_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)})
+    if get_setting(msg.guild.id, "chatsummary_countconsencutive", "True") == "False":
+        if data is None:
+            raise ValueError("This value should not be null, but it was! ChatSummary")
+
+        if 'LastMessageAuthor' in data and data['LastMessageAuthor'] == str(msg.author.id):
+            return
+
     upd = {
-        '$inc': {f'Messages.{msg.author.id}': 1, 'MessageCount': 1}
+        '$inc': {f'Messages.{msg.author.id}': 1, 'MessageCount': 1},
+        '$set': {'LastMessageAuthor': str(msg.author.id)}
     }
 
     if get_key('Message_Intent', "false") == "true":
-        kwds = client['ChatSummary'].find_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)})
-        if kwds is not None and 'Keywords' in kwds:
-            kwds = kwds['Keywords']
+        if data is not None and 'Keywords' in data:
+            kwds = data['Keywords']
         else:
             kwds = []
 
@@ -208,7 +217,7 @@ class ChatSummary(discord.Cog):
             if message.author.bot:
                 return
 
-            init(message)
+            init(str(message.guild.id), str(message.channel.id))
 
             inc(message)
         except Exception as e:
@@ -227,7 +236,7 @@ class ChatSummary(discord.Cog):
             if countedits == "False":
                 return
 
-            init(new_message)
+            init(str(new_message.guild.id), str(new_message.channel.id))
             inc(new_message)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -317,7 +326,7 @@ class ChatSummary(discord.Cog):
                 return
 
             # Insert chat summary element if not found
-            init(ctx.message)
+            init(str(ctx.guild.id), str(ctx.channel.id))
 
             # Set enabled to true
             res = client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)},
@@ -480,6 +489,41 @@ class ChatSummary(discord.Cog):
             await ctx.respond(
                 trl(ctx.user.id, ctx.guild.id, "chat_summary_count_edits_on", append_tip=True) if countedits else
                 trl(ctx.user.id, ctx.guild.id, "chat_summary_count_edits_off", append_tip=True),
+                ephemeral=True)
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+
+    @chat_summary_subcommand.command(name="countconsencutive",
+                                     description="Enable or disable counting of mutliple messages sent by one member.")
+    @commands_ext.guild_only()
+    @discord.default_permissions(manage_guild=True)
+    @commands_ext.has_permissions(manage_guild=True)
+    @analytics("chatsummary countconsencutive")
+    @blocklist()
+    async def chatsummary_countconsencutive(self, ctx: discord.ApplicationContext, countconsencutive: bool):
+        try:
+            # Get old setting
+            old_count_counsencutive = get_setting(ctx.guild.id, "chatsummary_count_consencutive", "True")
+
+            # Save setting
+            set_setting(ctx.guild.id, "chatsummary_countconsencutive", str(countconsencutive))
+
+            # Create logging embed
+            logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "chat_summary_count_consencutive_log_title"))
+            logging_embed.add_field(name=trl(0, ctx.guild.id, "chat_summary_count_consencutive_log_count_consencutive"),
+                                    value="{old} -> {new}".format(old=("Yes" if old_count_counsencutive == "True" else "No"),
+                                                                  new=("Yes" if countconsencutive else "No")))
+            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"),
+                                    value=f"{ctx.user.mention}")
+
+            # Send
+            await log_into_logs(ctx.guild, logging_embed)
+
+            # Respond
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, "chat_summary_count_consencutive_on", append_tip=True) if countconsencutive else
+                trl(ctx.user.id, ctx.guild.id, "chat_summary_count_consencutive_off", append_tip=True),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
