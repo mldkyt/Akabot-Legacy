@@ -44,6 +44,27 @@ def is_a_moderator(ctx: discord.ApplicationContext):
     return False
 
 
+class UnbanView(discord.ui.View):
+    def __init__(self, guild: discord.Guild, user: discord.User, reason: str):
+        super().__init__(timeout=60)
+        self.user = user
+        self.guild = guild
+        self.reason = reason
+
+    @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
+    async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
+        await self.guild.unban(self.user, reason=self.reason)
+        await interaction.respond(
+            trl(interaction.user.id, self.guild.id, "moderation_unban_response", append_tip=True).format(
+                mention=self.user.mention, reason=self.reason), ephemeral=True)
+        self.stop()
+
+    @discord.ui.button(label="No", style=discord.ButtonStyle.danger)
+    async def no(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.stop()
+        await interaction.edit(view=self)
+
+
 class Moderation(discord.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
@@ -161,6 +182,42 @@ class Moderation(discord.Cog):
             log_embed.add_field(name="Banned Time", value=get_now_for_server(ctx.guild.id).isoformat())
 
             await log_into_logs(ctx.guild, log_embed)
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+
+    @discord.slash_command(name='unban', description='Unban a user from the server')
+    @commands_ext.guild_only()
+    @discord.default_permissions(ban_members=True)
+    @commands_ext.bot_has_permissions(ban_members=True)
+    @discord.option(name='userid', description='The user ID to unban', required=False)
+    @discord.option(name='username', description='The username to unban', required=False)
+    @analytics("unban")
+    @blocklist()
+    async def unban_user(self, ctx: discord.ApplicationContext, reason: str, userid: str = "", username: str = ""):
+        try:
+            if not is_a_moderator(ctx):
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_not_moderator"), ephemeral=True)
+                return
+
+            await ctx.defer(ephemeral=True)
+            # Fetch the banned member
+
+            async for member in ctx.guild.bans():
+                if userid != "" and userid == str(member.user.id):
+                    await ctx.respond(
+                        trl(ctx.user.id, ctx.guild.id, "moderation_unban_ask", append_tip=True).format(
+                            mention=member.user.mention, reason=reason), ephemeral=True, view=UnbanView(ctx.guild, member.user, reason))
+                    break
+
+                if username != "" and username in member.user.name:
+                    await ctx.respond(
+                        trl(ctx.user.id, ctx.guild.id, "moderation_unban_ask", append_tip=True).format(
+                            mention=member.user.mention, reason=reason), ephemeral=True, view=UnbanView(ctx.guild, member.user, reason))
+                    break
+            else:
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_unban_fail", append_tip=True),
+                                  ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
