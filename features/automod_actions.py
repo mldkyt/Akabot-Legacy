@@ -112,7 +112,7 @@ class AutomodActions(discord.Cog):
 
                         await payload.member.timeout_for(duration, reason=extra)
                     elif automod_action[3] == "ban":
-                        await payload.member.ban(reason=extra)
+                        await payload.member.ban(reason=extra, delete_message_seconds=604800)
                     elif automod_action[3] == "kick":
                         await payload.member.kick(reason=extra)
                     elif automod_action[3] == "DM":

@@ -168,7 +168,7 @@ class Moderation(discord.Cog):
                 sentry_sdk.capture_exception(e, scope="ban_user_dm")
                 pass
 
-            await ctx.guild.ban(user, reason=reason)
+            await ctx.guild.ban(user, reason=reason, delete_message_seconds=604800)
 
             await ctx.respond(
                 trl(ctx.user.id, ctx.guild.id, "moderation_ban_response", append_tip=True).format(mention=user.mention,

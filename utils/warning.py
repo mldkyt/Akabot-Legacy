@@ -75,7 +75,8 @@ async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -
                     sentry_sdk.capture_exception(e)
                     pass
                 await user.ban(
-                    reason=trl(user.id, guild.id, "warn_actions_auto_ban_reason").format(warnings=action['Warnings']))
+                    reason=trl(user.id, guild.id, "warn_actions_auto_ban_reason").format(warnings=action['Warnings']),
+                    delete_message_seconds=604800)
             elif action['Action'].startswith('timeout'):
                 time = action['Action'].split(' ')[1]
                 total_seconds = 0

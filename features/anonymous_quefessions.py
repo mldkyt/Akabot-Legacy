@@ -208,7 +208,7 @@ class AdminGuildBanConfirm(View):
 
             member = interaction.guild.get_member(int(data['MemberID']))
 
-            await member.ban(reason=trl(0, interaction.guild.id, 'quefessions_ban_reason'))
+            await member.ban(reason=trl(0, interaction.guild.id, 'quefessions_ban_reason'), delete_message_seconds=604800)
 
             self.stop()
             self.disable_all_items()
