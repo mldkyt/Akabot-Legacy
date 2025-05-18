@@ -49,6 +49,9 @@ class Counting(discord.Cog):
             if message.author.bot:
                 return
 
+            client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
+                                          {'$inc': {'Count': 1}})
+
             data = client["Counting"].find_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)})
 
             if data is None:
@@ -58,7 +61,7 @@ class Counting(discord.Cog):
                 await self.handle_fail(message, data)
                 return
 
-            if data["Count"] != int(message.content):
+            if (data["Count"] - 1) != int(message.content):
                 await self.handle_fail(message, data)
                 return
 
@@ -79,7 +82,7 @@ class Counting(discord.Cog):
                                                                    reason="Webhook for counting messages. Created automatically.")
 
                 # Send message using webhook
-                await webhook.send(content=message.content, username=message.author.display_name,
+                await webhook.send(content=str(data['Count'] - 1), username=message.author.display_name,
                                    avatar_url=message.author.display_avatar.url)
 
                 # Delete the message
@@ -88,7 +91,7 @@ class Counting(discord.Cog):
                 await message.add_reaction('✅')
 
             client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
-                                          {'$inc': {'Count': 1}, '$set': {'LastMember': str(message.author.id)}})
+                                          {'$set': {'LastMember': str(message.author.id)}})
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
