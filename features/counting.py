@@ -15,8 +15,9 @@ class Counting(discord.Cog):
 
     async def handle_fail(self, message: discord.Message, data: dict):
         await message.add_reaction("❌")
-        await message.reply(
-            trl(0, message.guild.id, "counting_failed").format(user=message.author.mention, count=str(data["Count"])))
+        if data['Count'] > 2:
+            await message.reply(
+                trl(0, message.guild.id, "counting_failed").format(user=message.author.mention, count=str(data["Count"] - 1)))
 
         client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id), },
                                       {'$set': {'Count': 1, 'LastMember': '0'}})
