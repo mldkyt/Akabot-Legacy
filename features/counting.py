@@ -58,11 +58,11 @@ class Counting(discord.Cog):
             if data is None:
                 return
 
-            if re.match("^[0-9]+$", message.content) is None:
+            if re.match("^[0-9]+$", message.content.strip()) is None:
                 await self.handle_fail(message, data)
                 return
 
-            if (data["Count"] - 1) != int(message.content):
+            if (data["Count"] - 1) != int(message.content.strip()):
                 await self.handle_fail(message, data)
                 return
 
