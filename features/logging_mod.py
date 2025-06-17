@@ -688,6 +688,9 @@ class Logging(discord.Cog):
     @discord.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         try:
+            if after.id == after.guild.me.id:
+                return  # avoid "Unknown Guild" when the self member gets banned
+
             moderator = None
             if after.guild.me.guild_permissions.view_audit_log:
                 async for entry in after.guild.audit_logs(limit=1, action=discord.AuditLogAction.member_update):
