@@ -884,6 +884,10 @@ class Logging(discord.Cog):
 
             embed = discord.Embed(title=trl(0, after.guild.id, "logging_scheduled_event_update"),
                                   color=discord.Color.blue())
+
+            if before is None or after is None:
+                return
+
             if before.name != after.name:
                 embed.add_field(name=trl(0, after.guild.id, "logging_name"), value=f'{before.name} -> {after.name}')
             if before.description != after.description:
