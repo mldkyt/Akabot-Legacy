@@ -553,6 +553,9 @@ class Logging(discord.Cog):
     @discord.Cog.listener()
     async def on_guild_role_delete(self, role: discord.Role):
         try:
+            if role.guild.self_role is not None and role.guild.self_role.id == role.id:
+                return  # avoid "Unknown Guild" when bot gets kicked
+
             moderator = None
             if role.guild.me.guild_permissions.view_audit_log:
                 async for entry in role.guild.audit_logs(limit=1, action=discord.AuditLogAction.role_delete):
