@@ -922,8 +922,9 @@ class Logging(discord.Cog):
             embed.add_field(name=trl(0, event.guild.id, "logging_location"), value=event.location.value)
             embed.add_field(name=trl(0, event.guild.id, "logging_start"),
                             value=event.start_time.strftime("%Y/%m/%d %H:%M:%S"))
-            embed.add_field(name=trl(0, event.guild.id, "logging_end"),
-                            value=event.end_time.strftime("%Y/%m/%d %H:%M:%S"))
+            if event.end_time is not None:
+                embed.add_field(name=trl(0, event.guild.id, "logging_end"),
+                                value=event.end_time.strftime("%Y/%m/%d %H:%M:%S"))
             embed.add_field(name=trl(0, event.guild.id, "logging_moderator"),
                             value=moderator.mention if moderator else trl(0, event.guild.id, "logging_unknown_member"))
             await log_into_logs(event.guild, embed)
