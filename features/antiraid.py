@@ -91,6 +91,10 @@ class AntiRaid(discord.Cog):
             if message.channel.type == discord.ChannelType.private:
                 return
 
+            if isinstance(message.author, discord.User):
+                # avoid "User" does not have attribute guild_permissions
+                return
+
             if message.author.guild_permissions.manage_messages:
                 return
 
