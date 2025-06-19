@@ -37,7 +37,7 @@ from features import welcoming, leveling, antiraid, chat_streaks, chat_revive, c
     auto_react, auto_response, bot_help, announcement_channels, tickets, debug_commands, birthday_announcements, \
     send_server_count, suggestions, temporary_vc, rp, word_scrambler, statistics_channels, \
     anonymous_quefessions, analytics, economy, message_time_capsule, sticky_message, counting, denylist, \
-    message_schedule
+    message_schedule, voice_channel_alerts
 from utils.config import get_key
 from utils.db_converter import update
 from utils.languages import get_translation_for_key_localized as trl
@@ -232,5 +232,7 @@ if get_key("Feature_Denylist", "true") == "true":
     bot.add_cog(denylist.ChannelDenylist(bot))
 if get_key("Feature_MessageSchedule", "true") == "true":
     bot.add_cog(message_schedule.MessageSchedule(bot))
+if get_key("Feature_VoiceChannelAlerts", "true") == "true":
+    bot.add_cog(voice_channel_alerts.VoiceChannelAlerts(bot))
 
 bot.run(get_key("Bot_Token"))
