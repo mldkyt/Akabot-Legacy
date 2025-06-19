@@ -53,7 +53,7 @@ class CreateModal(Modal):
                         name=interaction.user.display_name,
                         icon_url=interaction.user.display_avatar.url
                     ),
-                    timestamp=datetime.datetime.now(datetime.UTC)
+                    timestamp=datetime.datetime.now(datetime.timezone.utc)
                 ),
                 view=InfoButtonView()
             )
@@ -554,7 +554,7 @@ class AnonymousQuefessions(Cog):
                         name=message.author.display_name,
                         icon_url=message.author.display_avatar.url
                     ),
-                    timestamp=datetime.datetime.now(datetime.UTC)
+                    timestamp=datetime.datetime.now(datetime.timezone.utc)
                 ),
                 view=InfoButtonView()
             )
