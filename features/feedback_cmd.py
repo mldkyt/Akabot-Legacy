@@ -1,5 +1,5 @@
 #      Akabot is a general purpose bot with a ton of features.
-#      Copyright (C) 2023-2025 mldchan
+#      Copyright (C) 2023-2025 lunya.pet
 #
 #      This program is free software: you can redistribute it and/or modify
 #      it under the terms of the GNU Affero General Public License as
@@ -44,8 +44,8 @@ class PrivacyPolicyView(discord.ui.View):
     def __init__(self):
         super().__init__()
 
-        button1 = discord.ui.Button(label="mldchan.dev",
-                                    url="https://mldchan.dev/project/akabot/privacy/")
+        button1 = discord.ui.Button(label="lunya.pet",
+                                    url="https://lunya.pet/project/akabot/privacy/")
 
         self.add_item(button1)
 
