@@ -16,7 +16,10 @@
 #
 import datetime
 import logging
+from pyexpat.errors import messages
 
+import discord
+import sentry_sdk
 from discord import Cog, Bot, TextChannel, Interaction, Embed, EmbedAuthor, SlashCommandGroup, \
     ApplicationContext, Message, ButtonStyle
 from discord.ext.commands import has_guild_permissions, guild_only
@@ -28,6 +31,7 @@ from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
 from utils.settings import get_setting, set_setting
+from utils.warning import add_warning
 
 
 class CreateModal(Modal):
@@ -367,6 +371,40 @@ class AdminQuefessionBanDurationChoice(View):
 class InfoButtonView(View):
     def __init__(self):
         super().__init__(timeout=None)
+
+    @button(label="Reply Anonymously", custom_id="quefession_reply")
+    async def reply_anonymously(self, button: Button, interaction: discord.Interaction):
+        try:
+            if isinstance(interaction.message.channel, discord.Thread):
+                data = await interaction.message.reply(
+                    embed=discord.Embed(
+                        title="Anonymous Quefession Reply",
+                        description="Lorem ipsum"
+                    ),
+                    view=InfoButtonView()
+                )
+            else:
+                thread = interaction.message.thread or (await interaction.message.create_thread(name="Quefession Replies"))
+
+                data = await thread.send(
+                    embed=discord.Embed(
+                        title="Anonymous Quefession Reply",
+                        description="Lorem ipsum"
+                    ),
+                    view=InfoButtonView()
+                )
+
+            client['AnonymousQuefessions'].insert_one({
+                'GuildID': str(data.guild.id),
+                'ChannelID': str(data.channel.id),
+                'MessageID': str(data.id),
+                'AuthorID': str(data.author.id)
+            })
+
+            await interaction.respond("Reply sent!", ephemeral=True)
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            await interaction.respond("An error occured")
 
     @button(label='Admin View', custom_id='quefession_admin_view')
     async def admin_view(self, button: Button, interaction: Interaction):
