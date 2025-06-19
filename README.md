@@ -7,33 +7,33 @@ Akabot is a Discord bot that's made to be customizable and has a lot of features
 
 Individual modules have their documentation listed below.
 
-- [Anti Raid](https://wiki.mldchan.dev/index.php/Akabot#Anti_Raid) - The Antiraid module prevents way too many joins in a
+- Anti Raid - The Antiraid module prevents way too many joins in a
   short period of time.
-- [Automod Actions](https://wiki.mldchan.dev/index.php/Akabot#Automod_Actions) - Create automod actions for specific rules
+- Automod Actions - Create automod actions for specific rules
   executing specific actions and perform tasks when a member triggers an automod rule.
 - Anonymous Quefessions - Have people send you anonymous quefessions in your Discord server, with moderation abilities.
 - Auto React - React to messages automatically on a keyword.
 - Auto Response - Respond with a message automatically on a keyword.
-- [Chat Revive](https://wiki.mldchan.dev/index.php/Akabot#Chat_Revive) - The Chat Revive commands revives commands if
+- Chat Revive - The Chat Revive commands revives commands if
   there's no seen activity for a set period of time.
-- [Chat Streaks](https://wiki.mldchan.dev/index.php/Akabot#Chat_Streaks) - The Chat Streaks module counts how many days
+- Chat Streaks - The Chat Streaks module counts how many days
   you've sent a message consecutively in a Discord server.
-- [Chat Summary](https://wiki.mldchan.dev/index.php/Akabot#Chat_Summary) - The chat summary module counts messages and then
+- Chat Summary - The chat summary module counts messages and then
   sends a message at the end of the day.
-- [Economy](https://wiki.mldchan.dev/index.php/Akabot#Economy_Module) - This module introduces an economy system to Akabot, allowing users to earn, spend, and manage virtual currency within their Discord server. 
-- [Giveaways](https://wiki.mldchan.dev/index.php/Akabot#Giveaways) - The Giveaways module allows server administrators to
+- Economy - This module introduces an economy system to Akabot, allowing users to earn, spend, and manage virtual currency within their Discord server. 
+- Giveaways - The Giveaways module allows server administrators to
   create and manage giveaways directly within their Discord server.
 - Heartbeat - Configure the bot to send messages to another server on intervals to let the server know it's alive and
   online.
 - Help - Get help with the bot directly from the bot! Will direct you to a wiki anyone can contribute to.
-- [Leveling](https://wiki.mldchan.dev/index.php/Akabot#Leveling) - The Leveling module allows server administrators to
+- Leveling - The Leveling module allows server administrators to
   implement and manage a leveling system within their Discord server.
-- [Logging](https://github.com/mldchan/Akabot/wiki/Logging) - This module adds logging for a Discord server. It sends
+- Logging - This module adds logging for a Discord server. It sends
   events into a logging channel.
-- [Message Time Capsule](https://wiki.mldchan.dev/index.php/Akabot#Message_Scheduler) - This module allows users to schedule messages, reminders, and collection messages in Discord servers and DMs. 
-- [Moderation](https://wiki.mldchan.dev/index.php/Akabot#Moderation) - This module provides commands to perform moderation
+- Message Time Capsule - This module allows users to schedule messages, reminders, and collection messages in Discord servers and DMs. 
+- Moderation - This module provides commands to perform moderation
   actions such as kicking, banning, timing out, and removing timeouts for users in a Discord server.
-- [Reaction Roles](https://wiki.mldchan.dev/index.php/Akabot#Reaction_Roles) - This module allows users to assign or remove
+- Reaction Roles - This module allows users to assign or remove
   roles by reacting to messages containing specific buttons. It provides commands to create different types of reaction
   role setups, such as normal, add-only, remove-only, and single-choice reaction roles.
 - Roles on Join - Give members roles immediately on join.
@@ -47,12 +47,12 @@ Individual modules have their documentation listed below.
   create them for you.
 - Tickets - Handle tickets in your Discord server. Let members open tickets, get help and close tickets. Comes with an
   auto close feature and archive feature.
-- [Verification](https://wiki.mldchan.dev/index.php/Akabot#Verification) - This module adds user verification in Discord
+- Verification - This module adds user verification in Discord
   servers. It prevents bots from accessing your Discord server.
 - Welcome and Goodbye messages - Welcome new members, and say goodbye to the ones who leave.
-- [Word Scramble](https://github.com/mldchan/Akabot/wiki/Word-Scramble) - Scrambles random English words or words from
+- Word Scramble - Scrambles random English words or words from
   previous messagse in chat and lets your members unscramble them for extra rewards in the leveling system.
-- [Announcement Channels](https://wiki.mldchan.dev/index.php/Akabot#Announcement_Channels) 
+- Announcement Channels
 
 ## Available Public Instances
 
