@@ -16,7 +16,6 @@
 #
 import datetime
 import logging
-from pyexpat.errors import messages
 
 import discord
 import sentry_sdk
@@ -31,7 +30,6 @@ from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
 from utils.settings import get_setting, set_setting
-from utils.warning import add_warning
 
 
 class CreateModal(Modal):
@@ -59,7 +57,7 @@ class CreateModal(Modal):
                     ),
                     timestamp=datetime.datetime.now(datetime.timezone.utc)
                 ),
-                view=InfoButtonView()
+                view=InfoButtonView(interaction.guild_id, interaction.channel_id)
             )
 
             client['AnonymousQuefessions'].insert_one({
@@ -369,11 +367,26 @@ class AdminQuefessionBanDurationChoice(View):
 
 
 class InfoButtonView(View):
-    def __init__(self):
+    def __init__(self, guild_id: int, channel_id: int):
         super().__init__(timeout=None)
 
-    @button(label="Reply Anonymously", custom_id="quefession_reply")
-    async def reply_anonymously(self, button: Button, interaction: discord.Interaction):
+        if guild_id == 0 or channel_id == 0 or get_setting(guild_id, f"quefessions_replies_{channel_id}", False):
+            btn = discord.ui.Button(label="Reply Anonymously", custom_id="anonymous_reply")
+            btn.callback = self.reply_anonymously
+            self.add_item(
+                btn
+            )
+
+        btn_admin = discord.ui.Button(label='Admin View', custom_id='quefession_admin_view')
+        btn_admin.callback = self.admin_view
+        self.add_item(btn_admin)
+
+        btn_report = discord.ui.Button(label='Report Quefession...', custom_id='quefession_report_view')
+        btn_report.callback = self.report_quefession
+        self.add_item(btn_report)
+
+
+    async def reply_anonymously(self, interaction: discord.Interaction):
         try:
             if isinstance(interaction.message.channel, discord.Thread):
                 data = await interaction.message.reply(
@@ -381,7 +394,7 @@ class InfoButtonView(View):
                         title="Anonymous Quefession Reply",
                         description="Lorem ipsum"
                     ),
-                    view=InfoButtonView()
+                    view=InfoButtonView(interaction.guild_id, interaction.channel_id)
                 )
             else:
                 thread = interaction.message.thread or (await interaction.message.create_thread(name="Quefession Replies"))
@@ -391,7 +404,7 @@ class InfoButtonView(View):
                         title="Anonymous Quefession Reply",
                         description="Lorem ipsum"
                     ),
-                    view=InfoButtonView()
+                    view=InfoButtonView(interaction.guild_id, interaction.channel_id)
                 )
 
             client['AnonymousQuefessions'].insert_one({
@@ -406,7 +419,6 @@ class InfoButtonView(View):
             sentry_sdk.capture_exception(e)
             await interaction.respond("An error occured")
 
-    @button(label='Admin View', custom_id='quefession_admin_view')
     async def admin_view(self, button: Button, interaction: Interaction):
         if not interaction.user.guild_permissions.manage_channels and not interaction.user.guild_permissions.manage_guild and \
                 not interaction.user.guild_permissions.administrator:
@@ -440,7 +452,6 @@ class InfoButtonView(View):
 
         await interaction.respond(fmt, ephemeral=True, view=AdminView(message=message))
 
-    @button(label='Report Quefession...', custom_id='quefession_report_view')
     async def report_quefession(self, button: Button, interaction: Interaction):
         try:
             data = client['AnonymousQuefessions'].find_one(
@@ -533,6 +544,20 @@ class AnonymousQuefessions(Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @anonymous_quefessions_cmd.command()
+    @guild_only()
+    @has_guild_permissions(manage_guild=True)
+    async def set_quefessions_reply(self, ctx: ApplicationContext, enabled: bool):
+        try:
+            set_setting(ctx.guild.id, f'quefessions_replies_{ctx.channel.id}', enabled)
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, 'quefessions_replies_enabled') if enabled else
+                trl(ctx.user.id, ctx.guild.id, 'quefessions_replies_disabled'),
+                ephemeral=True)
+        except Exception as e:
+            capture_exception(e)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+
+    @anonymous_quefessions_cmd.command()
     @has_guild_permissions(manage_guild=True)
     @guild_only()
     async def create_quefessions_sending_msg(self, ctx: ApplicationContext):
@@ -559,7 +584,7 @@ class AnonymousQuefessions(Cog):
     async def on_message(self, message: Message):
         if get_key('Message_Intent', "false") == "false":
             return
-        
+
         try:
             if message.author.bot:
                 return
@@ -594,7 +619,7 @@ class AnonymousQuefessions(Cog):
                     ),
                     timestamp=datetime.datetime.now(datetime.timezone.utc)
                 ),
-                view=InfoButtonView()
+                view=InfoButtonView(message.guild.id, message.channel.id)
             )
 
             client['AnonymousQuefessions'].insert_one({
