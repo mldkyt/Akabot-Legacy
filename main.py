@@ -28,6 +28,7 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.pymongo import PyMongoIntegration
 
 import utils.blocklist
+from utils import module_toggling
 
 load_dotenv()
 
@@ -37,7 +38,7 @@ from features import welcoming, leveling, antiraid, chat_streaks, chat_revive, c
     auto_react, auto_response, bot_help, announcement_channels, tickets, debug_commands, birthday_announcements, \
     send_server_count, suggestions, temporary_vc, rp, word_scrambler, statistics_channels, \
     anonymous_quefessions, analytics, economy, message_time_capsule, sticky_message, counting, denylist, \
-    message_schedule, voice_channel_alerts
+    message_schedule, voice_channel_alerts, module_toggling_mod
 from utils.config import get_key
 from utils.db_converter import update
 from utils.languages import get_translation_for_key_localized as trl
@@ -142,6 +143,16 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
         await ctx.respond(embed=emb, ephemeral=True)
         return
 
+    if isinstance(error, module_toggling.ModuleNotEnabled):
+        emb = discord.Embed(
+            title="Disabled",
+            description=str(error),
+            color=discord.Color.red()
+        )
+
+        await ctx.respond(embed=emb, ephemeral=True)
+        return
+
     sentry_sdk.capture_exception(error)
     try:
         # respond
@@ -152,87 +163,49 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
     raise error
 
 
-if get_key("Feature_WelcomeGoodbye", "true") == "true":
-    bot.add_cog(welcoming.Welcoming(bot))
-if get_key("Feature_Leveling", "true") == "true":
-    bot.add_cog(leveling.Leveling(bot))
-if get_key("Feature_AntiRaid", "true") == "true":
-    bot.add_cog(antiraid.AntiRaid(bot))
-if get_key("Feature_ChatStreaks", "true") == "true":
-    bot.add_cog(chat_streaks.ChatStreaks(bot))
-if get_key("Feature_ChatRevive", "true") == "true":
-    bot.add_cog(chat_revive.ChatRevive(bot))
-if get_key("Feature_ChatSummary", "true") == "true":
-    bot.add_cog(chat_summary.ChatSummary(bot))
-if get_key("Feature_ReactionRoles", "true") == "true":
-    bot.add_cog(reaction_roles.ReactionRoles(bot))
-if get_key("Feature_Logging", "true") == "true":
-    bot.add_cog(logging_mod.Logging(bot))
-if get_key("Feature_AdminCommands", "true") == "true":
-    bot.add_cog(admin_cmds.AdminCommands(bot))
-if get_key("Feature_Giveaways", "true") == "true":
-    bot.add_cog(giveaways.Giveaways(bot))
-if get_key("Feature_FeedbackCmd", "true") == "true":
-    bot.add_cog(feedback_cmd.SupportCmd(bot))
-if get_key("Feature_Moderation", "true") == "true":
-    bot.add_cog(moderation.Moderation(bot))
-if get_key("Feature_Verification", "true") == "true":
-    bot.add_cog(verification.Verification(bot))
-if get_key("Feature_RolesOnJoin", "true") == "true":
-    bot.add_cog(roles_on_join.RolesOnJoin(bot))
-if get_key("Feature_Heartbeat", "true") == "true":
-    bot.add_cog(heartbeat.Heartbeat())
-if get_key("Feature_AutomodActions", "true") == "true":
-    bot.add_cog(automod_actions.AutomodActions(bot))
-if get_key("PowerOutageAnnouncements_Enabled", "false") == "true":
-    bot.add_cog(power_outage_announcement.PowerOutageAnnouncement(bot))
-if get_key("PerUserSettings_Enabled", "true") == "true":
-    bot.add_cog(per_user_settings.PerUserSettings(bot))
-if get_key("Feature_ServerSettings", "true") == "true":
-    bot.add_cog(server_settings.ServerSettings())
-if get_key('Message_Intent', "false") == "true":
-    if get_key("Feature_AutoReact", "true") == "true":
-        bot.add_cog(auto_react.AutoReact(bot))
-    if get_key("Feature_AutoResponse", "true") == "true":
-        bot.add_cog(auto_response.AutoResponse(bot))
-if get_key("Feature_HelpCommands", "true") == "true":
-    bot.add_cog(bot_help.Help(bot))
-if get_key("Feature_AnnouncementChannels", "true") == "true":
-    bot.add_cog(announcement_channels.AnnouncementChannels(bot))
-if get_key("Feature_Tickets", "true") == "true":
-    bot.add_cog(tickets.Tickets(bot))
-if get_key("Feature_DebugCommands", "false") == "true":
-    bot.add_cog(debug_commands.DebugCommands(bot))
-if get_key("Feature_BirthdayAnnouncements", "true") == "true":
-    bot.add_cog(birthday_announcements.BirthdayAnnouncements(bot))
+bot.add_cog(welcoming.Welcoming(bot))
+bot.add_cog(leveling.Leveling(bot))
+bot.add_cog(antiraid.AntiRaid(bot))
+bot.add_cog(chat_streaks.ChatStreaks(bot))
+bot.add_cog(chat_revive.ChatRevive(bot))
+bot.add_cog(chat_summary.ChatSummary(bot))
+bot.add_cog(reaction_roles.ReactionRoles(bot))
+bot.add_cog(logging_mod.Logging(bot))
+bot.add_cog(admin_cmds.AdminCommands(bot))
+bot.add_cog(giveaways.Giveaways(bot))
+bot.add_cog(feedback_cmd.SupportCmd(bot))
+bot.add_cog(moderation.Moderation(bot))
+bot.add_cog(verification.Verification(bot))
+bot.add_cog(roles_on_join.RolesOnJoin(bot))
+bot.add_cog(heartbeat.Heartbeat())
+bot.add_cog(automod_actions.AutomodActions(bot))
+bot.add_cog(power_outage_announcement.PowerOutageAnnouncement(bot))
+bot.add_cog(per_user_settings.PerUserSettings(bot))
+bot.add_cog(server_settings.ServerSettings())
+bot.add_cog(bot_help.Help(bot))
+bot.add_cog(announcement_channels.AnnouncementChannels(bot))
+bot.add_cog(tickets.Tickets(bot))
+bot.add_cog(debug_commands.DebugCommands(bot))
+bot.add_cog(birthday_announcements.BirthdayAnnouncements(bot))
 bot.add_cog(send_server_count.SendServerCount(bot))
-if get_key("Feature_SuggestionsEnabled", "true") == "true":
-    bot.add_cog(suggestions.Suggestions(bot))
-if get_key('Feature_TemporaryVC', 'true') == 'true':
-    bot.add_cog(temporary_vc.TemporaryVC(bot))
-if get_key("Feature_Roleplay", "true") == "true":
-    bot.add_cog(rp.RoleplayCommands(bot))
-if get_key('Message_Intent', "false") == "true":
-    if get_key("Feature_WordScramble", "true") == "true":
-        bot.add_cog(word_scrambler.WordScrambler(bot))
-if get_key("Feature_StatisticChannels", "true") == "true":
-    bot.add_cog(statistics_channels.StatisticChannels(bot))
-if get_key("Feature_AnonymousQuefessions", "true") == "true":
-    bot.add_cog(anonymous_quefessions.AnonymousQuefessions(bot))
+bot.add_cog(suggestions.Suggestions(bot))
+bot.add_cog(temporary_vc.TemporaryVC(bot))
+bot.add_cog(rp.RoleplayCommands(bot))
+bot.add_cog(statistics_channels.StatisticChannels(bot))
+bot.add_cog(anonymous_quefessions.AnonymousQuefessions(bot))
 bot.add_cog(analytics.Analytics(bot))
-if get_key("Feature_Economy", "true") == "true":
-    bot.add_cog(economy.Economy(bot))
-if get_key("Feature_MessageTimeCapsule", "true") == "true":
-    bot.add_cog(message_time_capsule.MessageTimeCapsule(bot))
-if get_key("Feature_StickyMessage", "true") == "true":
-    bot.add_cog(sticky_message.StickyMessage(bot))
-if get_key('Message_Intent', "false") == "true" and get_key("Feature_Counting", "true") == "true":
-    bot.add_cog(counting.Counting(bot))
-if get_key("Feature_Denylist", "true") == "true":
-    bot.add_cog(denylist.ChannelDenylist(bot))
-if get_key("Feature_MessageSchedule", "true") == "true":
-    bot.add_cog(message_schedule.MessageSchedule(bot))
-if get_key("Feature_VoiceChannelAlerts", "true") == "true":
-    bot.add_cog(voice_channel_alerts.VoiceChannelAlerts(bot))
+bot.add_cog(economy.Economy(bot))
+bot.add_cog(message_time_capsule.MessageTimeCapsule(bot))
+bot.add_cog(sticky_message.StickyMessage(bot))
+bot.add_cog(counting.Counting(bot))
+bot.add_cog(denylist.ChannelDenylist(bot))
+bot.add_cog(message_schedule.MessageSchedule(bot))
+bot.add_cog(voice_channel_alerts.VoiceChannelAlerts(bot))
+bot.add_cog(module_toggling_mod.ModuleToggling(bot))
+
+if get_key('Message_Intent', "false") == "true":
+    bot.add_cog(auto_react.AutoReact(bot))
+    bot.add_cog(auto_response.AutoResponse(bot))
+    bot.add_cog(word_scrambler.WordScrambler(bot))
 
 bot.run(get_key("Bot_Token"))
