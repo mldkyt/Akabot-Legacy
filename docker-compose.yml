@@ -3,7 +3,7 @@ services:
   mongodb:
     image: mongo:latest
     environment:
-      MONGO_INITDB_ROOT_USERNAME: mldchan
+      MONGO_INITDB_ROOT_USERNAME: lunya
       MONGO_INITDB_ROOT_PASSWORD: changeme
     networks:
       - akabot
@@ -14,9 +14,9 @@ services:
     ports:
       - "8081:8081"
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: mldchan
+      ME_CONFIG_MONGODB_ADMINUSERNAME: lunya
       ME_CONFIG_MONGODB_ADMINPASSWORD: changeme
-      ME_CONFIG_MONGODB_URL: mongodb://mldchan:changeme@mongodb:27017/
+      ME_CONFIG_MONGODB_URL: mongodb://lunya:changeme@mongodb:27017/
       ME_CONFIG_BASICAUTH: false
     networks:
       - akabot

@@ -92,7 +92,7 @@ async def on_ready():
         bot.add_view(suggestions.V2SuggestionView())
     else:
         bot.add_view(anonymous_quefessions.CreateButtonView())
-    bot.add_view(anonymous_quefessions.InfoButtonView())
+    bot.add_view(anonymous_quefessions.InfoButtonView(0, 0))
     bot.add_view(chat_summary.OpenPaginatorView())
     bot.add_view(message_time_capsule.AddYoursView())
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f"v{BOT_VERSION}"))
