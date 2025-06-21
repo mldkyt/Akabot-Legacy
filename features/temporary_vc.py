@@ -40,7 +40,7 @@ class V2NameChangeModal(Modal):
     async def callback(self, interaction: Interaction):
         try:
             if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
-                await interaction.respond("The moduel temporary_vc is disabled", ephemeral=True)
+                await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
                 return
 
             new_name = self.new_name_field.value
@@ -64,7 +64,7 @@ class V2MaxUsersChangeModal(Modal):
     async def callback(self, interaction: Interaction):
         try:
             if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
-                await interaction.respond("The moduel temporary_vc is disabled", ephemeral=True)
+                await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
                 return
 
             if not self.new_max_users_field.value.isdigit():
@@ -100,7 +100,7 @@ class V2BitrateChangeModal(Modal):
     async def callback(self, interaction: Interaction):
         try:
             if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
-                await interaction.respond("The moduel temporary_vc is disabled", ephemeral=True)
+                await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
                 return
 
             if not self.new_bitrate_field.value.isdigit():
@@ -132,7 +132,7 @@ class V2TemporaryVCMenu(View):
     async def change_name(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
             if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
-                await interaction.respond("The moduel temporary_vc is disabled", ephemeral=True)
+                await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
                 return
 
             data = client['TemporaryVC'].find_one(
@@ -155,7 +155,7 @@ class V2TemporaryVCMenu(View):
     async def change_max_users(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
             if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
-                await interaction.respond("The moduel temporary_vc is disabled", ephemeral=True)
+                await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
                 return
 
             data = client['TemporaryVC'].find_one(
@@ -178,7 +178,7 @@ class V2TemporaryVCMenu(View):
     async def change_bitrate(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
             if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
-                await interaction.respond("The moduel temporary_vc is disabled", ephemeral=True)
+                await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
                 return
 
             data = client['TemporaryVC'].find_one(
