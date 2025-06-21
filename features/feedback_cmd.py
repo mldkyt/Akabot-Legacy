@@ -406,44 +406,6 @@ This is due to recent raids and attacks on the server due to the developer leavi
 ### With this noted, click the button below to join the server:
         """, view=DiscordJoinView(), ephemeral=True)
 
-    @discord.slash_command(name="changelog", description="Get the bot's changelog")
-    @discord.option(name="version", description="The version to get the changelog for",
-                    choices=["4.0", "3.4", "3.3", "3.2", "3.1"])
-    @analytics("changelog")
-    @blocklist()
-    async def changelog(self, ctx: discord.ApplicationContext, version: str = get_key("Bot_Version", "3.3")):
-        try:
-            if version == "4.0":
-                with open("LATEST.md", "r") as f:
-                    changelog = f.read()
-
-                await ctx.respond(changelog, ephemeral=True)
-            elif version == "3.4":
-                with open("LATEST_3.4.md", "r") as f:
-                    changelog = f.read()
-
-                await ctx.respond(changelog, ephemeral=True)
-            elif version == "3.3":
-                with open("LATEST_3.3.md", "r") as f:
-                    changelog = f.read()
-
-                await ctx.respond(changelog, ephemeral=True)
-            elif version == "3.2":
-                with open("LATEST_3.2.md", "r") as f:
-                    changelog = f.read()
-
-                await ctx.respond(changelog, ephemeral=True)
-            elif version == "3.1":
-                with open("LATEST_3.1.md", "r") as f:
-                    changelog = f.read()
-
-                await ctx.respond(changelog, ephemeral=True)
-            else:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "feedback_changelog_invalid_version"), ephemeral=True)
-        except Exception as e:
-            sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
-
     @discord.slash_command(name='mastodon', description='Link to the Akabot\'s Mastodon profile!')
     @analytics("mastodon")
     @blocklist()
