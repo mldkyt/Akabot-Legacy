@@ -2,6 +2,8 @@ import discord
 import sentry_sdk
 
 from database import client
+from utils.module_toggling import is_module_enabled
+from utils.settings import get_setting
 
 
 class VoiceChannelAlerts(discord.Cog):
@@ -12,6 +14,7 @@ class VoiceChannelAlerts(discord.Cog):
     command_grp = discord.SlashCommandGroup(name="voice_channel_alerts", description="Subscribe to voice channel alerts")
 
     @command_grp.command(name="all_notifications", description="Subscribe to ALL voice channel join notifications")
+    @is_module_enabled("voice_channel_alerts")
     async def set_all_notifications(self, ctx: discord.ApplicationContext, subscribed: bool):
         try:
             current_subscribed = client['vc_notifs_all'].count_documents({'Member': str(ctx.user.id)}) == 1
@@ -41,6 +44,7 @@ class VoiceChannelAlerts(discord.Cog):
             await ctx.respond("Something went wrong! :3", ephemeral=True)
 
     @command_grp.command(name="sub_user", description="Subscribe to notifications from a specific user")
+    @is_module_enabled("voice_channel_alerts")
     async def sub_user(self, ctx: discord.ApplicationContext, user: discord.User):
         try:
             if client['vc_notifs_user'].count_documents({
@@ -61,6 +65,7 @@ class VoiceChannelAlerts(discord.Cog):
             await ctx.respond("Something went wrong! :3", ephemeral=True)
 
     @command_grp.command(name="unsub_user", description="Unsubscribe from notifications from a specific user")
+    @is_module_enabled("voice_channel_alerts")
     async def unsub_user(self, ctx: discord.ApplicationContext, user: discord.User):
         try:
             if client['vc_notifs_user'].count_documents({
@@ -81,6 +86,7 @@ class VoiceChannelAlerts(discord.Cog):
             await ctx.respond("Something went wrong! :3", ephemeral=True)
 
     @command_grp.command(name="sub_channel", description="Subscribe to notifications from a specific channel")
+    @is_module_enabled("voice_channel_alerts")
     async def sub_channel(self, ctx: discord.ApplicationContext, channel: discord.VoiceChannel):
         try:
             if client['vc_notifs_channel'].count_documents({
@@ -101,6 +107,7 @@ class VoiceChannelAlerts(discord.Cog):
             await ctx.respond("Something went wrong! :3", ephemeral=True)
 
     @command_grp.command(name="unsub_channel", description="Unsubscribe from notifications from a specific channel")
+    @is_module_enabled("voice_channel_alerts")
     async def unsub_channel(self, ctx: discord.ApplicationContext, channel: discord.VoiceChannel):
         try:
             if client['vc_notifs_channel'].count_documents({
@@ -124,7 +131,8 @@ class VoiceChannelAlerts(discord.Cog):
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
         try:
             if before.channel is None and after.channel is not None:
-                pass
+                if get_setting(after.channel.guild.id, "module_voice_channel_alerts_enabled", True):
+                    return
 
                 sent_to = []
 

@@ -36,6 +36,7 @@ from utils.leveling import calc_multiplier, get_xp, add_xp, get_level_for_xp, ge
     mult_change_start, mult_change_end, mult_del, mult_list, \
     mult_get, update_roles_for_member
 from utils.logging_util import log_into_logs
+from utils.module_toggling import is_module_enabled
 from utils.per_user_settings import get_per_user_setting, set_per_user_setting
 from utils.settings import get_setting, set_setting
 from utils.tips import append_tip_to_message
@@ -53,6 +54,12 @@ class Leveling(discord.Cog):
             if msg.author.bot:
                 return
             if msg.is_system():
+                return
+
+            if not msg.guild:
+                return
+
+            if not get_setting(msg.guild.id, "module_leveling_enabled", True):
                 return
 
             if get_key('Message_Intent', "false") == "true":
@@ -93,6 +100,7 @@ class Leveling(discord.Cog):
             sentry_sdk.capture_exception(e)
 
     @discord.slash_command(name='level', description='Get the level of a user')
+    @is_module_enabled("leveling")
     @commands_ext.guild_only()
     @analytics("level")
     @blocklist()
@@ -166,6 +174,7 @@ class Leveling(discord.Cog):
     leveling_subcommand = discord.SlashCommandGroup(name='leveling', description='Leveling settings')
 
     @leveling_subcommand.command(name="list", description="List the leveling settings")
+    @is_module_enabled("leveling")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
@@ -200,6 +209,7 @@ class Leveling(discord.Cog):
 
     @leveling_subcommand.command(name='set_per_message',
                                  description='Set the XP per message, and an additional XP booster')
+    @is_module_enabled("leveling")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
@@ -234,6 +244,7 @@ class Leveling(discord.Cog):
             ephemeral=True)
 
     @leveling_subcommand.command(name='multiplier', description='Set the leveling multiplier')
+    @is_module_enabled("leveling")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
@@ -265,6 +276,7 @@ class Leveling(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='add_multiplier', description='Add to the leveling multiplier')
+    @is_module_enabled("leveling")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
@@ -327,6 +339,7 @@ class Leveling(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='change_multiplier_name', description='Change the name of a multiplier')
+    @is_module_enabled("leveling")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
@@ -372,6 +385,7 @@ class Leveling(discord.Cog):
 
     @leveling_subcommand.command(name='change_multiplier_multiplier',
                                  description='Change the multiplier of a multiplier')
+    @is_module_enabled("leveling")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
@@ -414,6 +428,7 @@ class Leveling(discord.Cog):
 
     @leveling_subcommand.command(name='change_multiplier_start_date',
                                  description='Change the start date of a multiplier')
+    @is_module_enabled("leveling")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
@@ -468,6 +483,7 @@ class Leveling(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='change_multiplier_end_date', description='Change the end date of a multiplier')
+    @is_module_enabled("leveling")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
@@ -520,6 +536,7 @@ class Leveling(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='remove_multiplier', description='Remove a multiplier')
+    @is_module_enabled("leveling")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
@@ -558,6 +575,7 @@ class Leveling(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='get_multiplier', description='Get the leveling multiplier')
+    @is_module_enabled("leveling")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
@@ -574,6 +592,7 @@ class Leveling(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='set_xp_per_level', description='Set the XP per level')
+    @is_module_enabled("leveling")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
@@ -602,6 +621,7 @@ class Leveling(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='set_reward', description='Set a role for a level')
+    @is_module_enabled("leveling")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
@@ -644,6 +664,7 @@ class Leveling(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='remove_reward', description='Remove a role for a level')
+    @is_module_enabled("leveling")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
@@ -681,6 +702,7 @@ class Leveling(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name="set_icon", description="Set leveling icon")
+    @is_module_enabled("leveling")
     @analytics("leveling set icon")
     @blocklist()
     @commands_ext.guild_only()
@@ -707,6 +729,7 @@ class Leveling(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='leaderboard', description='Get the leaderboard for the server')
+    @is_module_enabled("leveling")
     async def leveling_lb(self, ctx: discord.ApplicationContext):
         try:
             # Get the top 10 users

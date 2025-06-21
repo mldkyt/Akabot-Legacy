@@ -28,6 +28,7 @@ from database import client
 from utils.english_words import get_random_english_word, scramble_word
 from utils.languages import get_translation_for_key_localized as trl
 from utils.leveling import get_level_for_xp, add_xp, get_xp, update_roles_for_member
+from utils.module_toggling import is_module_enabled
 from utils.settings import get_setting, set_setting
 
 
@@ -141,6 +142,7 @@ class WordScrambler(discord.Cog):
     word_scramble_commands = discord.SlashCommandGroup(name="word_scramble", description="Word Scramble commands")
 
     @word_scramble_commands.command(name="start", description="Force start a word scramble game in this channel")
+    @is_module_enabled("word_scramble")
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     async def word_scramble_start(self, ctx: discord.ApplicationContext):
@@ -181,6 +183,7 @@ class WordScrambler(discord.Cog):
             sentry_sdk.capture_exception(e)
 
     @word_scramble_commands.command(name="end", description="Force end a word scramble game in this channel")
+    @is_module_enabled("word_scramble")
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     async def word_scramble_end(self, ctx: discord.ApplicationContext):
@@ -204,6 +207,7 @@ class WordScrambler(discord.Cog):
             sentry_sdk.capture_exception(e)
 
     @word_scramble_commands.command(name="set_channel", description="Add a channel or set settings for word scramble")
+    @is_module_enabled("word_scramble")
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @discord.option(name="chance", description="One in what chance to start per minute? Higher value = Less occurence",
@@ -258,6 +262,7 @@ class WordScrambler(discord.Cog):
             sentry_sdk.capture_exception(e)
 
     @word_scramble_commands.command(name="set_xp_per_game", description="Set XP to add per game won in word scramble")
+    @is_module_enabled("word_scramble")
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     async def word_scramble_set_xp(self, ctx: discord.ApplicationContext, xp: int | None = None):
@@ -282,6 +287,7 @@ class WordScrambler(discord.Cog):
             ), ephemeral=True)
 
     @word_scramble_commands.command(name="remove_channel", description="Remove a channel from word scramble")
+    @is_module_enabled("word_scramble")
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     async def word_scramble_remove_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
@@ -301,6 +307,7 @@ class WordScrambler(discord.Cog):
             sentry_sdk.capture_exception(e)
 
     @word_scramble_commands.command(name="set_role", description="Set a ping role for word scramble")
+    @is_module_enabled("word_scramble")
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     async def word_scramble_set_role(self, ctx: discord.ApplicationContext, role: discord.Role | None = None,
@@ -330,6 +337,12 @@ class WordScrambler(discord.Cog):
     async def on_message(self, msg: discord.Message):
         try:
             if msg.author.bot:
+                return
+
+            if not msg.guild:
+                return
+
+            if not get_setting(msg.guild.id, "module_word_scramble_enabled", True):
                 return
 
             if not is_word_scrambler_running(msg.channel.id):
@@ -397,6 +410,9 @@ class WordScrambler(discord.Cog):
 
     async def random_word_scramble(self):
         for guild in self.bot.guilds:
+            if not get_setting(guild.id, "module_word_scramble_enabled", True):
+                continue
+
             channels = get_setting(guild.id, "word_scramble_channels", {})
             for channel_id, settings in channels.items():
                 channel_id = int(channel_id)

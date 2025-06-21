@@ -28,6 +28,7 @@ from utils.blocklist import blocklist
 from utils.denylist import queue_send_message
 from utils.languages import get_translation_for_key_localized as trl, get_language
 from utils.logging_util import log_into_logs
+from utils.module_toggling import is_module_enabled
 from utils.per_user_settings import get_per_user_setting
 from utils.settings import get_setting, set_setting
 from utils.tips import append_tip_to_message
@@ -177,6 +178,9 @@ class ChatStreaks(discord.Cog):
             if message.guild is None:
                 return
 
+            if not get_setting(message.guild.id, "module_chat_streaks_enabled", True):
+                return
+
             if message.author.bot:
                 return
 
@@ -231,6 +235,7 @@ class ChatStreaks(discord.Cog):
     streaks_subcommand = discord.SlashCommandGroup(name='streaks', description='Manage the chat streaks')
 
     @streaks_subcommand.command(name="reset", description="Reset streak for a specific user")
+    @is_module_enabled("chat_streaks")
     @commands_ext.guild_only()
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
@@ -260,6 +265,7 @@ class ChatStreaks(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @streaks_subcommand.command(name="streak", description="Get someone's streak, to get yours, /streak.")
+    @is_module_enabled("chat_streaks")
     @commands_ext.guild_only()
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
@@ -278,6 +284,7 @@ class ChatStreaks(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @streaks_subcommand.command(name="configure_messages", description="Configure Chat Streaks messages")
+    @is_module_enabled("chat_streaks")
     @commands_ext.guild_only()
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
@@ -301,6 +308,7 @@ class ChatStreaks(discord.Cog):
             sentry_sdk.capture_exception(e)
 
     @discord.slash_command(name='streak', description='Get your current streak')
+    @is_module_enabled("chat_streaks")
     @analytics("streak")
     @blocklist()
     async def get_streak_command(self, ctx: discord.ApplicationContext):
@@ -316,6 +324,7 @@ class ChatStreaks(discord.Cog):
     # Leaderboard
 
     @streaks_subcommand.command(name="leaderboard", description="Get the chat streak leaderboard")
+    @is_module_enabled("chat_streaks")
     @commands_ext.guild_only()
     @analytics("streaks leaderboard")
     @blocklist()
@@ -367,6 +376,7 @@ class ChatStreaks(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @streaks_subcommand.command(name="add_reward", description="Add a chat streak reward")
+    @is_module_enabled("chat_streaks")
     @commands_ext.guild_only()
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
@@ -386,6 +396,7 @@ class ChatStreaks(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @streaks_subcommand.command(name="remove_reward", description="Remove a chat streak reward")
+    @is_module_enabled("chat_streaks")
     @commands_ext.guild_only()
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
