@@ -6,6 +6,8 @@ from discord.ext import tasks
 from database import client
 from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
+from utils.module_toggling import is_module_enabled
+from utils.settings import get_setting
 from utils.tzutil import get_now_for_server
 
 
@@ -29,6 +31,7 @@ class MessageSchedule(discord.Cog):
         self.handle_message_schedule.start()
 
     @grp.command(name="daily")
+    @is_module_enabled("schedule")
     async def schedule_daily(self, ctx: discord.ApplicationContext, text: str):
         try:
             if client['ScheduledMessages'].count_documents({'GuildID': str(ctx.guild.id)}) >= int(
@@ -46,6 +49,7 @@ class MessageSchedule(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="weekly")
+    @is_module_enabled("schedule")
     async def schedule_weekly(self, ctx: discord.ApplicationContext, day_of_week: discord.Option(int,
                                                                                                  description="Day of week to send the message at (1 - Monday, 7 - Sunday)"),
                               text: discord.Option(str, description="Text to send")):
@@ -68,6 +72,7 @@ class MessageSchedule(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="monthly")
+    @is_module_enabled("schedule")
     async def schedule_monthly(self, ctx: discord.ApplicationContext,
                                day: discord.Option(int, description="Day of month to send at"),
                                text: discord.Option(str, description="Text to send")):
@@ -91,6 +96,7 @@ class MessageSchedule(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="yearly")
+    @is_module_enabled("schedule")
     async def schedule_yearly(self, ctx: discord.ApplicationContext,
                               month: discord.Option(int, description="Month to send message at"),
                               day: discord.Option(int, description="Day of month to send message at"),
@@ -114,6 +120,7 @@ class MessageSchedule(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="update_content")
+    @is_module_enabled("schedule")
     async def update_content(self, ctx: discord.ApplicationContext,
                              object_id: discord.Option(str, description="ID of the message to update"),
                              new_text: discord.Option(str, description="New text to send")):
@@ -135,6 +142,7 @@ class MessageSchedule(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="delete")
+    @is_module_enabled("schedule")
     async def delete(self, ctx: discord.ApplicationContext,
                      object_id: discord.Option(str, description="ID of the message to update")):
 
@@ -155,6 +163,7 @@ class MessageSchedule(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="list", description="List scheduled messages")
+    @is_module_enabled("schedule")
     async def list(self, ctx: discord.ApplicationContext):
 
         try:
@@ -203,6 +212,9 @@ class MessageSchedule(discord.Cog):
             for schedule in schedules_list:
                 guild = self.bot.get_guild(int(schedule['GuildID']))
                 if guild is None:
+                    continue
+
+                if not get_setting(guild.id, "module_schedule_enabled", True):
                     continue
 
                 now = get_now_for_server(guild.id)

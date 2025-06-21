@@ -25,6 +25,7 @@ from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
+from utils.module_toggling import is_module_enabled
 from utils.settings import get_setting, set_setting
 
 
@@ -61,6 +62,9 @@ class AntiRaid(discord.Cog):
     @discord.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         try:
+            if not get_setting(member.guild.id, "module_antiraid_enabled", True):
+                return
+
             self.join_violation_counters.filter_expired_actions()
 
             antiraid_join_threshold = get_setting(member.guild.id, "antiraid_join_threshold", "5")
@@ -85,6 +89,12 @@ class AntiRaid(discord.Cog):
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
         try:
+            if not message.guild:
+                return
+
+            if not get_setting(message.guild.id, "module_antiraid_enabled", True):
+                return
+
             if message.author.bot:
                 return
 
@@ -121,6 +131,7 @@ class AntiRaid(discord.Cog):
             sentry_sdk.capture_exception(e)
 
     @antiraid_subcommand.command(name="join_threshold", description="Set the join threshold for the antiraid system")
+    @is_module_enabled("antiraid")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
@@ -160,6 +171,7 @@ class AntiRaid(discord.Cog):
 
     @antiraid_subcommand.command(name="message_threshold",
                                  description="Set the message threshold for the antiraid system")
+    @is_module_enabled("antiraid")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()
@@ -198,6 +210,7 @@ class AntiRaid(discord.Cog):
             sentry_sdk.capture_exception(e)
 
     @antiraid_subcommand.command(name="list", description="List the antiraid settings")
+    @is_module_enabled("antiraid")
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
     @commands_ext.guild_only()

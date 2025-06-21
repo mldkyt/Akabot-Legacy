@@ -25,6 +25,7 @@ from database import client
 from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
+from utils.module_toggling import is_module_enabled
 from utils.per_user_settings import get_per_user_setting
 from utils.settings import set_setting, get_setting
 
@@ -70,6 +71,9 @@ class BirthdayAnnouncements(discord.Cog):
                     if guild is None:
                         continue
 
+                    if not get_setting(guild.id, "module_birthday_announcements_enabled", True):
+                        continue
+
                     channel_id = get_setting(int(guild_id), 'birthday_announcements_channel', '0')
                     channel = guild.get_channel(int(channel_id))
                     if channel is None:
@@ -101,6 +105,7 @@ class BirthdayAnnouncements(discord.Cog):
                 sentry_sdk.capture_exception(e)
 
     @birthday_announcements_group.command(name="channel", description="Set the channel for birthday announcements")
+    @is_module_enabled("birthday_announcements")
     @discord.default_permissions(manage_guild=True)
     @discord.option(name="channel", description="The channel to send birthday announcements in")
     @commands.has_permissions(manage_guild=True)
@@ -114,6 +119,7 @@ class BirthdayAnnouncements(discord.Cog):
             ephemeral=True)
 
     @birthday_announcements_group.command(name="message", description="Customize the birthday announcement message")
+    @is_module_enabled("birthday_announcements")
     @discord.option(name="message", description="The message to send on birthdays")
     @discord.default_permissions(manage_guild=True)
     @commands.has_permissions(manage_guild=True)

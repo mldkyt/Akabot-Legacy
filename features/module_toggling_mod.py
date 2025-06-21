@@ -4,7 +4,8 @@ import sentry_sdk
 from utils.settings import set_setting
 from utils.languages import get_translation_for_key_localized as trl
 
-VALID_MODULE_NAMES = ["anonymous_quefessions", ""]
+VALID_MODULE_NAMES = ["antiraid", "birthday_announcements", "chat_streaks", "economy", "leveling", "schedule",
+                      "time_capsule", "temporary_vc", "voice_channel_alerts", "word_scramble"]
 
 
 class ModuleToggling(discord.Cog):

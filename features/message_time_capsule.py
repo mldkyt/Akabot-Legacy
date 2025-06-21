@@ -7,6 +7,8 @@ import datetime
 from discord.ext import tasks
 from discord.ext.pages import Paginator
 import io
+
+from utils.module_toggling import is_module_enabled
 from utils.settings import get_setting
 from utils.config import get_key
 from utils.leveling import add_xp
@@ -84,6 +86,7 @@ class MessageTimeCapsule(discord.Cog):
     schedule_group = discord.SlashCommandGroup("schedule", "Schedule message commands")
 
     @schedule_group.command(name="message", description="Schedule a message")
+    @is_module_enabled("time_capsule")
     @guild_only()
     async def schedule_message(self, ctx: discord.ApplicationContext, time: str, message: str):
         """Schedule a message"""
@@ -111,6 +114,7 @@ class MessageTimeCapsule(discord.Cog):
             await ctx.respond("An error occurred while scheduling the message.", ephemeral=True)
 
     @schedule_group.command(name="messages", description="List all messages")
+    @is_module_enabled("time_capsule")
     @guild_only()
     async def schedule_messages(self, ctx: discord.ApplicationContext):
         """List all messages"""
@@ -205,6 +209,7 @@ class MessageTimeCapsule(discord.Cog):
             await ctx.respond("An error occurred while listing reminders.", ephemeral=True)
 
     @schedule_group.command(name="collection", description="Schedule a collection message")
+    @is_module_enabled("time_capsule")
     @guild_only()
     async def schedule_collection(self, ctx: discord.ApplicationContext, time: str, message: str):
         """Schedule a collection message"""
@@ -265,6 +270,9 @@ class MessageTimeCapsule(discord.Cog):
                     client['MessageCapsule'].delete_one({"_id": i["_id"]})
                     continue
 
+                if not get_setting(guild.id, "module_time_capsule_enabled", True):
+                    continue
+
                 channel = guild.get_channel(int(i["ChannelID"]))
                 if channel is None:
                     client['MessageCapsule'].delete_one({"_id": i["_id"]})
@@ -302,6 +310,14 @@ class MessageTimeCapsule(discord.Cog):
     async def check_collection_messages(self):
         for i in client['CollectionMessageCapsule'].find({"Time": {"$lt": datetime.datetime.now()}}).to_list():
             try:
+                guild = self.bot.get_guild(int(i["GuildID"]))
+                if guild is None:
+                    client['CollectionMessageCapsule'].delete_one({"_id": i["_id"]})
+                    continue
+
+                if not get_setting(guild.id, "module_time_capsule_enabled", True):
+                    continue
+
                 channel: discord.TextChannel = self.bot.get_channel(int(i["ChannelID"]))
                 if channel is None:
                     client['CollectionMessageCapsule'].delete_one({"_id": i["_id"]})
@@ -309,11 +325,6 @@ class MessageTimeCapsule(discord.Cog):
 
                 author = self.bot.get_user(int(i["UserID"]))
                 if author is None:
-                    client['CollectionMessageCapsule'].delete_one({"_id": i["_id"]})
-                    continue
-
-                guild = self.bot.get_guild(int(i["GuildID"]))
-                if guild is None:
                     client['CollectionMessageCapsule'].delete_one({"_id": i["_id"]})
                     continue
 
