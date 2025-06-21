@@ -10,6 +10,7 @@ from database import client
 from discord.ext import commands as commands_ext
 from discord.ext import pages
 
+from utils.module_toggling import is_module_enabled
 from utils.settings import set_setting, get_setting
 from utils.languages import get_translation_for_key_localized as trl
 
@@ -278,6 +279,7 @@ class Economy(discord.Cog):
 
     # Weekly, daily commands
     @economics_subcommands.command(name='daily', description='Claim daily reward')
+    @is_module_enabled("economy")
     async def daily(self, ctx: discord.ApplicationContext):
         success, added = claim_daily(ctx.guild.id, ctx.author.id)
 
@@ -290,6 +292,7 @@ class Economy(discord.Cog):
             ephemeral=True)
 
     @economics_subcommands.command(name='weekly', description='Claim weekly reward')
+    @is_module_enabled("economy")
     async def weekly(self, ctx: discord.ApplicationContext):
         success, added = claim_weekly(ctx.guild.id, ctx.author.id)
 
@@ -302,6 +305,7 @@ class Economy(discord.Cog):
             ephemeral=True)
 
     @economics_subcommands.command(name='work', description='Work and earn money')
+    @is_module_enabled("economy")
     async def work(self, ctx: discord.ApplicationContext):
         success, added = work(ctx.guild.id, ctx.author.id)
 
@@ -315,6 +319,7 @@ class Economy(discord.Cog):
             ephemeral=True)
 
     @economics_subcommands.command(name='balance', description='View your balance')
+    @is_module_enabled("economy")
     async def balance(self, ctx: discord.ApplicationContext):
         wallet, bank = get_akacoins(ctx.author.id)
 
@@ -325,6 +330,7 @@ class Economy(discord.Cog):
                                                                         description='Economy admin commands')
 
     @economics_subcommands.command(name='pay', description='Send someone money')
+    @is_module_enabled("economy")
     async def pay(self, ctx: discord.ApplicationContext, target: discord.User, amount: int):
         if ctx.user.id == target.id:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_pay_self", append_tip=True), ephemeral=True)
@@ -341,6 +347,7 @@ class Economy(discord.Cog):
                           view=SendMoneyConfirmation(ctx.user.id, target.id, amount))
 
     @economics_subcommands.command(name='gamble', description='Gamble with money')
+    @is_module_enabled("economy")
     @commands_ext.cooldown(1, 60, commands_ext.BucketType.user)
     async def gamble(self, ctx: discord.ApplicationContext, amount: int):
         data = client['Economy'].find_one({'UserID': str(ctx.user.id)})
@@ -355,6 +362,7 @@ class Economy(discord.Cog):
             view=GambleView(ctx.guild.id, ctx.user.id, amount))
 
     @economics_subcommands.command(name='rob', description='Attempt to rob someone')
+    @is_module_enabled("economy")
     @commands_ext.cooldown(1, 60, commands_ext.BucketType.user)
     async def rob(self, ctx: discord.ApplicationContext, target: discord.Member):
         chance = random.randint(0, 100)
@@ -393,6 +401,7 @@ class Economy(discord.Cog):
                               .format(target=target.display_name, fine=str(fine)), ephemeral=True)
 
     @economics_subcommands.command(name='leaderboard', description='View the server leaderboard')
+    @is_module_enabled("economy")
     async def lb(self, ctx: discord.ApplicationContext):
         cur_page = ""
         p = []
@@ -424,6 +433,7 @@ class Economy(discord.Cog):
         await paginator.respond(ctx.interaction, ephemeral=True)
 
     @economics_subcommands.command(name='shop', description='View items in shop')
+    @is_module_enabled("economy")
     async def shop(self, ctx: discord.ApplicationContext):
         cur_page = ""
         p = []
@@ -452,6 +462,7 @@ class Economy(discord.Cog):
         await paginator.respond(ctx.interaction, ephemeral=True)
 
     @economics_subcommands.command(name='buy', description='Buy an item')
+    @is_module_enabled("economy")
     async def buy(self, ctx: discord.ApplicationContext, identifier: str):
         if client['Inventory'].count_documents({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)}) > 0:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_buy_own", append_tip=True), ephemeral=True)
@@ -486,6 +497,7 @@ class Economy(discord.Cog):
                           .format(identifier=identifier), ephemeral=True)
 
     @economics_subcommands.command(name='inventory', description='View items in inventory')
+    @is_module_enabled("economy")
     async def inventory(self, ctx: discord.ApplicationContext):
         cur_page = ""
         p = []
@@ -523,6 +535,7 @@ class Economy(discord.Cog):
         await paginator.respond(ctx.interaction, ephemeral=True)
 
     @economics_subcommands.command(name='sell', description='Sell an item that is sellable.')
+    @is_module_enabled("economy")
     async def sell(self, ctx: discord.ApplicationContext, identifier: str):
         inventory = client['Inventory'].find_one({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
         if not inventory:
@@ -547,6 +560,7 @@ class Economy(discord.Cog):
                           .format(identifier=identifier), ephemeral=True)
 
     @economics_subcommands.command(name='send', description='Send an item to another player.')
+    @is_module_enabled("economy")
     async def send(self, ctx: discord.ApplicationContext, to: discord.Member, identifier: str):
         if to.id == ctx.user.id:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_send_self", append_tip=True), ephemeral=True)
@@ -584,6 +598,7 @@ class Economy(discord.Cog):
                           .format(identifier=identifier, target=to.display_name), ephemeral=True)
 
     @economics_subcommands.command(name='transfer', description='Transfer money between the bank and wallet')
+    @is_module_enabled("economy")
     @discord.option(name='into', choices=['bank', 'wallet'])
     async def transfer(self, ctx: discord.ApplicationContext, into: str, amount: int):
         limit = int(get_setting(ctx.guild.id, 'economy_transfer_limit', "-1"))
@@ -657,6 +672,7 @@ class Economy(discord.Cog):
                               .format(amount=str(amount)), ephemeral=True)
 
     @economics_admin_subcommands.command(name='add', description='Add AkaCoins to a specific user')
+    @is_module_enabled("economy")
     @commands_ext.has_permissions(manage_guild=True)
     @discord.option(name='location', choices=['wallet', 'bank'])
     async def admin_add(self, ctx: discord.ApplicationContext, user: discord.User, amount: int,
@@ -667,6 +683,7 @@ class Economy(discord.Cog):
                           .format(amount=str(amount), name=user.display_name, location=location), ephemeral=True)
 
     @economics_admin_subcommands.command(name='remove', description='Remove AkaCoins from a specific user')
+    @is_module_enabled("economy")
     @commands_ext.has_permissions(manage_guild=True)
     @discord.option(name='location', choices=['wallet', 'bank'])
     async def admin_remove(self, ctx: discord.ApplicationContext, user: discord.User, amount: int,
@@ -677,6 +694,7 @@ class Economy(discord.Cog):
                           .format(amount=str(amount), name=user.display_name, location=location), ephemeral=True)
 
     @economics_admin_subcommands.command(name='set', description='Set AkaCoins for a specific user')
+    @is_module_enabled("economy")
     @commands_ext.has_permissions(manage_guild=True)
     @discord.option(name='location', choices=['wallet', 'bank'])
     async def admin_set(self, ctx: discord.ApplicationContext, user: discord.User, amount: int,
@@ -687,6 +705,7 @@ class Economy(discord.Cog):
                           .format(amount=str(amount), name=user.display_name, location=location), ephemeral=True)
 
     @economics_admin_subcommands.command(name='balance', description='Get another user\'s balance.')
+    @is_module_enabled("economy")
     @commands_ext.has_permissions(manage_guild=True)
     async def admin_balance(self, ctx: discord.ApplicationContext, user: discord.User):
         wallet, bank = get_akacoins(user.id)
@@ -697,6 +716,7 @@ class Economy(discord.Cog):
             ephemeral=True)
 
     @economics_admin_subcommands.command(name='reset', description='Reset AkaCoins for a specific user')
+    @is_module_enabled("economy")
     @commands_ext.has_permissions(manage_guild=True)
     @discord.option(name='location', choices=['wallet', 'bank'])
     async def admin_reset(self, ctx: discord.ApplicationContext, user: discord.User):
@@ -708,6 +728,7 @@ class Economy(discord.Cog):
 
     @economics_admin_subcommands.command(name='add_role_on_sale',
                                          description='Put a role on sale, so people can purchase it.')
+    @is_module_enabled("economy")
     @commands_ext.has_permissions(manage_guild=True)
     async def add_role_to_shop(self, ctx: discord.ApplicationContext, role: discord.Role, identifier: str, price: int,
                                allow_sell: bool = True, allow_trade: bool = True):
@@ -740,6 +761,7 @@ class Economy(discord.Cog):
 
     @economics_admin_subcommands.command(name='remove_role_from_sale',
                                          description='Remove a role from sale, no one will be able to purchase it.')
+    @is_module_enabled("economy")
     @commands_ext.has_permissions(manage_guild=True)
     async def remove_role_from_shop(self, ctx: discord.ApplicationContext, role: discord.Role):
         client['Shop'].delete_one({
@@ -753,6 +775,7 @@ class Economy(discord.Cog):
 
     @economics_admin_subcommands.command(name='set_transfer_limits',
                                          description='Set transfer (bank <=> wallet) limits.')
+    @is_module_enabled("economy")
     @commands_ext.has_permissions(manage_guild=True)
     async def set_transfer_limits(self, ctx: discord.ApplicationContext, amount: int, cooldown_minutes: int,
                                   cooldown_hours: int):
@@ -766,6 +789,7 @@ class Economy(discord.Cog):
             ephemeral=True)
 
     @economics_admin_subcommands.command(name='set_gambling', description="Set various gambling settings")
+    @is_module_enabled("economy")
     @discord.option(name='start_min_chance', description='The minimum chance to have when starting a new gamble. (80%)')
     @discord.option(name='start_max_chance',
                     description='The maximum chance to have when starting a new gamble. (100%)')
@@ -793,6 +817,7 @@ class Economy(discord.Cog):
         await ctx.respond("Settings were saved.", ephemeral=True)
 
     @economics_admin_subcommands.command(name='set_daily_weekly', description="Set various daily/weekly settings")
+    @is_module_enabled("economy")
     @discord.option(name='daily_min', description='Minimum daily money (50)')
     @discord.option(name='daily_max', description='Maximum daily money (500)')
     @discord.option(name='weekly_min', description='Minimum weekly money (250)')
@@ -812,6 +837,7 @@ class Economy(discord.Cog):
         await ctx.respond("Settings were saved.", ephemeral=True)
 
     @economics_admin_subcommands.command(name='set_work', description="Set various work settings")
+    @is_module_enabled("economy")
     @discord.option(name='work_min', description='Minimum work money (150)')
     @discord.option(name='work_max', description='Maximum work money (400)')
     @discord.option(name='bonus_min', description='Minimum bonus money (0)')
@@ -838,6 +864,7 @@ class Economy(discord.Cog):
         await ctx.respond("Settings were saved.", ephemeral=True)
 
     @economics_admin_subcommands.command(name='set_rob', description="Set various rob settings")
+    @is_module_enabled("economy")
     @discord.option(name='chance', description='Rob success chance (60%)')
     @discord.option(name='min_money', description='Minimum money required for robbing (25)')
     @discord.option(name='stolen_percentage_min', description='Minimum percentage of stolen (10%)')

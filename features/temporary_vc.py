@@ -25,6 +25,7 @@ from discord.ui import View, Modal, InputText
 
 from database import client
 from utils.languages import get_translation_for_key_localized as trl
+from utils.module_toggling import is_module_enabled
 from utils.settings import get_setting, set_setting
 
 
@@ -38,6 +39,10 @@ class V2NameChangeModal(Modal):
 
     async def callback(self, interaction: Interaction):
         try:
+            if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
+                await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
+                return
+
             new_name = self.new_name_field.value
             ch = interaction.guild.get_channel(self.ch_id)
             await ch.edit(name=new_name)
@@ -58,6 +63,10 @@ class V2MaxUsersChangeModal(Modal):
 
     async def callback(self, interaction: Interaction):
         try:
+            if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
+                await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
+                return
+
             if not self.new_max_users_field.value.isdigit():
                 await interaction.response.send_message('Max users must be a number', ephemeral=True)
                 return
@@ -90,6 +99,10 @@ class V2BitrateChangeModal(Modal):
 
     async def callback(self, interaction: Interaction):
         try:
+            if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
+                await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
+                return
+
             if not self.new_bitrate_field.value.isdigit():
                 await interaction.response.send_message('Bitrate must be a number', ephemeral=True)
                 return
@@ -118,6 +131,10 @@ class V2TemporaryVCMenu(View):
     @discord.ui.button(label='Change Name', style=discord.ButtonStyle.primary)
     async def change_name(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
+            if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
+                await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
+                return
+
             data = client['TemporaryVC'].find_one(
                 {'ChannelID': str(interaction.channel.id), 'GuildID': str(interaction.guild.id)})
             if not data:
@@ -137,6 +154,10 @@ class V2TemporaryVCMenu(View):
     @discord.ui.button(label='Change Max Users', style=discord.ButtonStyle.primary)
     async def change_max_users(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
+            if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
+                await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
+                return
+
             data = client['TemporaryVC'].find_one(
                 {'ChannelID': str(interaction.channel.id), 'GuildID': str(interaction.guild.id)})
             if not data:
@@ -156,6 +177,10 @@ class V2TemporaryVCMenu(View):
     @discord.ui.button(label='Change Bitrate', style=discord.ButtonStyle.primary)
     async def change_bitrate(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
+            if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
+                await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
+                return
+
             data = client['TemporaryVC'].find_one(
                 {'ChannelID': str(interaction.channel.id), 'GuildID': str(interaction.guild.id)})
             if not data:
@@ -271,6 +296,10 @@ class TemporaryVC(discord.Cog):
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState,
                                     after: discord.VoiceState):
         try:
+            # check if the module is enabled
+            if not get_setting(member.guild.id, "module_temporary_vc_enabled", True):
+                return
+
             # First let's check joining for temporary voice channel creation
             if after.channel and not before.channel:
                 await h_join_channel(member, after)
@@ -288,6 +317,7 @@ class TemporaryVC(discord.Cog):
 
     @temporary_vc_commands.command(name='add_creator_channel',
                                    description='Add a channel to create temporary voice channels')
+    @is_module_enabled("temporary_vc")
     @discord.default_permissions(manage_guild=True)
     @commands.has_permissions(manage_guild=True)
     async def add_creator_channel(self, ctx: discord.ApplicationContext, channel: discord.VoiceChannel):
@@ -302,6 +332,7 @@ class TemporaryVC(discord.Cog):
 
     @temporary_vc_commands.command(name='remove_creator_channel',
                                    description='Remove a channel to create temporary voice channels')
+    @is_module_enabled("temporary_vc")
     @discord.default_permissions(manage_guild=True)
     @commands.has_permissions(manage_guild=True)
     async def remove_creator_channel(self, ctx: discord.ApplicationContext, channel: discord.VoiceChannel):
@@ -321,6 +352,7 @@ class TemporaryVC(discord.Cog):
 
     @temporary_vc_commands.command(name='change_default_name',
                                    description='Default name syntax. {name}, {username}, {guild}, {id} are available')
+    @is_module_enabled("temporary_vc")
     async def change_default_name(self, ctx: discord.ApplicationContext, name: str):
         try:
             set_setting(ctx.guild.id, 'temporary_vc_name', name)
