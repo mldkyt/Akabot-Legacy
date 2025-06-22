@@ -16,6 +16,7 @@
 #
 import asyncio
 import logging
+import re
 
 import discord
 import sentry_sdk
@@ -44,6 +45,11 @@ class V2NameChangeModal(Modal):
                 return
 
             new_name = self.new_name_field.value
+
+            if not re.match(r"[a-zA-Z0-9-_]{1,16}", new_name):
+                await interaction.respond("Name is invalid!", ephemeral=True)
+                return
+
             ch = interaction.guild.get_channel(self.ch_id)
             await ch.edit(name=new_name)
             await interaction.response.send_message('Name updated', ephemeral=True)
