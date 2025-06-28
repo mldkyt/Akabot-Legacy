@@ -315,7 +315,7 @@ class Economy(discord.Cog):
         success, added = claim_daily(ctx.guild.id, ctx.author.id)
 
         if not success:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_daily_claimed", append_tip=True), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_daily_claimed", append_tip=True), ephemeral=True)
             return
 
         await ctx.respond(
@@ -328,7 +328,7 @@ class Economy(discord.Cog):
         success, added = claim_weekly(ctx.guild.id, ctx.author.id)
 
         if not success:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'economy_weekly_claimed', append_tip=True), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'economy_weekly_claimed', append_tip=True), ephemeral=True)
             return
 
         await ctx.respond(
@@ -341,7 +341,7 @@ class Economy(discord.Cog):
         success, added = work(ctx.guild.id, ctx.author.id)
 
         if not success:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'economy_work_too_frequently', append_tip=True),
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'economy_work_too_frequently', append_tip=True),
                               ephemeral=True)
             return
 
@@ -364,7 +364,7 @@ class Economy(discord.Cog):
     @is_module_enabled("economy")
     async def pay(self, ctx: discord.ApplicationContext, target: discord.User, amount: int):
         if ctx.user.id == target.id:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_pay_self", append_tip=True), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_pay_self", append_tip=True), ephemeral=True)
             return
 
         client = get_client()
@@ -448,7 +448,7 @@ class Economy(discord.Cog):
         await client.client.close()
 
         if len(records) == 0:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_lb_empty", append_tip=True), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_lb_empty", append_tip=True), ephemeral=True)
             return
 
         for i, v in enumerate(records):
@@ -486,7 +486,7 @@ class Economy(discord.Cog):
         await client.client.close()
 
         if len(records) == 0:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_shop_empty", append_tip=True), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_shop_empty", append_tip=True), ephemeral=True)
             return
 
         for i, v in enumerate(records):
@@ -509,18 +509,18 @@ class Economy(discord.Cog):
     async def buy(self, ctx: discord.ApplicationContext, identifier: str):
         client = get_client()
         if await client['Inventory'].count_documents({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)}) > 0:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_buy_own", append_tip=True), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_buy_own", append_tip=True), ephemeral=True)
             await client.client.close()
             return
 
         shop_item = await client['Shop'].find_one({'Identifier': identifier, 'GuildID': str(ctx.guild.id)})
         if not shop_item:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_buy_not_found", append_tip=True), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_buy_not_found", append_tip=True), ephemeral=True)
             await client.client.close()
             return
 
         if shop_item['Price'] > (await get_akacoins(ctx.user.id))[0]:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_buy_poor", append_tip=True), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_buy_poor", append_tip=True), ephemeral=True)
             await client.client.close()
             return
 
@@ -559,7 +559,7 @@ class Economy(discord.Cog):
         await client.client.close()
 
         if len(records) == 0:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_inventory_empty", append_tip=True),
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_inventory_empty", append_tip=True),
                               ephemeral=True)
             return
 
@@ -591,12 +591,12 @@ class Economy(discord.Cog):
         client = get_client()
         inventory = await client['Inventory'].find_one({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
         if not inventory:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_sell_not_own", append_tip=True), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_sell_not_own", append_tip=True), ephemeral=True)
             await client.client.close()
             return
 
         if not inventory['AllowSell']:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_sell_not_allowed", append_tip=True),
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_sell_not_allowed", append_tip=True),
                               ephemeral=True)
             await client.client.close()
             return
@@ -618,19 +618,19 @@ class Economy(discord.Cog):
     @is_module_enabled("economy")
     async def send(self, ctx: discord.ApplicationContext, to: discord.Member, identifier: str):
         if to.id == ctx.user.id:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_send_self", append_tip=True), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_send_self", append_tip=True), ephemeral=True)
             return
 
         client = get_client()
 
         inventory = await client['Inventory'].find_one({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
         if not inventory:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_sell_not_own", append_tip=True), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_sell_not_own", append_tip=True), ephemeral=True)
             await client.client.close()
             return
 
         if not inventory['AllowTrade']:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_send_not_allowed", append_tip=True),
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_send_not_allowed", append_tip=True),
                               ephemeral=True)
             await client.client.close()
             return
@@ -686,7 +686,7 @@ class Economy(discord.Cog):
                 return
 
             if 'TransferLimit' in data and data['TransferLimit'] > datetime.datetime.now():
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_transfer_cooldown", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_transfer_cooldown", append_tip=True),
                                   ephemeral=True)
                 return
 
@@ -714,7 +714,7 @@ class Economy(discord.Cog):
                 return
 
             if 'TransferLimit' in data and data['TransferLimit'] > datetime.datetime.now():
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_transfer_cooldown", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_transfer_cooldown", append_tip=True),
                                   ephemeral=True)
                 return
 
@@ -819,10 +819,10 @@ class Economy(discord.Cog):
 
         await client.client.close()
 
-        sell_str = trl(ctx.user.id, ctx.guild.id, "economy_item_sellable") if allow_sell \
-            else trl(ctx.user.id, ctx.guild.id, "economy_item_not_sellable")
-        trade_str = trl(ctx.user.id, ctx.guild.id, "economy_item_tradeable") if allow_trade \
-            else trl(ctx.user.id, ctx.guild.id, "economy_item_not_tradeable")
+        sell_str = await trl(ctx.user.id, ctx.guild.id, "economy_item_sellable") if allow_sell \
+            else await trl(ctx.user.id, ctx.guild.id, "economy_item_not_sellable")
+        trade_str = await trl(ctx.user.id, ctx.guild.id, "economy_item_tradeable") if allow_trade \
+            else await trl(ctx.user.id, ctx.guild.id, "economy_item_not_tradeable")
         await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "economy_admin_role_on_sale", append_tip=True)
                           ).format(role=role.mention, price=str(price), sell_str=sell_str, trade_str=trade_str),
                           ephemeral=True)

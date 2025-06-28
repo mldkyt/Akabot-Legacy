@@ -142,7 +142,7 @@ class ChatRevive(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_revive_subcommand.command(name="remove", description="List the revive settings")
     @commands_ext.guild_only()
@@ -174,7 +174,7 @@ class ChatRevive(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_revive_subcommand.command(name="list", description="List the revive settings")
     @commands_ext.guild_only()
@@ -208,4 +208,4 @@ class ChatRevive(discord.Cog):
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

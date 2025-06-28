@@ -74,7 +74,7 @@ async def check_user_blocklist(user_id: str) -> tuple[bool, str]:
     return False, ""
 
 def blocklist():
-    def predicate(ctx: commands_ext.Context):
+    async def predicate(ctx: commands_ext.Context):
         try:
             if SFW_ONLY and ctx.channel.is_nsfw():
                 raise BlocklistError("This instance of Akabot is configured to be only used in SFW spaces.")
@@ -83,36 +83,36 @@ def blocklist():
                 if str(ctx.guild.id) in BLOCKLIST_SERVERS:
                     raise BlocklistError("This instance of Akabot blocks this server.")
 
-                blocked, reason = check_guild_blocklist(str(ctx.guild.id))
+                blocked, reason = await check_guild_blocklist(str(ctx.guild.id))
                 if blocked:
                     raise BlocklistError(f"Blocklisted in DB: {reason}")
 
                 blocked, keyword = check_blocklist(ctx.guild.name)
                 if blocked:
-                    add_guild_to_blocklist(str(ctx.guild.id), ctx.guild.name)
+                    await add_guild_to_blocklist(str(ctx.guild.id), ctx.guild.name)
                     raise BlocklistError(f"Word {keyword} was blocklisted in guild.name")
 
                 blocked, keyword = check_blocklist(ctx.guild.description or '')
                 if blocked:
-                    add_guild_to_blocklist(str(ctx.guild.id), ctx.guild.description or '')
+                    await add_guild_to_blocklist(str(ctx.guild.id), ctx.guild.description or '')
                     raise BlocklistError(f"Word {keyword} was blocklisted in guild.description")
 
             if ctx.author is not None:
                 if str(ctx.author.id) in BLOCKLIST_USERS:
                     raise BlocklistError("This instance of Akabot blocks you.")
 
-                blocked, reason = check_user_blocklist(str(ctx.author.id))
+                blocked, reason = await check_user_blocklist(str(ctx.author.id))
                 if blocked:
                     raise BlocklistError(f"Blocklisted in DB: {reason}")
 
                 blocked, keyword = check_blocklist(str(ctx.author.display_name))
                 if blocked:
-                    add_member_to_blocklist(str(ctx.author.display_name), ctx.author.display_name)
+                    await add_member_to_blocklist(str(ctx.author.display_name), ctx.author.display_name)
                     raise BlocklistError(f"Word {keyword} was blocklisted in author.display_name")
 
                 blocked, keyword = check_blocklist(str(ctx.author.name))
                 if blocked:
-                    add_member_to_blocklist(str(ctx.author.display_name), ctx.author.name)
+                    await add_member_to_blocklist(str(ctx.author.display_name), ctx.author.name)
                     raise BlocklistError(f"Word {keyword} was blocklisted in author.name")
 
             return True

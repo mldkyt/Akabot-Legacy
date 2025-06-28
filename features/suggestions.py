@@ -252,7 +252,7 @@ class Suggestions(discord.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
         try:
-            migration_1()
+            asyncio.create_task(migration_1())
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -385,7 +385,7 @@ class Suggestions(discord.Cog):
                               ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @suggestions_group.command(name='message_reminder', description="Message reminder for people posting suggestions")
     @discord.default_permissions(manage_guild=True)
@@ -403,7 +403,7 @@ class Suggestions(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @suggestions_group.command(name='update_message', description='Refresh all suggestions messages in this channel')
     @commands.guild_only()
@@ -422,4 +422,4 @@ class Suggestions(discord.Cog):
 
         await asyncio.gather(*tasks)
 
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'suggestions_v2_refreshed', append_tip=True))
+        await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'suggestions_v2_refreshed', append_tip=True))

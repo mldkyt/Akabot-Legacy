@@ -157,7 +157,7 @@ class AutomodActions(discord.Cog):
             # verify count of rules
             automod_db_actions = await db_get_automod_actions(ctx.guild.id)
             if len(automod_db_actions) >= int(get_key("AutomodActions_MaxActions", "5")):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_actions_max_reached"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "automod_actions_max_reached"), ephemeral=True)
                 return
 
             automod_actions = await ctx.guild.fetch_auto_moderation_rules()
@@ -178,20 +178,20 @@ class AutomodActions(discord.Cog):
             # Check if there's already a timeout action
             for i in automod_db_actions:
                 if i[1] == automod_rule.id and i[3] == action:
-                    await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_rule_action_already_exists"),
+                    await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "automod_rule_action_already_exists"),
                                       ephemeral=True)
                     return
 
                 if i[1] == automod_rule.id and i[3].startswith("timeout") and action.startswith("timeout"):
-                    await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_rule_timeout_action_already_exists"),
+                    await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "automod_rule_timeout_action_already_exists"),
                                       ephemeral=True)
                     return
 
             # Determine message if not specified
             if action == "DM" and not message_reason:
-                message_reason = trl(0, ctx.guild.id, "automod_default_dm")
+                message_reason = await trl(0, ctx.guild.id, "automod_default_dm")
             elif not message_reason:
-                message_reason = trl(0, ctx.guild.id, "automod_default")
+                message_reason = await trl(0, ctx.guild.id, "automod_default")
 
             action_id = await db_add_automod_action(ctx.guild.id, automod_rule.id, rule_name, action,
                                               additional=message_reason)
@@ -200,7 +200,7 @@ class AutomodActions(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @automod_actions_subcommands.command(name='remove', description='Remove an automod action.')
     @discord_commands_ext.bot_has_permissions(manage_guild=True)
@@ -213,7 +213,7 @@ class AutomodActions(discord.Cog):
             # verify action exists, rule_name is NOT rule_id
 
             if not ObjectId.is_valid(action_id):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_rule_doesnt_exist_2"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "automod_rule_doesnt_exist_2"), ephemeral=True)
                 return
 
             automod_actions = await db_get_automod_actions(ctx.guild.id)
@@ -224,14 +224,14 @@ class AutomodActions(discord.Cog):
                     break
 
             if not automod_rule:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_rule_doesnt_exist_2"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "automod_rule_doesnt_exist_2"), ephemeral=True)
                 return
 
             await db_remove_automod_action(ObjectId(action_id))
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_removed", append_tip=True), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "automod_removed", append_tip=True), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @automod_actions_subcommands.command(name='list', description='List automod actions.')
     @discord_commands_ext.bot_has_permissions(manage_guild=True)
@@ -242,7 +242,7 @@ class AutomodActions(discord.Cog):
         try:
             automod_actions = await db_get_automod_actions(ctx.guild.id)
             if not automod_actions:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_actions_list_empty", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "automod_actions_list_empty", append_tip=True),
                                   ephemeral=True)
                 return
 
@@ -252,4 +252,4 @@ class AutomodActions(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

@@ -118,7 +118,7 @@ class AutoReact(discord.Cog):
             await paginator.respond(ctx.interaction, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_react_group.command(name="edit_trigger", description="Change trigger for a setting")
     @discord_commands_ext.has_permissions(manage_messages=True)
@@ -127,7 +127,7 @@ class AutoReact(discord.Cog):
     async def edit_trigger_auto_react(self, ctx: discord.ApplicationContext, id: str, new_trigger: str):
         try:
             if not ObjectId.is_valid(id):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
                                   ephemeral=True)
                 return
 
@@ -137,14 +137,14 @@ class AutoReact(discord.Cog):
             await client.client.close()
 
             if edited.matched_count == 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
                                   ephemeral=True)
                 return
 
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_keyword_updated_success"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_keyword_updated_success"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_react_group.command(name="delete", description="Delete an auto react setting")
     @discord_commands_ext.has_permissions(manage_messages=True)
@@ -157,15 +157,15 @@ class AutoReact(discord.Cog):
             await client.client.close()
 
             if delete.deleted_count == 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
                                   ephemeral=True)
                 return
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_delete_success"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_delete_success"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_react_group.command(name="edit_react_emoji", description="Change react for a setting")
     @discord_commands_ext.has_permissions(manage_messages=True)
@@ -178,22 +178,22 @@ class AutoReact(discord.Cog):
             if emoji.is_custom_emoji():
                 # Check if the emoji is from the current server
                 if emoji.id is None:
-                    await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_invalid"), ephemeral=True)
+                    await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_invalid"), ephemeral=True)
                     return
 
                 for i in ctx.guild.emojis:
                     if i.id == emoji.id:
                         break
                 else:
-                    await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_invalid"), ephemeral=True)
+                    await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_invalid"), ephemeral=True)
                     return
             else:
                 if not emoji_package.is_emoji(new_emoji.strip()):
-                    await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_invalid"), ephemeral=True)
+                    await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_invalid"), ephemeral=True)
                     return
 
             if not ObjectId.is_valid(id):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
                                   ephemeral=True)
                 return
 
@@ -203,15 +203,15 @@ class AutoReact(discord.Cog):
             await client.client.close()
 
             if updated.matched_count == 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
                                   ephemeral=True)
                 return
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_set_success"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_set_success"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @discord.Cog.listener()
     async def on_message(self, msg: discord.Message):

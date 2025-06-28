@@ -114,7 +114,7 @@ class BugReportModal(discord.ui.Modal):
             'labels': ['bug', 'in-bot']
         })
 
-        await interaction.response.send_message(trl(self.user_id, 0, "feedback_feature_submitted", append_tip=True),
+        await interaction.response.send_message(await trl(self.user_id, 0, "feedback_feature_submitted", append_tip=True),
                                                 ephemeral=True)
 
     async def submit_bug_report_on_forgejo(self, interaction):
@@ -165,7 +165,7 @@ class BugReportModal(discord.ui.Modal):
 
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await interaction.response.send_message(trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
+            await interaction.response.send_message(await trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
 
 
 class FeatureModal(discord.ui.Modal):
@@ -209,7 +209,7 @@ class FeatureModal(discord.ui.Modal):
                     await interaction.response.send_message(
                         f"Failed to submit feature request: {await response.text()}", ephemeral=True)
                     return
-        await interaction.response.send_message(trl(self.user_id, 0, "feedback_feature_submitted", append_tip=True),
+        await interaction.response.send_message(await trl(self.user_id, 0, "feedback_feature_submitted", append_tip=True),
                                                 ephemeral=True)
 
     async def submit_feature_on_gitlab(self, interaction: discord.Interaction):
@@ -232,7 +232,7 @@ class FeatureModal(discord.ui.Modal):
             'labels': ['suggestion', 'in-bot']
         })
 
-        await interaction.response.send_message(trl(self.user_id, 0, "feedback_feature_submitted", append_tip=True),
+        await interaction.response.send_message(await trl(self.user_id, 0, "feedback_feature_submitted", append_tip=True),
                                                 ephemeral=True)
 
     async def submit_feature_on_forgejo(self, interaction):
@@ -283,7 +283,7 @@ class FeatureModal(discord.ui.Modal):
 
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await interaction.response.send_message(trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
+            await interaction.response.send_message(await trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
 
 
 class ConfirmSubmitBugReport(discord.ui.View):
@@ -364,7 +364,7 @@ class SupportCmd(discord.Cog):
     @analytics("website")
     @blocklist()
     async def website(self, ctx: discord.ApplicationContext):
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "feedback_visit_website", append_tip=True), ephemeral=True)
+        await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "feedback_visit_website", append_tip=True), ephemeral=True)
 
     @discord.slash_command(name="vote", description="Vote on the bot")
     @analytics("vote")
@@ -390,7 +390,7 @@ class SupportCmd(discord.Cog):
     @analytics("donate")
     @blocklist()
     async def donate(self, ctx: discord.ApplicationContext):
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "feedback_donate", append_tip=True), ephemeral=True)
+        await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "feedback_donate", append_tip=True), ephemeral=True)
 
     @discord.slash_command(name='support_discord', description='Support Discord server link')
     async def support_discord(self, ctx: discord.ApplicationContext):
@@ -473,4 +473,4 @@ This is due to recent raids and attacks on the server due to the developer leavi
     @analytics("about")
     @blocklist()
     async def about(self, ctx: discord.ApplicationContext):
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "feedback_about", append_tip=True), ephemeral=True)
+        await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "feedback_about", append_tip=True), ephemeral=True)

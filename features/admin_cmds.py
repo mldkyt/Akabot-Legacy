@@ -77,7 +77,7 @@ class AdminCommands(discord.Cog):
                 return
 
             if not announcement_file.filename.endswith(".md"):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "announcement_file_not_md"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "announcement_file_not_md"), ephemeral=True)
                 return
 
             await announcement_file.save("temp.md")
@@ -87,7 +87,7 @@ class AdminCommands(discord.Cog):
                 announcement = f.read()
 
             if len(announcement) > 2000:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "announcement_too_long"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "announcement_too_long"), ephemeral=True)
                 return
 
             msg: discord.Message | None = await ctx.followup.send(content="Creating announcement...")
@@ -96,7 +96,7 @@ class AdminCommands(discord.Cog):
 
             first_channel = self.bot.get_channel(ANNOUNCEMENT_CHANNEL)
             if not first_channel:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "announcement_channel_not_found"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "announcement_channel_not_found"), ephemeral=True)
                 return
 
             await first_channel.send(announcement, file=discord.File(extra_attachment.filename))

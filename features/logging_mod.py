@@ -331,13 +331,13 @@ class Logging(discord.Cog):
                     before_topic = before.topic if hasattr(before, 'topic') else trl(0, after.guild.id,
                                                                                      "logging_empty_field")
                     if not before_topic:
-                        before_topic = trl(0, after.guild.id, "logging_empty_field")
+                        before_topic = await trl(0, after.guild.id, "logging_empty_field")
 
                     # After topic
                     after_topic = after.topic if hasattr(after, 'topic') else trl(0, after.guild.id,
                                                                                   "logging_empty_field")
                     if not after_topic:
-                        after_topic = trl(0, after.guild.id, "logging_empty_field")
+                        after_topic = await trl(0, after.guild.id, "logging_empty_field")
 
                     # Add field
                     embed.add_field(name=await trl(0, after.guild.id, "logging_topic"),
@@ -1034,7 +1034,7 @@ class Logging(discord.Cog):
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @logging_subcommand.command(name="set_channel", description="Set the logging channel")
     @commands_ext.guild_only()
@@ -1064,4 +1064,4 @@ class Logging(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

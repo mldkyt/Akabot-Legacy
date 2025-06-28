@@ -198,7 +198,7 @@ class Welcoming(discord.Cog):
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @welcome_subcommands.command(name='channel', description="Set the welcoming channel")
     @discord.default_permissions(manage_guild=True)
@@ -235,7 +235,7 @@ class Welcoming(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @welcome_subcommands.command(name='type', description="Set whether you want to use message content or embed")
     @discord.default_permissions(manage_guild=True)
@@ -268,7 +268,7 @@ class Welcoming(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @welcome_subcommands.command(name='title', description="Set the title of the welcoming message")
     @discord.default_permissions(manage_guild=True)
@@ -298,7 +298,7 @@ class Welcoming(discord.Cog):
                               ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @welcome_subcommands.command(name='text', description="Set the text of the welcoming message")
     @discord.default_permissions(manage_guild=True)
@@ -328,7 +328,7 @@ class Welcoming(discord.Cog):
                               ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @welcome_subcommands.command(name="grace_period", description="Set up a grace period. If a member leaves within this time, the welcome message is deleted")
     @discord.default_permissions(manage_guild=True)
@@ -364,7 +364,7 @@ class Welcoming(discord.Cog):
             await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "welcome_grace_period_set", append_tip=True)).format(minutes=minutes), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
 
 
@@ -393,7 +393,7 @@ class Welcoming(discord.Cog):
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @goodbye_subcommands.command(name='channel', description="Set the goodbye channel")
     @discord.default_permissions(manage_guild=True)
@@ -425,7 +425,7 @@ class Welcoming(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @goodbye_subcommands.command(name='type', description="Set whether you want to use message content or embed")
     @discord.default_permissions(manage_guild=True)
@@ -458,7 +458,7 @@ class Welcoming(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @goodbye_subcommands.command(name='title', description="Set the title of the goodbye message")
     @discord.default_permissions(manage_guild=True)
@@ -488,7 +488,7 @@ class Welcoming(discord.Cog):
                               ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @goodbye_subcommands.command(name='text', description="Set the text of the goodbye message")
     @discord.default_permissions(manage_guild=True)
@@ -518,4 +518,4 @@ class Welcoming(discord.Cog):
                               ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

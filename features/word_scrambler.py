@@ -161,7 +161,7 @@ class WordScrambler(discord.Cog):
             await ctx.defer(ephemeral=True)
 
             if await is_word_scrambler_running(ctx.channel.id):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_running", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "word_scramble_running", append_tip=True),
                                   ephemeral=True)
                 return
 
@@ -189,7 +189,7 @@ class WordScrambler(discord.Cog):
             await ctx.followup.send(await trl(ctx.user.id, ctx.guild.id, "word_scramble_started", append_tip=True),
                                     ephemeral=True)
         except Exception as e:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_start_failed", append_tip=True),
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "word_scramble_start_failed", append_tip=True),
                               ephemeral=True)
             sentry_sdk.capture_exception(e)
 
@@ -200,7 +200,7 @@ class WordScrambler(discord.Cog):
     async def word_scramble_end(self, ctx: discord.ApplicationContext):
         try:
             if not await is_word_scrambler_running(ctx.channel.id):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_not_running", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "word_scramble_not_running", append_tip=True),
                                   ephemeral=True)
                 return
 
@@ -211,9 +211,9 @@ class WordScrambler(discord.Cog):
                     content=await trl(0, ctx.guild.id, "word_scramble_message_ended_forcibly", append_tip=True))
 
             await end_word_scrambler(ctx.channel.id)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_stopped", append_tip=True), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "word_scramble_stopped", append_tip=True), ephemeral=True)
         except Exception as e:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_stop_failed", append_tip=True),
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "word_scramble_stop_failed", append_tip=True),
                               ephemeral=True)
             sentry_sdk.capture_exception(e)
 
@@ -231,22 +231,22 @@ class WordScrambler(discord.Cog):
                                         chance: int, min_characters: int, max_characters: int, context: str):
         try:
             if min_characters < 3:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_min_length", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "word_scramble_min_length", append_tip=True),
                                   ephemeral=True)
                 return
 
             if max_characters > 20:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_max_length", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "word_scramble_max_length", append_tip=True),
                                   ephemeral=True)
                 return
 
             if min_characters > max_characters:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_min_max_length", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "word_scramble_min_max_length", append_tip=True),
                                   ephemeral=True)
                 return
 
             if chance < 1:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_min_chance", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "word_scramble_min_chance", append_tip=True),
                                   ephemeral=True)
                 return
 
@@ -256,7 +256,7 @@ class WordScrambler(discord.Cog):
                 context = "all_channels"
 
             if context not in ["english", "channel", "all_channels"]:  # Extra check just in case
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_invalid_context", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "word_scramble_invalid_context", append_tip=True),
                                   ephemeral=True)
                 return
 
@@ -268,7 +268,7 @@ class WordScrambler(discord.Cog):
                 chance=chance, min_length=min_characters, max_length=max_characters, context=context
             ), ephemeral=True)
         except Exception as e:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_set_failed", append_tip=True),
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "word_scramble_set_failed", append_tip=True),
                               ephemeral=True)
             sentry_sdk.capture_exception(e)
 
@@ -288,7 +288,7 @@ class WordScrambler(discord.Cog):
 
         else:
             if xp < 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_xp_min", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "word_scramble_xp_min", append_tip=True),
                                   ephemeral=True)
                 return
 
@@ -307,13 +307,13 @@ class WordScrambler(discord.Cog):
             if channel.id in sett:
                 del sett[str(channel.id)]
                 await set_setting(ctx.guild.id, "word_scramble_channels", sett)
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_remove_channel", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "word_scramble_remove_channel", append_tip=True),
                                   ephemeral=True)
             else:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_remove_not_found", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "word_scramble_remove_not_found", append_tip=True),
                                   ephemeral=True)
         except Exception as e:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_remove_failed", append_tip=True),
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "word_scramble_remove_failed", append_tip=True),
                               ephemeral=True)
             sentry_sdk.capture_exception(e)
 
@@ -467,10 +467,9 @@ class WordScrambler(discord.Cog):
 
     async def cleanup(self):
         client = get_client()
-        expired = await client["WordScramble"].find({"Expires": {"$lt": datetime.datetime.now()}})
-        await client.client.close()
+        expired = client["WordScramble"].find({"Expires": {"$lt": datetime.datetime.now()}})
 
-        for game in expired:
+        async for game in expired:
             channel = self.bot.get_channel(int(game["ChannelID"]))
             if channel is None:
                 continue
@@ -480,3 +479,4 @@ class WordScrambler(discord.Cog):
                 word=game['Word']
             ))
             await end_word_scrambler(int(game["ChannelID"]))
+        await client.client.close()

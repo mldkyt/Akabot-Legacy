@@ -53,7 +53,7 @@ class AnnouncementChannels(discord.Cog):
             return
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.author.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.author.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @announcement_channels_group.command(name="unsubscribe",
                                          description="Unsubscribe a channel from Akabot announcements")
@@ -72,7 +72,7 @@ class AnnouncementChannels(discord.Cog):
             return
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.author.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.author.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @announcement_channels_group.command(name="list",
                                          description="List all channels subscribed to Akabot announcements")
@@ -80,7 +80,7 @@ class AnnouncementChannels(discord.Cog):
         try:
             channels = await db_get_announcement_channels(ctx.guild.id)
             if not channels:
-                await ctx.respond(trl(ctx.author.id, ctx.guild.id, "announcement_none_subscribed"),
+                await ctx.respond(await trl(ctx.author.id, ctx.guild.id, "announcement_none_subscribed"),
                                   ephemeral=True)
                 return
 
@@ -93,4 +93,4 @@ class AnnouncementChannels(discord.Cog):
             return
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.author.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.author.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

@@ -145,7 +145,7 @@ class Leveling(discord.Cog):
                                                                                              multiplier=multiplier)
 
                 if len(msg) > 0:
-                    response += trl(ctx.user.id, ctx.guild.id, "leveling_level_multiplier_title")
+                    response += await trl(ctx.user.id, ctx.guild.id, "leveling_level_multiplier_title")
                     response += f'{msg}'
 
                 await ctx.respond(response, ephemeral=True)
@@ -159,7 +159,7 @@ class Leveling(discord.Cog):
                                                                                          multiplier=multiplier))
 
                 if len(msg) > 0:
-                    response += trl(ctx.user.id, ctx.guild.id, "leveling_level_multiplier_title")
+                    response += await trl(ctx.user.id, ctx.guild.id, "leveling_level_multiplier_title")
                     response += f'{msg}'
 
                 if await get_per_user_setting(ctx.user.id, 'tips_enabled', 'true') == 'true':
@@ -169,7 +169,7 @@ class Leveling(discord.Cog):
 
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     leveling_subcommand = discord.SlashCommandGroup(name='leveling', description='Leveling settings')
 
@@ -205,7 +205,7 @@ class Leveling(discord.Cog):
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='set_per_message',
                                  description='Set the XP per message, and an additional XP booster')
@@ -222,16 +222,16 @@ class Leveling(discord.Cog):
     @blocklist()
     async def set_per_message(self, ctx: discord.ApplicationContext, initial: int, extra: int, extra_requirement: int):
         if 4000 < extra_requirement <= 0:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_extra_requirement"),
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_extra_requirement"),
                               ephemeral=True)
             return
 
         if 100 < extra < 0:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_extra"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_extra"), ephemeral=True)
             return
 
         if 100 < initial < 0:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_initial"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_initial"), ephemeral=True)
             return
 
         await set_setting(ctx.guild.id, 'leveling_initial_xp', str(initial))
@@ -291,7 +291,7 @@ class Leveling(discord.Cog):
         try:
             # Verify the format of start_date and end_date
             if not re.match(r'\d{2}-\d{2}', start_date) or not re.match(r'\d{2}-\d{2}', end_date):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_date_format"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_date_format"), ephemeral=True)
                 return
 
             # Verify if the multiplier already exists
@@ -308,11 +308,11 @@ class Leveling(discord.Cog):
             now = await get_now_for_server(ctx.guild.id)
             # Use the validate_day method to check if the start and end dates are valid
             if not validate_day(start_month, start_day, now.year):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_start_date"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_start_date"), ephemeral=True)
                 return
 
             if not validate_day(end_month, end_day, now.year):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_end_date"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_end_date"), ephemeral=True)
                 return
 
             # Multipliers apply to every year
@@ -336,7 +336,7 @@ class Leveling(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='change_multiplier_name', description='Change the name of a multiplier')
     @is_module_enabled("leveling")
@@ -381,7 +381,7 @@ class Leveling(discord.Cog):
                     old_name=old_name, new_name=new_name), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='change_multiplier_multiplier',
                                  description='Change the multiplier of a multiplier')
@@ -396,7 +396,7 @@ class Leveling(discord.Cog):
     async def change_multiplier_multiplier(self, ctx: discord.ApplicationContext, name: str, multiplier: int):
         try:
             if not mult_exists(ctx.guild.id, name):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_doesnt_exist"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_doesnt_exist"), ephemeral=True)
                 return
 
             # Get old setting
@@ -424,7 +424,7 @@ class Leveling(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='change_multiplier_start_date',
                                  description='Change the start date of a multiplier')
@@ -445,7 +445,7 @@ class Leveling(discord.Cog):
 
             # Verify the format of start_date
             if not re.match(r'\d{2}-\d{2}', start_date):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_date_format"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_date_format"), ephemeral=True)
                 return
 
             # Verify the month and day values
@@ -454,7 +454,7 @@ class Leveling(discord.Cog):
             now = await get_now_for_server(ctx.guild.id)
             # Use the validate_day method to check if the start date is valid
             if not validate_day(start_month, start_day, now.year):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_start_date"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_start_date"), ephemeral=True)
                 return
 
             start_year = now.year
@@ -480,7 +480,7 @@ class Leveling(discord.Cog):
 
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='change_multiplier_end_date', description='Change the end date of a multiplier')
     @is_module_enabled("leveling")
@@ -500,7 +500,7 @@ class Leveling(discord.Cog):
 
             # Verify the format of end_date
             if not re.match(r'\d{2}-\d{2}', end_date):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_date_format"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_date_format"), ephemeral=True)
                 return
 
             # Verify the month and day values
@@ -509,7 +509,7 @@ class Leveling(discord.Cog):
             now = await get_now_for_server(ctx.guild.id)
             # Use the validate_day method to check if the end date is valid
             if not validate_day(end_month, end_day, now.year):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_end_date"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "leveling_error_invalid_end_date"), ephemeral=True)
                 return
 
             year = now.year
@@ -533,7 +533,7 @@ class Leveling(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='remove_multiplier', description='Remove a multiplier')
     @is_module_enabled("leveling")
@@ -572,7 +572,7 @@ class Leveling(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='get_multiplier', description='Get the leveling multiplier')
     @is_module_enabled("leveling")
@@ -589,7 +589,7 @@ class Leveling(discord.Cog):
                     multiplier=multiplier), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='set_xp_per_level', description='Set the XP per level')
     @is_module_enabled("leveling")
@@ -618,7 +618,7 @@ class Leveling(discord.Cog):
             await log_into_logs(ctx.guild, logging_embed)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='set_reward', description='Set a role for a level')
     @is_module_enabled("leveling")
@@ -661,7 +661,7 @@ class Leveling(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='remove_reward', description='Remove a role for a level')
     @is_module_enabled("leveling")
@@ -699,7 +699,7 @@ class Leveling(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name="set_icon", description="Set leveling icon")
     @is_module_enabled("leveling")
@@ -722,11 +722,11 @@ class Leveling(discord.Cog):
                     (await trl(ctx.user.id, ctx.guild.id, "leveling_set_icon_success", append_tip=True)).format(icon=icon),
                     ephemeral=True)
             else:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_set_icon_error"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "leveling_set_icon_error"), ephemeral=True)
 
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='leaderboard', description='Get the leaderboard for the server')
     @is_module_enabled("leveling")
@@ -754,7 +754,7 @@ class Leveling(discord.Cog):
             insert_last = False
 
             # Create the embed
-            leaderboard_message = trl(ctx.user.id, ctx.guild.id, "leveling_leaderboard_title")
+            leaderboard_message = await trl(ctx.user.id, ctx.guild.id, "leveling_leaderboard_title")
 
             # Add the users to the embed
             i = 1
@@ -774,7 +774,7 @@ class Leveling(discord.Cog):
                                                                     language)
 
                     lb_pages.append(leaderboard_message)
-                    leaderboard_message = trl(ctx.user.id, ctx.guild.id, "leveling_leaderboard_title")
+                    leaderboard_message = await trl(ctx.user.id, ctx.guild.id, "leveling_leaderboard_title")
                     insert_last = False
 
             if not insert_last:
@@ -789,4 +789,4 @@ class Leveling(discord.Cog):
             await pages_resp.respond(ctx.interaction, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

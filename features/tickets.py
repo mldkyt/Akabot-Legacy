@@ -128,7 +128,7 @@ async def db_list_archived_tickets():
     :return: List of tuples with guild_id and ticket_channel_id.
     """
     client = get_client()
-    tickets = await client['TicketChannels'].find({'ATime': {'$not': {'$eq': 'None'}}})
+    tickets = await client['TicketChannels'].find({'ATime': {'$not': {'$eq': 'None'}}}).to_list()
     await client.client.close()
     return tickets
 
@@ -139,7 +139,7 @@ async def db_list_not_archived_tickets():
     :return: List of tuples with guild_id and ticket_channel_id.
     """
     client = get_client()
-    tickets = await client['TicketChannels'].find({'ATime': 'None'})
+    tickets = await client['TicketChannels'].find({'ATime': 'None'}).to_list()
     await client.client.close()
     return tickets
 
@@ -343,7 +343,7 @@ class Tickets(discord.Cog):
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @tickets_commands.command(name="set_hide_time",
                               description="Set the time that the ticket will be available for the creator after it's "
@@ -363,7 +363,7 @@ class Tickets(discord.Cog):
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @tickets_commands.command(name="set_archive_time",
                               description="Set the time that the ticket will be archived after no activity.")
@@ -382,7 +382,7 @@ class Tickets(discord.Cog):
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @tasks.loop(seconds=60)
     async def handle_hiding(self):

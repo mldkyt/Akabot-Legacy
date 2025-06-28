@@ -137,7 +137,7 @@ class StickyMessage(discord.Cog):
     async def check_sticky_message(self):
         client = get_client()
 
-        for i in await client['StickyMessages'].find({
+        async for i in client['StickyMessages'].find({
             'NewMessage': True
         }):
             try:

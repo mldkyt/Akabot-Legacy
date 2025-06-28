@@ -276,7 +276,7 @@ class ChatStreaks(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @streaks_subcommand.command(name="streak", description="Get someone's streak, to get yours, /streak.")
     @is_module_enabled("chat_streaks")
@@ -295,7 +295,7 @@ class ChatStreaks(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @streaks_subcommand.command(name="configure_messages", description="Configure Chat Streaks messages")
     @is_module_enabled("chat_streaks")
@@ -316,7 +316,7 @@ class ChatStreaks(discord.Cog):
             await set_setting(ctx.guild.id, 'chat_streaks_delete_sent_message_updated',
                               str(delete_sent_message_updated))
 
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_streaks_configure_messages_success"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "chat_streaks_configure_messages_success"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -332,7 +332,7 @@ class ChatStreaks(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     # Leaderboard
 
@@ -352,7 +352,7 @@ class ChatStreaks(discord.Cog):
 
             lb_pages = []
             lb_last = False
-            message = trl(ctx.user.id, ctx.guild.id, "chat_streak_leaderboard_title")
+            message = await trl(ctx.user.id, ctx.guild.id, "chat_streak_leaderboard_title")
 
             i = 1
             for _, row in enumerate(rows):
@@ -375,7 +375,7 @@ class ChatStreaks(discord.Cog):
                         message = append_tip_to_message(ctx.guild.id, ctx.user.id, message, language)
 
                     lb_pages.append(message)
-                    message = trl(ctx.user.id, ctx.guild.id, "chat_streak_leaderboard_title")
+                    message = await trl(ctx.user.id, ctx.guild.id, "chat_streak_leaderboard_title")
                     lb_last = False
 
             if not lb_last:
@@ -389,7 +389,7 @@ class ChatStreaks(discord.Cog):
             await resp.respond(ctx.interaction, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @streaks_subcommand.command(name="add_reward", description="Add a chat streak reward")
     @is_module_enabled("chat_streaks")
@@ -409,10 +409,10 @@ class ChatStreaks(discord.Cog):
                 {'GuildID': str(ctx.guild.id), 'RoleID': str(role.id), 'RequiredStreak': required_streak,
                  'RemoveOnLoss': remove_on_loss})
             await client.client.close()
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_streaks_add_reward_success"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "chat_streaks_add_reward_success"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @streaks_subcommand.command(name="remove_reward", description="Remove a chat streak reward")
     @is_module_enabled("chat_streaks")
@@ -428,7 +428,7 @@ class ChatStreaks(discord.Cog):
 
             await client['ChatStreaksRewards'].delete_one({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)})
             await client.client.close()
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_streaks_remove_reward_success"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "chat_streaks_remove_reward_success"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

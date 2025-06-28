@@ -85,7 +85,7 @@ class RolesOnJoin(discord.Cog):
             await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @roles_on_join_commands.command(name="remove", description="Remove a role on join")
     @analytics("roles_on_join remove")
@@ -95,16 +95,16 @@ class RolesOnJoin(discord.Cog):
             client = get_client()
 
             if await client['RolesOnJoin'].count_documents({'GuildID': str(ctx.guild.id)}) == 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "roles_on_join_role_not_in_join_roles"),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "roles_on_join_role_not_in_join_roles"),
                                   ephemeral=True)
             else:
                 await client['RolesOnJoin'].delete_one({'GuildID': str(ctx.guild.id)})
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "roles_on_join_role_removed", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "roles_on_join_role_removed", append_tip=True),
                                   ephemeral=True)
             await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @roles_on_join_commands.command(name="list", description="List roles on join")
     @analytics("roles_on_join list")
@@ -135,4 +135,4 @@ class RolesOnJoin(discord.Cog):
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

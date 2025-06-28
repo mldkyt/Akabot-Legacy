@@ -20,7 +20,7 @@ from database import get_client
 
 async def get_setting(server_id: int, key: str, default):
     client = get_client()
-    res = client['ServerSettings'].find_one({'GuildID': str(server_id)})
+    res = await client['ServerSettings'].find_one({'GuildID': str(server_id)})
     await client.client.close()
     if not res:
         return default

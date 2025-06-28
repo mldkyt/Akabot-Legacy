@@ -117,7 +117,7 @@ class OpenPaginatorView(View):
             await pagination.respond(interaction, ephemeral=True)
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, "command_error_generic"),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, "command_error_generic"),
                                       ephemeral=True)
 
 
@@ -190,7 +190,7 @@ async def normal_chat_summary(channel, date, guild, i, summary_title: str = ""):
         kwd_cnt = {k: v for k, v in sorted(kwd_cnt.items(), key=lambda item: item[1], reverse=True)}
         logging.debug('Found %d keywords in the list', len(kwd_cnt))
         if len(kwd_cnt) > 0:
-            chat_summary_message += trl(0, guild.id, "chat_summary_keywords_title")
+            chat_summary_message += await trl(0, guild.id, "chat_summary_keywords_title")
             for k, v in kwd_cnt.items():
                 if v == 0:
                     continue
@@ -261,9 +261,8 @@ class ChatSummary(discord.Cog):
         try:
             logging.info('Running summarize task')
             client = get_client()
-            res = client['ChatSummary'].find({'Enabled': True}).to_list()
-            await client.client.close()
-            for i in res:
+            res = client['ChatSummary'].find({'Enabled': True})
+            async for i in res:
                 yesterday = await get_now_for_server(i['GuildID'])
 
                 if yesterday.hour != 0 or yesterday.minute != 0:
@@ -320,6 +319,7 @@ class ChatSummary(discord.Cog):
                 elif setting == "special":
                     await special_chat_summary(channel, date, guild, i)
 
+            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -341,7 +341,7 @@ class ChatSummary(discord.Cog):
                 'GuildID': str(ctx.guild.id), 'Enabled': True
             })
             if res > int(get_key("Max_ChatSummary_Channels", "3")):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "limits_max_chatsummary_channels"))
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "limits_max_chatsummary_channels"))
                 await client.client.close()
                 return
 
@@ -353,7 +353,7 @@ class ChatSummary(discord.Cog):
                                                    {'$set': {'Enabled': True}})
             await client.client.close()
             if res.modified_count == 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_summary_add_already_added"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "chat_summary_add_already_added"), ephemeral=True)
                 return
 
             # Logging embed
@@ -365,10 +365,10 @@ class ChatSummary(discord.Cog):
             await log_into_logs(ctx.guild, logging_embed)
 
             # Send response
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_summary_add_added", append_tip=True), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "chat_summary_add_added", append_tip=True), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_summary_subcommand.command(name="remove", description="Remove a channel from being counted to chat summary")
     @commands_ext.guild_only()
@@ -383,7 +383,7 @@ class ChatSummary(discord.Cog):
                                                    {'$set': {'Enabled': False}})
             await client.client.close()
             if res.modified_count == 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'chat_summary_remove_already_removed'), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'chat_summary_remove_already_removed'), ephemeral=True)
 
             # Logging embed
             logging_embed = discord.Embed(title=trl(ctx.user.id, ctx.guild.id, "chat_summary_remove_log_title"))
@@ -396,11 +396,11 @@ class ChatSummary(discord.Cog):
             await log_into_logs(ctx.guild, logging_embed)
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_summary_remove_removed", append_tip=True),
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "chat_summary_remove_removed", append_tip=True),
                               ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_summary_subcommand.command(name="dateformat", description="Set the date format of Chat Streak messages.")
     @commands_ext.guild_only()
@@ -435,7 +435,7 @@ class ChatSummary(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_summary_subcommand.command(name="top_count",
                                      description="Set the amount of people to show in summary messages.")
@@ -480,7 +480,7 @@ class ChatSummary(discord.Cog):
 
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_summary_subcommand.command(name="countedits",
                                      description="Enable or disable counting of message edits as sent messages.")
@@ -515,7 +515,7 @@ class ChatSummary(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_summary_subcommand.command(name="countconsencutive",
                                      description="Enable or disable counting of mutliple messages sent by one member.")
@@ -550,7 +550,7 @@ class ChatSummary(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_summary_subcommand.command(name='add_keyword', description='Add a keyword to be counted')
     @commands_ext.guild_only()

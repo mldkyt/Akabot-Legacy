@@ -61,7 +61,7 @@ class MessageSchedule(discord.Cog):
 
             if await client['ScheduledMessages'].count_documents({'GuildID': str(ctx.guild.id)}) >= int(
                     get_key("MAX_SCHEDULED_MESSAGES", "5")):
-                await ctx.respond(trl(ctx.guild.id, ctx.user.id, "message_schedule_max_reached"), ephemeral=True)
+                await ctx.respond(await trl(ctx.guild.id, ctx.user.id, "message_schedule_max_reached"), ephemeral=True)
                 await client.client.close()
                 return
 
@@ -76,7 +76,7 @@ class MessageSchedule(discord.Cog):
                 day_of_week=day_of_week_word, id=str(inserted.inserted_id)), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="monthly")
     @is_module_enabled("schedule")
@@ -87,7 +87,7 @@ class MessageSchedule(discord.Cog):
             client = get_client()
             if await client['ScheduledMessages'].count_documents({'GuildID': str(ctx.guild.id)}) >= int(
                     get_key("MAX_SCHEDULED_MESSAGES", "5")):
-                await ctx.respond(trl(ctx.guild.id, ctx.user.id, "message_schedule_max_reached"), ephemeral=True)
+                await ctx.respond(await trl(ctx.guild.id, ctx.user.id, "message_schedule_max_reached"), ephemeral=True)
                 await client.client.close()
                 return
 
@@ -103,7 +103,7 @@ class MessageSchedule(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="yearly")
     @is_module_enabled("schedule")
@@ -116,7 +116,7 @@ class MessageSchedule(discord.Cog):
 
             if await client['ScheduledMessages'].count_documents({'GuildID': str(ctx.guild.id)}) >= int(
                     get_key("MAX_SCHEDULED_MESSAGES", "5")):
-                await ctx.respond(trl(ctx.guild.id, ctx.user.id, "message_schedule_max_reached"), ephemeral=True)
+                await ctx.respond(await trl(ctx.guild.id, ctx.user.id, "message_schedule_max_reached"), ephemeral=True)
                 await client.client.close()
                 return
 
@@ -131,7 +131,7 @@ class MessageSchedule(discord.Cog):
                         inserted.inserted_id)), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="update_content")
     @is_module_enabled("schedule")
@@ -140,7 +140,7 @@ class MessageSchedule(discord.Cog):
                              new_text: discord.Option(str, description="New text to send")):
         try:
             if not ObjectId.is_valid(object_id):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_invalid_id"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "message_schedule_invalid_id"), ephemeral=True)
                 return
 
             client = get_client()
@@ -149,13 +149,13 @@ class MessageSchedule(discord.Cog):
             await client.client.close()
 
             if update_result.modified_count > 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_updated_content", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "message_schedule_updated_content", append_tip=True),
                                   ephemeral=True)
             else:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_not_found"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "message_schedule_not_found"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="delete")
     @is_module_enabled("schedule")
@@ -164,7 +164,7 @@ class MessageSchedule(discord.Cog):
 
         try:
             if not ObjectId.is_valid(object_id):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_invalid_id"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "message_schedule_invalid_id"), ephemeral=True)
                 return
 
             client = get_client()
@@ -172,13 +172,13 @@ class MessageSchedule(discord.Cog):
             await client.client.close()
 
             if delete_result.deleted_count > 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_deleted", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "message_schedule_deleted", append_tip=True),
                                   ephemeral=True)
             else:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_not_found"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "message_schedule_not_found"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="list", description="List scheduled messages")
     @is_module_enabled("schedule")
@@ -221,7 +221,7 @@ class MessageSchedule(discord.Cog):
             await ctx.respond(message_content, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @tasks.loop(minutes=1)
     async def handle_message_schedule(self):

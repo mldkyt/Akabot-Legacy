@@ -62,7 +62,7 @@ class Giveaways(discord.Cog):
         try:
             # Check if the parameters are correct
             if days + hours < 0 or days < 0 or hours < 0 or minutes < 0 or winners < 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "giveaways_error_negative_parameters"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "giveaways_error_negative_parameters"), ephemeral=True)
                 return
 
             client = get_client()
@@ -70,7 +70,7 @@ class Giveaways(discord.Cog):
             # Check if we didn't hit limit of giveaways
             res = await client['Giveaways'].count_documents({'GuildID': str(ctx.guild.id)})
             if res > int(get_key("Max_Giveaways", "3")):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "limits_max_giveaways"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "limits_max_giveaways"), ephemeral=True)
                 return
 
             # Determine ending date
@@ -105,7 +105,7 @@ class Giveaways(discord.Cog):
     async def giveaway_end(self, ctx: discord.ApplicationContext, giveaway_id: str):
         try:
             if not ObjectId.is_valid(giveaway_id):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "giveaways_error_not_found"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "giveaways_error_not_found"), ephemeral=True)
                 return
 
             client = get_client()
@@ -113,16 +113,16 @@ class Giveaways(discord.Cog):
             res = await client['Giveaways'].count_documents({'_id': ObjectId(giveaway_id)})
             await client.client.close()
             if res == 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "giveaways_error_not_found"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "giveaways_error_not_found"), ephemeral=True)
                 return
 
             await self.process_send_giveaway(giveaway_id)
 
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "giveaways_giveaway_end_success", append_tip=True),
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "giveaways_giveaway_end_success", append_tip=True),
                               ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @giveaways_group.command(name='list', description='List all giveaways')
     @discord.default_permissions(manage_guild=True)
@@ -136,7 +136,7 @@ class Giveaways(discord.Cog):
             res = await client['Giveaways'].find({}).to_list()
             await client.client.close()
 
-            message = trl(ctx.user.id, ctx.guild.id, "giveaways_list_title")
+            message = await trl(ctx.user.id, ctx.guild.id, "giveaways_list_title")
 
             for i in res:
                 id = str(i['_id'])

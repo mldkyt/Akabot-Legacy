@@ -102,7 +102,7 @@ class PerUserSettings(discord.Cog):
                 lang=get_language_name(lang_code, completeness=False)), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @user_settings_group.command(name='birthday', description='Set your birthday for Birthday Announcements.')
     @discord.option(name='birthday', description='Your birthday in the format YYYY-MM-DD')

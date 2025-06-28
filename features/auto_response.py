@@ -108,7 +108,7 @@ class AutoResponse(discord.Cog):
     async def edit_trigger_auto_response(self, ctx: discord.ApplicationContext, id: str, new_trigger: str):
         try:
             if not ObjectId.is_valid(id):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
                                   ephemeral=True)
                 return
 
@@ -118,15 +118,15 @@ class AutoResponse(discord.Cog):
                                                        {'$set': {'TriggerText': new_trigger}})
 
             if result.matched_count == 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
                                   ephemeral=True)
                 return
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_keyword_updated"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_response_keyword_updated"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_response_group.command(name="delete", description="Delete an auto response setting")
     @discord_commands_ext.has_permissions(manage_messages=True)
@@ -135,7 +135,7 @@ class AutoResponse(discord.Cog):
     async def delete_auto_response(self, ctx: discord.ApplicationContext, id: str):
         try:
             if not ObjectId.is_valid(id):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
                                   ephemeral=True)
                 return
 
@@ -144,15 +144,15 @@ class AutoResponse(discord.Cog):
             result = await client['AutoResponse'].delete_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)})
 
             if result.deleted_count == 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
                                   ephemeral=True)
                 return
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_delete_success"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_response_delete_success"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_response_group.command(name="edit_response", description="Change response for a setting")
     @discord_commands_ext.has_permissions(manage_messages=True)
@@ -161,7 +161,7 @@ class AutoResponse(discord.Cog):
     async def edit_response_auto_response(self, ctx: discord.ApplicationContext, id: str, new_response: str):
         try:
             if not ObjectId.is_valid(id):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
                                   ephemeral=True)
                 return
 
@@ -171,15 +171,15 @@ class AutoResponse(discord.Cog):
                                                        {'$set': {'ReplyText': new_response}})
 
             if result.matched_count == 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
                                   ephemeral=True)
                 return
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_text_updated"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_response_text_updated"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @discord.Cog.listener()
     async def on_message(self, msg: discord.Message):

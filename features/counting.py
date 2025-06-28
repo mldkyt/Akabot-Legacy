@@ -138,10 +138,10 @@ class Counting(discord.Cog):
                 {'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id), 'Count': 1, 'LastMember': '0'})
 
             await client.client.close()
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "counting_channel_added", append_tip=True), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "counting_channel_added", append_tip=True), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @counting.command(name="remove_channel", description="Remove a channel from counting channels")
     async def remove_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
@@ -150,14 +150,14 @@ class Counting(discord.Cog):
             existing = await client["Counting"].find_one({'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id)})
 
             if existing is None:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "counting_channel_not_found"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "counting_channel_not_found"), ephemeral=True)
                 await client.client.close()
                 return
 
             await client["Counting"].delete_one({'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id)})
 
             await client.client.close()
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "counting_channel_removed"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "counting_channel_removed"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

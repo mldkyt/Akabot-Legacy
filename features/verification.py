@@ -123,7 +123,7 @@ class VerificationTextReverseModal(discord.ui.Modal):
             # We assume the length is correct
             # Verify the English word
             if self.text_1.value != self.word_right:
-                await interaction.response.send_message(trl(self.user_id, 0, "verification_form_word_incorrect"),
+                await interaction.response.send_message(await trl(self.user_id, 0, "verification_form_word_incorrect"),
                                                         ephemeral=True)
                 return
 
@@ -157,7 +157,7 @@ class VerificationEnglishWord(discord.ui.View):
             await ctx.response.send_modal(modal)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
 
 
 class VerificationEnglishWordModal(discord.ui.Modal):
@@ -176,15 +176,15 @@ class VerificationEnglishWordModal(discord.ui.Modal):
             # We assume the length is correct
             # Verify the English word
             if not utils.english_words.verify_english_word(self.text_1.value):
-                await interaction.response.send_message(trl(self.user_id, 0, "verification_form_not_english"),
+                await interaction.response.send_message(await trl(self.user_id, 0, "verification_form_not_english"),
                                                         ephemeral=True)
                 return
 
             await give_verify_role(interaction)
-            await interaction.response.send_message(trl(self.user_id, 0, "verification_success"), ephemeral=True)
+            await interaction.response.send_message(await trl(self.user_id, 0, "verification_success"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await interaction.response.send_message(trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
+            await interaction.response.send_message(await trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
 
 
 class VerificationMath(discord.ui.View):
@@ -251,13 +251,13 @@ class VerificationMathModal(discord.ui.Modal):
         try:
             if self.text_1.value == self.right_result:
                 await give_verify_role(interaction)
-                await interaction.response.send_message(trl(self.user_id, 0, "verification_success"), ephemeral=True)
+                await interaction.response.send_message(await trl(self.user_id, 0, "verification_success"), ephemeral=True)
             else:
-                await interaction.response.send_message(trl(self.user_id, 0, "verification_math_incorrect"),
+                await interaction.response.send_message(await trl(self.user_id, 0, "verification_math_incorrect"),
                                                         ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await interaction.response.send_message(trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
+            await interaction.response.send_message(await trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
 
 
 class VerificationView(discord.ui.View):
@@ -304,7 +304,7 @@ class VerificationView(discord.ui.View):
                 await ctx.respond(await word_reverse.message_content(), view=word_reverse, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
 
 class Verification(discord.Cog):
@@ -330,15 +330,15 @@ class Verification(discord.Cog):
 
             # Role position check
             if ctx.guild.me.top_role.position < role.position:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "verification_set_role_no_perms"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "verification_set_role_no_perms"), ephemeral=True)
                 return
 
             await utils.settings.set_setting(ctx.guild.id, "verification_role", str(role.id))
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "verification_set_success", append_tip=True),
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "verification_set_success", append_tip=True),
                               ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @verification_subcommand.command(name="set_difficulty", description="Set the verification difficulty")
     @discord.commands.option(name="difficulty",
@@ -383,7 +383,7 @@ class Verification(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @verification_subcommand.command(name="send_message", description="Send the verification message")
     @discord.ext.commands.has_permissions(manage_guild=True)
@@ -397,24 +397,24 @@ class Verification(discord.Cog):
             # Get the role and verify it was set
             ver_role_id = await utils.settings.get_setting(ctx.guild.id, "verification_role", "-1")
             if ver_role_id == "-1":
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "verification_send_message_verification_role_not_set"),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "verification_send_message_verification_role_not_set"),
                                   ephemeral=True)
                 return
 
             # Role existing check
             ver_role = ctx.guild.get_role(int(ver_role_id))
             if ver_role is None:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "verification_role_doesnt_exist"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "verification_role_doesnt_exist"), ephemeral=True)
                 return
 
             # Role permissions checks
             if ctx.guild.me.top_role.position < ver_role.position:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "verification_role_position"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "verification_role_position"), ephemeral=True)
                 return
 
             # Channel permissions
             if not ctx.channel.can_send():
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "verification_channel_send"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "verification_channel_send"), ephemeral=True)
                 return
 
             # Create the view
@@ -424,8 +424,8 @@ class Verification(discord.Cog):
             await ctx.channel.send(content=custom_verify_message, view=view)
 
             # Respond to user that it was successfull
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "verification_send_success", append_tip=True),
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "verification_send_success", append_tip=True),
                               ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

@@ -116,7 +116,7 @@ class ReportTextModal(Modal):
                 ephemeral=True)
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
 class ReplyModal(discord.ui.Modal):
@@ -162,7 +162,7 @@ class ReplyModal(discord.ui.Modal):
             await interaction.respond("Reply sent!", ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await interaction.respond(trl(self.message.author.id, self.message.guild.id, "command_error_generic"), ephemeral=True)
+            await interaction.respond(await trl(self.message.author.id, self.message.guild.id, "command_error_generic"), ephemeral=True)
 
 class CreateButtonView(View):
     def __init__(self):
@@ -190,7 +190,7 @@ class CreateButtonView(View):
             logging.debug(str(ban))
 
             if ban is not None:
-                await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_banned'),
+                await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_banned'),
                                           ephemeral=True)
                 return
 
@@ -200,7 +200,7 @@ class CreateButtonView(View):
                             modal_title=await trl(0, interaction.guild.id, 'quefessions_submit_modal_title')))
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
 
@@ -233,7 +233,7 @@ class AdminBanSelectTypeView(View):
             await interaction.edit(view=AdminQuefessionBanDurationChoice(self.mod_message))
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
     @button(label='Server Ban', style=ButtonStyle.danger)
@@ -242,7 +242,7 @@ class AdminBanSelectTypeView(View):
             await interaction.edit(view=AdminBanSelectTypeView(self.mod_message))
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
 
@@ -262,7 +262,7 @@ class AdminGuildBanConfirm(View):
             await client.client.close()
 
             if data is None:
-                await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
+                await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
                                           ephemeral=True)
                 return
 
@@ -275,7 +275,7 @@ class AdminGuildBanConfirm(View):
             await interaction.edit(view=self)
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
     @button(label='Cancel Guild Ban', style=ButtonStyle.secondary)
@@ -284,7 +284,7 @@ class AdminGuildBanConfirm(View):
             await interaction.edit(view=AdminView(message=self.mod_message))
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
 
@@ -338,11 +338,11 @@ class AdminQuefessionBanDurationChoice(View):
             self.stop()
             self.disable_all_items()
             await interaction.edit(view=self)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_10_minutes'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_10_minutes'),
                                       ephemeral=True)
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
                                       ephemeral=True)
 
     @button(label='1 hour', style=ButtonStyle.danger)
@@ -352,11 +352,11 @@ class AdminQuefessionBanDurationChoice(View):
             self.stop()
             self.disable_all_items()
             await interaction.edit(view=self)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_hour'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_hour'),
                                       ephemeral=True)
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
                                       ephemeral=True)
 
     @button(label='12 hour', style=ButtonStyle.danger)
@@ -366,11 +366,11 @@ class AdminQuefessionBanDurationChoice(View):
             self.stop()
             self.disable_all_items()
             await interaction.edit(view=self)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_12_hours'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_12_hours'),
                                       ephemeral=True)
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
                                       ephemeral=True)
 
     @button(label='1 day', style=ButtonStyle.danger)
@@ -380,11 +380,11 @@ class AdminQuefessionBanDurationChoice(View):
             self.stop()
             self.disable_all_items()
             await interaction.edit(view=self)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_day'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_day'),
                                       ephemeral=True)
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
                                       ephemeral=True)
 
     @button(label='1 week', style=ButtonStyle.danger)
@@ -394,11 +394,11 @@ class AdminQuefessionBanDurationChoice(View):
             self.stop()
             self.disable_all_items()
             await interaction.edit(view=self)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_week'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_week'),
                                       ephemeral=True)
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
                                       ephemeral=True)
 
     @button(label='1 month', style=ButtonStyle.danger)
@@ -408,11 +408,11 @@ class AdminQuefessionBanDurationChoice(View):
             self.stop()
             self.disable_all_items()
             await interaction.edit(view=self)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_month'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_month'),
                                       ephemeral=True)
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
                                       ephemeral=True)
 
     @button(label='Permanent', style=ButtonStyle.danger)
@@ -422,11 +422,11 @@ class AdminQuefessionBanDurationChoice(View):
             self.stop()
             self.disable_all_items()
             await interaction.edit(view=self)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_permanent'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_permanent'),
                                       ephemeral=True)
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
                                       ephemeral=True)
 
 
@@ -468,7 +468,7 @@ class InfoButtonView(View):
     async def admin_view(self, button: Button, interaction: Interaction):
         if not interaction.user.guild_permissions.manage_channels and not interaction.user.guild_permissions.manage_guild and \
                 not interaction.user.guild_permissions.administrator:
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'no_permission'), ephemeral=True)
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'no_permission'), ephemeral=True)
             return
 
         client = get_client()
@@ -478,7 +478,7 @@ class InfoButtonView(View):
         await client.client.close()
 
         if data is None:
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
                                       ephemeral=True)
             return
 
@@ -494,7 +494,7 @@ class InfoButtonView(View):
         message = await interaction.guild.get_channel(int(data['ChannelID'])).fetch_message(int(data['MessageID']))
         logging.info(message)
         if message is None:
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
                                       ephemeral=True)
             return
 
@@ -509,7 +509,7 @@ class InfoButtonView(View):
             await client.client.close()
 
             if data is None:
-                await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
+                await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
                                           ephemeral=True)
                 return
 
@@ -522,12 +522,12 @@ class InfoButtonView(View):
             if get_key("Message_Intent", "false") == "true":
                 channel = interaction.guild.get_channel(int(data['ChannelID']))
                 if channel is None:
-                    await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'), ephemeral=True)
+                    await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'), ephemeral=True)
                     return
 
                 message = await channel.fetch_message(int(data['MessageID']))
                 if message is None:
-                    await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'), ephemeral=True)
+                    await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'), ephemeral=True)
                     return
 
                 await interaction.response.send_modal(modal=ReportTextModal(author, interaction.message, message.content,
@@ -541,7 +541,7 @@ class InfoButtonView(View):
                                                                             report_title=await trl(int(author[2]), interaction.guild.id, "quefessions_report_title")))
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
 
@@ -560,7 +560,7 @@ class LogsView(View):
             self.stop()
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
     @button(label='Ban', style=ButtonStyle.danger)
@@ -570,7 +570,7 @@ class LogsView(View):
                                       view=AdminBanSelectTypeView(message=self.mod_message))
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
 
@@ -597,7 +597,7 @@ class AnonymousQuefessions(Cog):
                 ephemeral=True)
         except Exception as e:
             capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @anonymous_quefessions_cmd.command()
     @guild_only()
@@ -611,7 +611,7 @@ class AnonymousQuefessions(Cog):
                 ephemeral=True)
         except Exception as e:
             capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @anonymous_quefessions_cmd.command()
     @has_guild_permissions(manage_guild=True)
@@ -630,11 +630,11 @@ class AnonymousQuefessions(Cog):
                 view=CreateButtonView()
             )
 
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'quefessions_sent_successfully'), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'quefessions_sent_successfully'), ephemeral=True)
 
         except Exception as e:
             capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @Cog.listener()
     async def on_message(self, message: Message):

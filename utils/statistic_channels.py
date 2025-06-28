@@ -20,7 +20,7 @@ from database import get_client
 async def db_get_statistic_channels(guild_id: int):
     """Returns an array of {GuildID: str, ChannelID: str, StatisticText: str}"""
     client = get_client()
-    data = client['StatisticChannels'].find({'GuildID': str(guild_id)}).to_list()
+    data = await client['StatisticChannels'].find({'GuildID': str(guild_id)}).to_list()
     await client.client.close()
 
     return data
@@ -29,7 +29,7 @@ async def db_get_statistic_channels(guild_id: int):
 async def db_set_statistic_channel(guild_id: int, channel_id: int, statistic_text: str):
     """Updates or creates a record in DB"""
     client = get_client()
-    client['StatisticChannels'].update_one({'GuildID': str(guild_id), 'ChannelID': str(channel_id)}, {'$set': {
+    await client['StatisticChannels'].update_one({'GuildID': str(guild_id), 'ChannelID': str(channel_id)}, {'$set': {
         'StatisticText': statistic_text}},
                                            upsert=True)
     await client.client.close()
@@ -38,5 +38,5 @@ async def db_set_statistic_channel(guild_id: int, channel_id: int, statistic_tex
 async def db_remove_statistic_channel(guild_id: int, channel_id: int):
     """Removes a record from DB"""
     client = get_client()
-    client['StatisticChannels'].delete_one({'GuildID': str(guild_id), 'ChannelID': str(channel_id)})
+    await client['StatisticChannels'].delete_one({'GuildID': str(guild_id), 'ChannelID': str(channel_id)})
     await client.client.close()
