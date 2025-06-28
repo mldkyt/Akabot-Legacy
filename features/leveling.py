@@ -115,11 +115,11 @@ class Leveling(discord.Cog):
             multiplier_list = await mult_list(ctx.guild.id)
 
             msg = ""
+            now = await get_now_for_server(ctx.guild.id)
             for i in multiplier_list:
                 start_month, start_day = map(int, i['StartDate'].split('-'))
                 end_month, end_day = map(int, i['EndDate'].split('-'))
 
-                now = await get_now_for_server(ctx.guild.id)
                 start_date = datetime.datetime(now.year, start_month, start_day)
                 end_date = datetime.datetime(now.year, end_month, end_day, hour=23, minute=59, second=59)
 
