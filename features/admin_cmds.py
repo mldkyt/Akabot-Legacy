@@ -53,7 +53,6 @@ class AdminCommands(discord.Cog):
             active_users = await client['AnalyticsActiveUsers'].count_documents({'LastUseTime': {'$gt': datetime.datetime.now() - datetime.timedelta(days=7)}})
             active_akabot_users = await client['AnalyticsAkabotUsers'].count_documents({'LastBotUse': {'$gt': datetime.datetime.now() - datetime.timedelta(days=7)}})
 
-            await client.client.close()
 
             await ctx.respond(
                 (await trl(ctx.user.id, ctx.guild.id, "bot_status_message")).format(servers=str(servers),

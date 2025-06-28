@@ -15,7 +15,6 @@ async def is_broadcast(user_id: int, guild_id: int):
     data = await client['UserBirthday'].find_one({
         'UserID': str(user_id)
     })
-    await client.client.close()
 
     if data is None:
         return False
@@ -34,7 +33,6 @@ async def remove_broadcast(user_id: int, guild_id: int):
             'AllowedServers': str(guild_id)
         }
     })
-    await client.client.close()
 
 
 async def add_broadcast(user_id: int, guild_id: int):
@@ -46,7 +44,6 @@ async def add_broadcast(user_id: int, guild_id: int):
             'AllowedServers': str(guild_id)
         }
     })
-    await client.client.close()
 
 
 async def set_broadcast(user_id: int, guild_id: int, state: bool):

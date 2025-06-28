@@ -33,14 +33,12 @@ async def db_add_ticket_channel(guild_id: int, ticket_category: int, user_id: in
     await client['TicketChannels'].insert_one(
         {'GuildID': str(guild_id), 'TicketChannelID': str(ticket_category), 'UserID': str(user_id),
          'MTime': await get_now_for_server(guild_id), 'ATime': 'None'})
-    await client.client.close()
 
 
 async def db_is_ticket_channel(guild_id: int, ticket_channel_id: int):
     client = get_client()
     count = await client['TicketChannels'].count_documents(
         {'GuildID': str(guild_id), 'TicketChannelID': str(ticket_channel_id)})
-    await client.client.close()
     return count > 0
 
 
@@ -48,21 +46,18 @@ async def db_get_ticket_creator(guild_id: int, ticket_channel_id: int) -> int:
     client = get_client()
     user_id = await client['TicketChannels'].find_one({'GuildID': str(guild_id), 'TicketChannelID': str(ticket_channel_id)})[
         'UserID']
-    await client.client.close()
     return int(user_id)
 
 
 async def db_remove_ticket_channel(guild_id: int, ticket_channel_id: int):
     client = get_client()
     await client['TicketChannels'].delete_one({'GuildID': str(guild_id), 'TicketChannelID': str(ticket_channel_id)})
-    await client.client.close()
 
 
 async def db_update_mtime(guild_id: int, ticket_channel_id: int):
     client = get_client()
     await client['TicketChannels'].update_one({'GuildID': str(guild_id), 'TicketChannelID': str(ticket_channel_id)},
                                         {'$set': {'MTime': await get_now_for_server(guild_id)}})
-    await client.client.close()
 
 
 async def check_ticket_archive_time(guild_id: int, ticket_channel_id: int) -> bool:
@@ -74,7 +69,6 @@ async def check_ticket_archive_time(guild_id: int, ticket_channel_id: int) -> bo
 
     mtime = await client['TicketChannels'].find_one({'GuildID': str(guild_id), 'TicketChannelID': str(ticket_channel_id)})[
         'MTime']
-    await client.client.close()
 
     if mtime is None:
         return False
@@ -89,7 +83,6 @@ async def db_is_archived(guild_id: int, ticket_channel_id: int) -> bool:
     client = get_client()
     atime = await client['TicketChannels'].find_one({'GuildID': str(guild_id), 'TicketChannelID': str(ticket_channel_id)})[
         'ATime']
-    await client.client.close()
     return atime != "None"
 
 
@@ -104,7 +97,6 @@ async def check_ticket_hide_time(guild_id: int, ticket_channel_id: int) -> bool:
     client = get_client()
     atime = await client['TicketChannels'].find_one({'GuildID': str(guild_id), 'TicketChannelID': str(ticket_channel_id)})[
         'ATime']
-    await client.client.close()
 
     if atime == 'None':
         return False
@@ -119,7 +111,6 @@ async def db_archive_ticket(guild_id: int, ticket_channel_id: int):
     client = get_client()
     await client['TicketChannels'].update_one({'GuildID': str(guild_id), 'TicketChannelID': str(ticket_channel_id)},
                                         {'$set': {'ATime': await get_now_for_server(guild_id)}})
-    await client.client.close()
 
 
 async def db_list_archived_tickets():
@@ -129,7 +120,6 @@ async def db_list_archived_tickets():
     """
     client = get_client()
     tickets = await client['TicketChannels'].find({'ATime': {'$not': {'$eq': 'None'}}}).to_list()
-    await client.client.close()
     return tickets
 
 
@@ -140,7 +130,6 @@ async def db_list_not_archived_tickets():
     """
     client = get_client()
     tickets = await client['TicketChannels'].find({'ATime': 'None'}).to_list()
-    await client.client.close()
     return tickets
 
 
@@ -150,12 +139,7 @@ class TicketMessageView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-        self.close_button = discord.ui.Button(style=discord.ButtonStyle.danger, label="Close Ticket",
-                                              custom_id="close_ticket")
-        self.add_item(self.close_button)
-        self.close_button.callback = self.close_ticket
 
-    async def close_ticket(self, interaction: discord.Interaction):
         self.disable_all_items()
 
         if not await db_is_ticket_channel(interaction.guild.id, interaction.channel.id):
@@ -178,11 +162,8 @@ class TicketMessageView(discord.ui.View):
                                                       send_messages=False)
             await db_remove_ticket_channel(interaction.guild.id, interaction.channel.id)
 
-        # Send closed message
-        await interaction.channel.send("Ticket closed by " + interaction.user.mention)
 
         await interaction.message.edit(view=self)
-        await interaction.response.send_message("Ticket closed!", ephemeral=True)
 
 
 class TicketCreateView(discord.ui.View):
@@ -434,15 +415,9 @@ class Tickets(discord.Cog):
                                                       send_messages=False)
                         await db_remove_ticket_channel(guild.id, channel.id)
 
-                    # Send closed message
                     await channel.send(
-                        "Ticket closed automatically because there was no activity for a certain amount of time.")
 
-                    log_embed = discord.Embed(title="Ticket Closed Automatically",
-                                              description=f"Ticket closed automatically by the system in {channel.mention} because there was no activity for a certain amount of time.")
-                    log_embed.add_field(name="Ticket Closed Automatically Time",
                                         value=(await get_now_for_server(guild.id)).isoformat())
-                    log_embed.add_field(name="Ticket Closed Automatically Message", value=channel.jump_url)
 
                     await log_into_logs(guild, log_embed)
         except Exception as e:

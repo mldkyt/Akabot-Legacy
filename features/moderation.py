@@ -39,7 +39,6 @@ from utils.warning import add_warning, db_get_warning_actions, db_add_warning_ac
 async def is_a_moderator(ctx: discord.ApplicationContext):
     client = get_client()
     roles = client['ModeratorRoles'].find({'GuildID': str(ctx.guild.id)})
-    await client.client.close()
     async for role in roles:
         if int(role['RoleID']) in [role.id for role in ctx.user.roles]:
             return True
@@ -720,11 +719,9 @@ class Moderation(discord.Cog):
             if await client['ModeratorRoles'].count_documents({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)}) > 0:
                 await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "moderation_moderator_role_already_exists")).format(
                     role=role.mention), ephemeral=True)
-                await client.client.close()
                 return
 
             await client['ModeratorRoles'].insert_one({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)})
-            await client.client.close()
 
             await ctx.respond(
                 (await trl(ctx.user.id, ctx.guild.id, "moderation_add_moderator_role_response")).format(role=role.mention),
@@ -748,11 +745,9 @@ class Moderation(discord.Cog):
             client = get_client()
             if await client['ModeratorRoles'].delete_one(
                     {'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)}).deleted_count > 0:
-                await client.client.close()
                 await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "moderation_remove_moderator_role_response")).format(
                     role=role.mention), ephemeral=True)
             else:
-                await client.client.close()
                 await ctx.respond(
                     (await trl(ctx.user.id, ctx.guild.id, "moderation_moderator_role_doesnt_exist")).format(role=role.mention),
                     ephemeral=True)
@@ -774,7 +769,6 @@ class Moderation(discord.Cog):
         try:
             client = get_client()
             roles = await client['ModeratorRoles'].find({'GuildID': str(ctx.guild.id)})
-            await client.client.close()
 
             if not roles:
                 await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "moderation_no_moderator_roles"), ephemeral=True)

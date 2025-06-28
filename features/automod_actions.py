@@ -38,7 +38,6 @@ async def db_add_automod_action(guild_id: int, rule_id: int, rule_name: str, act
         {'GuildID': str(guild_id), 'RuleID': str(rule_id), 'RuleName': rule_name, 'Action': action,
          'Additional': additional})
 
-    await client.client.close()
 
     return insert_result.inserted_id
 
@@ -48,7 +47,6 @@ async def db_remove_automod_action(action_id: ObjectId):
 
     await client['AutomodActions'].delete_one({'_id': action_id})
 
-    await client.client.close()
 
 
 async def db_get_automod_actions(guild_id: int):
@@ -56,7 +54,6 @@ async def db_get_automod_actions(guild_id: int):
 
     result = await client['AutomodActions'].find({'GuildID': str(guild_id)}).to_list()
 
-    await client.client.close()
     return [(str(i['_id']), i['RuleID'], i['RuleName'], i['Action'], i['Additional']) for i in result]
 
 

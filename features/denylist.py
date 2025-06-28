@@ -105,6 +105,5 @@ class ChannelDenylist(discord.Cog):
                 if data_msg['DeleteAfter'] > 0:
                     await sent_message.delete(delay=data_msg['DeleteAfter'])
 
-            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)

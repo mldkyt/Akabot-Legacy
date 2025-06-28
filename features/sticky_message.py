@@ -52,7 +52,6 @@ class StickyMessage(discord.Cog):
                 }
             }, upsert=True)
 
-            await client.client.close()
 
             await self.move_message_down(ctx.channel)
 
@@ -71,7 +70,6 @@ class StickyMessage(discord.Cog):
             })
             if not existing_settings:
                 await ctx.respond("No sticky message set", ephemeral=True)
-                await client.client.close()
                 return
             
             if 'ExistingMessageID' in existing_settings:
@@ -82,7 +80,6 @@ class StickyMessage(discord.Cog):
             await client['StickyMessages'].delete_one({
                 'ChannelID': str(ctx.channel.id)
             })
-            await client.client.close()
             await ctx.respond(f"Sticky message removed", ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -96,7 +93,6 @@ class StickyMessage(discord.Cog):
                 'ChannelID': str(channel.id)
             })
             if existing_settings is None:
-                await client.client.close()
                 return
 
             if 'NextSendDate' in existing_settings:
@@ -109,7 +105,6 @@ class StickyMessage(discord.Cog):
                             'NewMessage': True
                         }
                     })
-                    await client.client.close()
                     return
 
             if 'ExistingMessageID' in existing_settings:
@@ -129,7 +124,6 @@ class StickyMessage(discord.Cog):
                 }
             }, upsert=True)
 
-            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -156,4 +150,3 @@ class StickyMessage(discord.Cog):
             except Exception as e:
                 sentry_sdk.capture_exception(e)
 
-        await client.client.close()

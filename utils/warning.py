@@ -113,14 +113,12 @@ async def db_add_warning(guild_id: int, user_id: int, reason: str) -> ObjectId:
     client = get_client()
     res = await client['Warnings'].insert_one(
         {'GuildID': str(guild_id), 'UserID': str(user_id), 'Reason': reason, 'Timestamp': get_date_time_str(guild_id)})
-    await client.client.close()
     return res.inserted_id
 
 
 async def db_get_warnings(guild_id: int, user_id: int) -> list[dict]:
     client = get_client()
     res = await client['Warnings'].find({'GuildID': str(guild_id), 'UserID': str(user_id)}).to_list()
-    await client.client.close()
     return res
 
 
@@ -130,20 +128,17 @@ async def db_remove_warning(guild_id: int, warning_id: str):
 
     client = get_client()
     await client['Warnings'].delete_one({'GuildID': str(guild_id), '_id': ObjectId(warning_id)})
-    await client.client.close()
 
 
 async def db_add_warning_action(guild_id: int, action: str, warnings: int):
     client = get_client()
     await client['WarningActions'].insert_one({'GuildID': str(guild_id), 'Action': action, 'Warnings': warnings})
-    await client.client.close()
 
 
 async def db_get_warning_actions(guild_id: int) -> list[dict]:
     client = get_client()
     client = get_client()
     res = await client['WarningActions'].find({'GuildID': str(guild_id)}).to_list()
-    await client.client.close()
     return res
 
 
@@ -153,4 +148,3 @@ async def db_remove_warning_action(id: str):
 
     client = get_client()
     await client['WarningActions'].delete_one({'_id': id})
-    await client.client.close()

@@ -60,7 +60,6 @@ async def init(guild_id: str, channel_id: str):
             'Keywords': []
         })
 
-    await client.client.close()
 
 
 async def inc(msg: discord.Message):
@@ -68,11 +67,9 @@ async def inc(msg: discord.Message):
     data = await client['ChatSummary'].find_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)})
     if await get_setting(msg.guild.id, "chatsummary_countconsencutive", "True") == "False":
         if data is None:
-            await client.client.close()
             raise ValueError("This value should not be null, but it was! ChatSummary")
 
         if 'LastMessageAuthor' in data and data['LastMessageAuthor'] == str(msg.author.id):
-            await client.client.close()
             return
 
     upd = {
@@ -93,7 +90,6 @@ async def inc(msg: discord.Message):
     await client['ChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
     await client['YearlyChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
     await client['MonthlyChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
-    await client.client.close()
 
 
 class OpenPaginatorView(View):
@@ -108,7 +104,6 @@ class OpenPaginatorView(View):
             data = await client['ChatSummaryLeaderboard'].find_one(
                 {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
                  'MessageID': str(interaction.message.id)})
-            await client.client.close()
             if data is None:
                 await interaction.respond('Summary not found', ephemeral=True)
                 return
@@ -129,12 +124,10 @@ async def special_chat_summary(channel, date, guild, i, override_month: bool = F
     if (now.month == 1 and now.day == 1) or override_year:  # 1st January
         client = get_client()
         i = await client['YearlyChatSummary'].find_one({'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id)})
-        await client.client.close()
         return await normal_chat_summary(channel, date, guild, i, summary_title="yearly")
     elif now.day == 1 or override_month:
         client = get_client()
         i = await client['MonthlyChatSummary'].find_one({'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id)})
-        await client.client.close()
         return await normal_chat_summary(channel, date, guild, i, summary_title="monthly")
     else:
         return await normal_chat_summary(channel, date, guild, i)
@@ -211,7 +204,6 @@ async def normal_chat_summary(channel, date, guild, i, summary_title: str = ""):
         sentry_sdk.capture_exception(e)
     client[db].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
                           {'$set': {'Messages': {}, 'MessageCount': 0, 'KeywordsCounting': {}}})
-    await client.client.close()
 
 
 class ChatSummary(discord.Cog):
@@ -319,7 +311,6 @@ class ChatSummary(discord.Cog):
                 elif setting == "special":
                     await special_chat_summary(channel, date, guild, i)
 
-            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -342,7 +333,6 @@ class ChatSummary(discord.Cog):
             })
             if res > int(get_key("Max_ChatSummary_Channels", "3")):
                 await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "limits_max_chatsummary_channels"))
-                await client.client.close()
                 return
 
             # Insert chat summary element if not found
@@ -351,7 +341,6 @@ class ChatSummary(discord.Cog):
             # Set enabled to true
             res = await client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)},
                                                    {'$set': {'Enabled': True}})
-            await client.client.close()
             if res.modified_count == 0:
                 await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "chat_summary_add_already_added"), ephemeral=True)
                 return
@@ -381,7 +370,6 @@ class ChatSummary(discord.Cog):
             client = get_client()
             res = await client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)},
                                                    {'$set': {'Enabled': False}})
-            await client.client.close()
             if res.modified_count == 0:
                 await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'chat_summary_remove_already_removed'), ephemeral=True)
 
@@ -581,7 +569,6 @@ class ChatSummary(discord.Cog):
         if res is not None:
             logging.debug('Keyword %s already added', kwd)
             await ctx.respond('Keyword already added.', ephemeral=True)
-            await client.client.close()
             return
 
         res = await client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id)},
@@ -610,12 +597,10 @@ class ChatSummary(discord.Cog):
         if res is None:
             logging.debug('Keyword wasn\'t found')
             await ctx.respond('Keyword not found.', ephemeral=True)
-            await client.client.close()
             return
 
         res = await client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id)},
                                                {'$pull': {'Keywords': kwd}, '$unset': {f'KeywordsCounting.{kwd}': ''}})
-        await client.client.close()
         logging.debug('Removed %s, affected %d, matched %d', kwd, res.modified_count, res.matched_count)
 
         await ctx.respond('Keyword removed.', ephemeral=True)

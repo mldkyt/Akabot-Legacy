@@ -259,7 +259,6 @@ class AdminGuildBanConfirm(View):
             data = await client['AnonymousQuefessions'].find_one(
                 {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
                  'MessageID': str(self.mod_message.id)})
-            await client.client.close()
 
             if data is None:
                 await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
@@ -300,7 +299,6 @@ class AdminQuefessionBanDurationChoice(View):
             'ChannelID': str(self.mod_message.channel.id),
             'MessageID': str(self.mod_message.id)
         })
-        await client.client.close()
 
         if data is None:
             return None
@@ -317,7 +315,6 @@ class AdminQuefessionBanDurationChoice(View):
             'MemberID': author,
             'BanEnd': datetime.datetime.now() + datetime.timedelta(minutes=minutes)
         })
-        await client.client.close()
 
     async def ban_perm(self):
         author = await self.fetch_author()
@@ -329,7 +326,6 @@ class AdminQuefessionBanDurationChoice(View):
             'MemberID': author,
             'Permanent': True
         })
-        await client.client.close()
 
     @button(label='10 minutes', style=ButtonStyle.danger)
     async def ban_10_minutes(self, button: Button, interaction: Interaction):
@@ -475,7 +471,6 @@ class InfoButtonView(View):
         data = await client['AnonymousQuefessions'].find_one(
             {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
              'MessageID': str(interaction.message.id)})
-        await client.client.close()
 
         if data is None:
             await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
@@ -506,7 +501,6 @@ class InfoButtonView(View):
             data = await client['AnonymousQuefessions'].find_one(
                 {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
                  'MessageID': str(interaction.message.id)})
-            await client.client.close()
 
             if data is None:
                 await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
@@ -664,7 +658,6 @@ class AnonymousQuefessions(Cog):
                 reply = await message.reply(await trl(message.author.id, message.guild.id, 'quefessions_banned'))
                 await message.delete()
                 await reply.delete(delay=5)
-                await client.client.close()
                 return
 
             msg = await message.channel.send(
@@ -687,7 +680,6 @@ class AnonymousQuefessions(Cog):
                 'AuthorID': str(message.author.id)
             })
 
-            await client.client.close()
             await message.delete()
         except Exception as e:
             capture_exception(e)
@@ -702,6 +694,5 @@ class AnonymousQuefessions(Cog):
                 'ChannelID': str(message.channel.id),
                 'MessageID': str(message.id)
             })
-            await client.client.close()
         except Exception as e:
             capture_exception(e)

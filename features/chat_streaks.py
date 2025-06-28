@@ -65,7 +65,6 @@ class ChatStreakStorage:
                 {'GuildID': str(guild_id), 'MemberID': str(member_id), 'LastMessage': start_time,
                  'StartTime': start_time})
 
-            await client.client.close()
             return "started", 0, 0
 
         last_message = res['LastMessage']
@@ -78,7 +77,6 @@ class ChatStreakStorage:
                 '$set': {'LastMessage': await get_server_midnight_time(guild_id),
                          'StartTime': await get_server_midnight_time(guild_id)}})
 
-            await client.client.close()
             return "expired", streak, 0
 
         before_update = (last_message - start_time).days
@@ -86,7 +84,6 @@ class ChatStreakStorage:
         await client['ChatStreaks'].update_one({'GuildID': str(guild_id), 'MemberID': str(member_id)},
                                          {'$set': {'LastMessage': await get_server_midnight_time(guild_id)}})
 
-        await client.client.close()
         after_update = (await get_server_midnight_time(guild_id) - start_time).days
 
         if before_update != after_update:
@@ -113,7 +110,6 @@ class ChatStreakStorage:
                 '$set': {'LastMessage': get_server_midnight_time(guild_id),
                          'StartTime': get_server_midnight_time(guild_id)}})
 
-        await client.client.close()
 
 
 class ChatStreaks(discord.Cog):
@@ -131,7 +127,6 @@ class ChatStreaks(discord.Cog):
             # Rewards: GuildID, RoleID, RequiredStreak, set by admins
             rewards = await client['ChatStreaksRewards'].find(
                 {'GuildID': str(guild_id), 'RequiredStreak': {'$gte': streak}}).to_list()
-            await client.client.close()
 
             for i in rewards:
                 role = self.bot.get_guild(guild_id).get_role(int(i['RoleID']))
@@ -164,7 +159,6 @@ class ChatStreaks(discord.Cog):
             client = get_client()
             # Remove any roles from the member
             rewarded = await client['ChatStreaksRewards'].find({'GuildID': str(guild.id)}).to_list()
-            await client.client.close()
 
             for i in rewarded:
                 if 'RemoveOnLoss' in i and i['RemoveOnLoss'] == False:
@@ -348,7 +342,6 @@ class ChatStreaks(discord.Cog):
             rows = await client['ChatStreaks'].aggregate([{"$match": {"GuildID": str(ctx.guild.id)}}, {"$addFields": {
                 "MaxStreak": {"$max": {'$divide': [{"$subtract": ["$LastMessage", "$StartTime"]}, 86400000]}}}},
                                                     {"$sort": {"MaxStreak": -1}}]).to_list()
-            await client.client.close()
 
             lb_pages = []
             lb_last = False
@@ -408,7 +401,6 @@ class ChatStreaks(discord.Cog):
             await client['ChatStreaksRewards'].insert_one(
                 {'GuildID': str(ctx.guild.id), 'RoleID': str(role.id), 'RequiredStreak': required_streak,
                  'RemoveOnLoss': remove_on_loss})
-            await client.client.close()
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "chat_streaks_add_reward_success"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -427,7 +419,6 @@ class ChatStreaks(discord.Cog):
             client = get_client()
 
             await client['ChatStreaksRewards'].delete_one({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)})
-            await client.client.close()
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "chat_streaks_remove_reward_success"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)

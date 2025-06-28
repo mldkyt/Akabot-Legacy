@@ -48,7 +48,6 @@ async def calc_multiplier(guild_id: int):
 async def get_xp(guild_id: int, user_id: int):
     client = get_client()
     data = await client['Leveling'].find_one({'GuildID': str(guild_id), 'UserID': str(user_id)})
-    await client.client.close()
     return data['XP'] if data else 1
 
 
@@ -63,7 +62,6 @@ async def add_xp(guild_id: int, user_id: int, xp: int):
         multiplier = await calc_multiplier(guild_id)
         await client['Leveling'].insert_one({'GuildID': str(guild_id), 'UserID': str(user_id), 'XP': xp * multiplier})
 
-    await client.client.close()
 
 
 async def get_level_for_xp(guild_id: int, xp: int):
@@ -93,59 +91,50 @@ async def add_mult(guild_id: int, name: str, multiplier: int, start_date_month: 
     await client['LevelingMultiplier'].insert_one({'GuildID': str(guild_id), 'Name': name, 'Multiplier': multiplier,
                                              'StartDate': '{:02d}-{:02d}'.format(start_date_month, start_date_day),
                                              'EndDate': '{:02d}-{:02d}'.format(end_date_month, end_date_day)})
-    await client.client.close()
 
 
 async def mult_exists(guild_id: int, name: str):
     client = get_client()
     data = await client['LevelingMultiplier'].count_documents({'GuildID': str(guild_id), 'Name': name})
-    await client.client.close()
     return data > 0
 
 
 async def mult_change_name(guild_id: int, old_name: str, new_name: str):
     client = get_client()
     await client['LevelingMultiplier'].update_one({'GuildID': str(guild_id), 'Name': old_name}, {'$set': {'Name': new_name}})
-    await client.client.close()
 
 
 async def mult_change_multiplier(guild_id: int, name: str, multiplier: int):
     client = get_client()
     await client['LevelingMultiplier'].update_one({'GuildID': str(guild_id), 'Name': name},
                                             {'$set': {'Multiplier': multiplier}})
-    await client.client.close()
 
 
 async def mult_change_start(guild_id: int, name: str, start_date: datetime.datetime):
     client = get_client()
     await client['LevelingMultiplier'].update_one({'GuildID': str(guild_id), 'Name': name},
                                             {'$set': {'StartDate': start_date}})
-    await client.client.close()
 
 
 async def mult_change_end(guild_id: int, name: str, end_date: datetime.datetime):
     client = get_client()
     await client['LevelingMultiplier'].update_one({'GuildID': str(guild_id), 'Name': name}, {'$set': {'EndDate': end_date}})
-    await client.client.close()
 
 
 async def mult_del(guild_id: int, name: str):
     client = get_client()
     await client['LevelingMultiplier'].delete_one({'GuildID': str(guild_id), 'Name': name})
-    await client.client.close()
 
 
 async def mult_list(guild_id: int):
     client = get_client()
     data = await client['LevelingMultiplier'].find({'GuildID': str(guild_id)}).to_list()
-    await client.client.close()
     return data
 
 
 async def mult_get(guild_id: int, name: str):
     client = get_client()
     data = await client['LevelingMultiplier'].find_one({'GuildID': str(guild_id), 'Name': name})
-    await client.client.close()
     return data
 
 

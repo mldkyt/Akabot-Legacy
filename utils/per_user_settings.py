@@ -21,7 +21,6 @@ from database import get_client
 async def get_per_user_setting(user_id: int, setting_name: str, default_value) -> str:
     client = get_client()
     res = await client['UserSettings'].find_one({'UserID': str(user_id)})
-    await client.client.close()
     return res[setting_name] if res and setting_name in res else default_value
 
 
@@ -39,4 +38,3 @@ async def set_per_user_setting(user_id: int, setting_name: str, setting_value):
     else:
         await client['UserSettings'].update_one({'UserID': str(user_id)}, {'$unset': {setting_name: 1}})
 
-    await client.client.close()

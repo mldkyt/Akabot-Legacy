@@ -428,7 +428,6 @@ This is due to recent raids and attacks on the server due to the developer leavi
         giveaways_usage = await client['Giveaways'].count_documents({'GuildID': str(ctx.guild.id)})
         automod_actions_usage = await client['AutomodActions'].count_documents({'GuildID': str(ctx.guild.id)})
 
-        await client.client.close()
 
         chat_summary_limit = int(get_key("Max_ChatSummary_Channels", "3"))
         announcement_channel_limit = int(get_key('Max_AnnouncementChannels', '10'))

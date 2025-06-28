@@ -45,7 +45,6 @@ class AutoResponse(discord.Cog):
             await client['AutoResponse'].insert_one(
                 {'GuildID': str(ctx.guild.id), 'TriggerText': trigger, 'ReplyText': reply})
 
-            await client.client.close()
 
             # Respond
             await ctx.respond(

@@ -41,7 +41,6 @@ async def add_guild_to_blocklist(guild_id: str, text: str):
             logging.debug("Adding guild %s to blocklist due to %s", str(guild_id), i.lower())
             await client["BlocklistedGuilds"].insert_one({"GuildID": guild_id, "Reason": f"Blocklisted: \"{text}\" had permanent blocklisted keyword \"{i}\""})
 
-    await client.client.close()
 
 
 async def add_member_to_blocklist(user_id: str, text: str):
@@ -55,7 +54,6 @@ async def add_member_to_blocklist(user_id: str, text: str):
 async def check_guild_blocklist(guild_id: str) -> tuple[bool, str]:
     client = get_client()
     blocked = await client["BlocklistedGuilds"].find_one({"GuildID": guild_id})
-    await client.client.close()
     if blocked:
         logging.debug("Server %s is blocked with reason %s", str(guild_id), blocked["Reason"])
         return True, blocked["Reason"]
@@ -70,7 +68,6 @@ async def check_user_blocklist(user_id: str) -> tuple[bool, str]:
         logging.debug("User %s is blocked with reason %s", str(user_id), blocked["Reason"])
         return True, blocked["Reason"]
 
-    await client.client.close()
     return False, ""
 
 def blocklist():

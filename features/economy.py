@@ -30,7 +30,6 @@ async def add_akacoins(user_id: int, amount: int, location: str = 'wallet'):
         }
     }, upsert=True)
 
-    await client.client.close()
 
 
 async def rem_akacoins(user_id: int, amount: int, location: str = 'wallet'):
@@ -51,7 +50,6 @@ async def rem_akacoins(user_id: int, amount: int, location: str = 'wallet'):
         }
     }, upsert=True)
 
-    await client.client.close()
 
 
 async def set_akacoins(user_id: int, amount: int, location: str = 'wallet'):
@@ -72,7 +70,6 @@ async def set_akacoins(user_id: int, amount: int, location: str = 'wallet'):
         }
     }, upsert=True)
 
-    await client.client.close()
 
 
 async def get_akacoins(user_id: int):
@@ -86,7 +83,6 @@ async def get_akacoins(user_id: int):
         })
 
     data = await client['Economy'].find_one({'UserID': str(user_id)})
-    await client.client.close()
 
     if 'Wallet' not in data:
         data['Wallet'] = 0
@@ -102,14 +98,12 @@ async def claim_daily(guild_id: int, user_id: int) -> (bool, int):
         'UserID': str(user_id),
     })
     if not data:
-        await client.client.close()
         return False, 0
 
     if 'LastDailyClaim' not in data:
         data['LastDailyClaim'] = datetime.datetime.now() - datetime.timedelta(days=1, minutes=1)
 
     if data['LastDailyClaim'] + datetime.timedelta(days=1) > datetime.datetime.now():
-        await client.client.close()
         return False, 0
 
     daily_min = int(await get_setting(guild_id, "economy_daily_min", "50"))
@@ -128,7 +122,6 @@ async def claim_daily(guild_id: int, user_id: int) -> (bool, int):
         }
     })
 
-    await client.client.close()
     return True, add_bal
 
 
@@ -138,14 +131,12 @@ async def claim_weekly(guild_id: int, user_id: int) -> (bool, int):
         'UserID': str(user_id),
     })
     if not data:
-        await client.client.close()
         return False, 0
 
     if 'LastWeeklyClaim' not in data:
         data['LastWeeklyClaim'] = datetime.datetime.now() - datetime.timedelta(days=1, minutes=1)
 
     if data['LastWeeklyClaim'] + datetime.timedelta(days=1) > datetime.datetime.now():
-        await client.client.close()
         return False, 0
 
     weekly_min = int(await get_setting(guild_id, "economy_weekly_min", "50"))
@@ -164,7 +155,6 @@ async def claim_weekly(guild_id: int, user_id: int) -> (bool, int):
         }
     })
 
-    await client.client.close()
     return True, add_bal
 
 
@@ -174,14 +164,12 @@ async def work(guild_id: int, user_id: int) -> (bool, int):
         'UserID': str(user_id),
     })
     if not data:
-        await client.client.close()
         return False, 0
 
     if 'LastWorkTime' not in data:
         data['LastWorkTime'] = datetime.datetime.now() - datetime.timedelta(minutes=6)
 
     if data['LastWorkTime'] + datetime.timedelta(minutes=5) > datetime.datetime.now():
-        await client.client.close()
         return False, 0
 
     work_min = int(await get_setting(guild_id, "economy_work_min", "150"))
@@ -211,7 +199,6 @@ async def work(guild_id: int, user_id: int) -> (bool, int):
         }
     })
 
-    await client.client.close()
     return True, work_money
 
 
@@ -239,7 +226,6 @@ class SendMoneyConfirmation(discord.ui.View):
                 'Wallet': self.amount
             }
         }, upsert=True)
-        await client.client.close()
 
         member = interaction.guild.get_member(self.target)
         if not member:
@@ -369,7 +355,6 @@ class Economy(discord.Cog):
 
         client = get_client()
         source_data = await client['Economy'].find_one({'UserID': str(ctx.user.id)})
-        await client.client.close()
         if source_data['Wallet'] < amount:
             await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "economy_no_money", append_tip=True)
                               ).format(wallet=str(source_data['Wallet']), amount=str(amount)), ephemeral=True)
@@ -385,7 +370,6 @@ class Economy(discord.Cog):
     async def gamble(self, ctx: discord.ApplicationContext, amount: int):
         client = get_client()
         data = await client['Economy'].find_one({'UserID': str(ctx.user.id)})
-        await client.client.close()
         if data['Wallet'] < amount:
             await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "economy_no_money", append_tip=True)
                               ).format(wallet=str(data['Wallet']), amount=str(amount)), ephemeral=True)
@@ -407,7 +391,6 @@ class Economy(discord.Cog):
 
         client = get_client()
         target_data = await client['Economy'].find_one({'UserID': str(target.id)})
-        await client.client.close()
         if not target_data:
             target_data = {
                 'Wallet': 0
@@ -445,7 +428,6 @@ class Economy(discord.Cog):
 
         client = get_client()
         records = await client['Economy'].find().to_list()
-        await client.client.close()
 
         if len(records) == 0:
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_lb_empty", append_tip=True), ephemeral=True)
@@ -483,7 +465,6 @@ class Economy(discord.Cog):
             'GuildID': str(ctx.guild.id)
         }).to_list()
 
-        await client.client.close()
 
         if len(records) == 0:
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_shop_empty", append_tip=True), ephemeral=True)
@@ -510,18 +491,15 @@ class Economy(discord.Cog):
         client = get_client()
         if await client['Inventory'].count_documents({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)}) > 0:
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_buy_own", append_tip=True), ephemeral=True)
-            await client.client.close()
             return
 
         shop_item = await client['Shop'].find_one({'Identifier': identifier, 'GuildID': str(ctx.guild.id)})
         if not shop_item:
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_buy_not_found", append_tip=True), ephemeral=True)
-            await client.client.close()
             return
 
         if shop_item['Price'] > (await get_akacoins(ctx.user.id))[0]:
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_buy_poor", append_tip=True), ephemeral=True)
-            await client.client.close()
             return
 
         await rem_akacoins(ctx.user.id, shop_item['Price'])
@@ -535,7 +513,6 @@ class Economy(discord.Cog):
             'AllowTrade': shop_item['AllowTrade']
         })
 
-        await client.client.close()
 
         if shop_item['Type'] == 'role' and 'RoleID' in shop_item:
             role = ctx.guild.get_role(int(shop_item['RoleID']))
@@ -556,7 +533,6 @@ class Economy(discord.Cog):
             'UserID': str(ctx.user.id),
             'GuildID': str(ctx.guild.id)
         }).to_list()
-        await client.client.close()
 
         if len(records) == 0:
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_inventory_empty", append_tip=True),
@@ -592,13 +568,11 @@ class Economy(discord.Cog):
         inventory = await client['Inventory'].find_one({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
         if not inventory:
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_sell_not_own", append_tip=True), ephemeral=True)
-            await client.client.close()
             return
 
         if not inventory['AllowSell']:
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_sell_not_allowed", append_tip=True),
                               ephemeral=True)
-            await client.client.close()
             return
 
         await add_akacoins(ctx.user.id, inventory['Price'])
@@ -610,7 +584,6 @@ class Economy(discord.Cog):
             if role:
                 await ctx.user.remove_roles(role)
 
-        await client.client.close()
         await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "economy_sell_success", append_tip=True)
                           ).format(identifier=identifier), ephemeral=True)
 
@@ -626,13 +599,11 @@ class Economy(discord.Cog):
         inventory = await client['Inventory'].find_one({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
         if not inventory:
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_sell_not_own", append_tip=True), ephemeral=True)
-            await client.client.close()
             return
 
         if not inventory['AllowTrade']:
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "economy_send_not_allowed", append_tip=True),
                               ephemeral=True)
-            await client.client.close()
             return
 
         await client['Inventory'].delete_one({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
@@ -653,7 +624,6 @@ class Economy(discord.Cog):
                 await ctx.user.remove_roles(role)
                 await to.add_roles(role)
 
-        await client.client.close()
         await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "economy_send_success", append_tip=True)
                           ).format(identifier=identifier, target=to.display_name), ephemeral=True)
 
@@ -733,7 +703,6 @@ class Economy(discord.Cog):
             await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "economy_transfer_bank", append_tip=True)
                               ).format(amount=str(amount)), ephemeral=True)
 
-        await client.client.close()
 
     @economics_admin_subcommands.command(name='add', description='Add AkaCoins to a specific user')
     @is_module_enabled("economy")
@@ -817,7 +786,6 @@ class Economy(discord.Cog):
             }
         }, upsert=True)
 
-        await client.client.close()
 
         sell_str = await trl(ctx.user.id, ctx.guild.id, "economy_item_sellable") if allow_sell \
             else await trl(ctx.user.id, ctx.guild.id, "economy_item_not_sellable")
@@ -840,7 +808,6 @@ class Economy(discord.Cog):
             'Type': 'role'
         })
 
-        await client.client.close()
 
         await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "economy_admin_role_removed", append_tip=True)
                           ).format(role=role.mention), ephemeral=True)

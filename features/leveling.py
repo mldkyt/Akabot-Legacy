@@ -748,7 +748,6 @@ class Leveling(discord.Cog):
                 }
             ])  # type: list[dict]
             # has GuildID, UserID, XP
-            await client.client.close()
 
             lb_pages = []
             insert_last = False

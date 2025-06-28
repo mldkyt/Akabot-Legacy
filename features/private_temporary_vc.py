@@ -143,7 +143,6 @@ class V2TemporaryVCMenu(View):
             client = get_client()
             data = await client['PrivateTemporaryVC'].find_one(
                 {'ChannelID': str(interaction.channel.id), 'GuildID': str(interaction.guild.id)})
-            await client.client.close()
             if not data:
                 await interaction.response.send_message('This is not a temporary channel', ephemeral=True)
                 return
@@ -168,7 +167,6 @@ class V2TemporaryVCMenu(View):
             client = get_client()
             data = await client['PrivateTemporaryVC'].find_one(
                 {'ChannelID': str(interaction.channel.id), 'GuildID': str(interaction.guild.id)})
-            await client.client.close()
             if not data:
                 await interaction.response.send_message('This is not a temporary channel', ephemeral=True)
                 return
@@ -193,7 +191,6 @@ class V2TemporaryVCMenu(View):
             client = get_client()
             data = await client['PrivateTemporaryVC'].find_one(
                 {'ChannelID': str(interaction.channel.id), 'GuildID': str(interaction.guild.id)})
-            await client.client.close()
             if not data:
                 await interaction.response.send_message('This is not a temporary channel', ephemeral=True)
                 return
@@ -272,7 +269,6 @@ async def new_temporary_channel(from_ch: discord.VoiceChannel,
     except Exception as e:
         sentry_sdk.capture_exception(e)
 
-    await client.client.close()
     return new_ch
 
 
@@ -282,13 +278,11 @@ async def h_leave_channel(member: discord.Member, state: discord.VoiceState):
     data = await client['PrivateTemporaryVC'].find_one(
         {'ChannelID': str(state.channel.id), 'GuildID': str(state.channel.guild.id)})
     if not data:
-        await client.client.close()
         return
 
     await client['PrivateTemporaryVC'].update_one(
         {'ChannelID': str(state.channel.id), 'GuildID': str(state.channel.guild.id)},
         {'$pull': {'Users': str(member.id)}})
-    await client.client.close()
 
     # Check if there are still users
     if len(state.channel.voice_states) > 0:
@@ -324,7 +318,6 @@ async def h_join_channel(member: discord.Member, state: discord.VoiceState):
         vc = await new_temporary_channel(state.channel, member)
         await member.move_to(vc, reason=await trl(0, member.guild.id, 'temporary_vc_mod_reason'))
 
-    await client.client.close()
 
 
 class PrivateTemporaryVC(discord.Cog):
@@ -366,7 +359,6 @@ class PrivateTemporaryVC(discord.Cog):
         try:
             client = get_client()
             await client['PrivateTemporaryVCCreators'].insert_one({'ChannelID': str(channel.id), 'GuildID': str(channel.guild.id)})
-            await client.client.close()
 
             await ctx.respond(
                 (await trl(ctx.user.id, ctx.guild.id, 'temporary_vc_creator_channel_add')).format(channel=channel.mention),
@@ -393,7 +385,6 @@ class PrivateTemporaryVC(discord.Cog):
                 await ctx.respond((await trl(ctx.user.id, ctx.guild.id, 'temporary_vc_error_channel_not_in_creator')).format(
                     channel=channel.mention), ephemeral=True)
 
-            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
@@ -415,7 +406,6 @@ class PrivateTemporaryVC(discord.Cog):
             temporary_vc = await client['PrivateTemporaryVC'].find_one({
                 'ChannelID': str(temporary_vc_channel.id)
             })
-            await client.client.close()
 
             if temporary_vc is None:
                 await ctx.respond("You're not in a private temporary VC", ephemeral=True)
@@ -465,7 +455,6 @@ class PrivateTemporaryVC(discord.Cog):
             temporary_vc = await client['PrivateTemporaryVC'].find_one({
                 'ChannelID': str(temporary_vc_channel.id)
             })
-            await client.client.close()
 
             if temporary_vc is None:
                 await ctx.respond("You're not in a private temporary VC", ephemeral=True)

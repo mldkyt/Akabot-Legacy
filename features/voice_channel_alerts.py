@@ -26,7 +26,6 @@ class VoiceChannelAlerts(discord.Cog):
                     'Member': str(ctx.user.id)
                 })
 
-                await client.client.close()
                 await ctx.respond("Subscribed to all notifications! :3", ephemeral=True)
                 return
 
@@ -35,11 +34,9 @@ class VoiceChannelAlerts(discord.Cog):
                     'Member': str(ctx.user.id)
                 })
 
-                await client.client.close()
                 await ctx.respond("Unsubscribed from ALL notifications! :3", ephemeral=True)
                 return
 
-            await client.client.close()
             if subscribed and current_subscribed:
                 await ctx.respond("You are already subscribed to all notifications! :3", ephemeral=True)
             else:
@@ -58,7 +55,6 @@ class VoiceChannelAlerts(discord.Cog):
                 'Target': str(user.id)
             }) > 0:
                 await ctx.respond(f"You are already subscribed to notifications from {user.mention}! :3", ephemeral=True)
-                await client.client.close()
                 return
 
             await client['vc_notifs_user'].insert_one({
@@ -66,7 +62,6 @@ class VoiceChannelAlerts(discord.Cog):
                 'Target': str(user.id)
             })
 
-            await client.client.close()
             await ctx.respond(f"Subscribed to notifications from {user.mention}! :3", ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -83,7 +78,6 @@ class VoiceChannelAlerts(discord.Cog):
                 'Target': str(user.id)
             }) == 0:
                 await ctx.respond(f"You are not subscribed to notifications from {user.mention}! :3", ephemeral=True)
-                await client.client.close()
                 return
 
             await client['vc_notifs_user'].delete_one({
@@ -91,7 +85,6 @@ class VoiceChannelAlerts(discord.Cog):
                 'Target': str(user.id)
             })
 
-            await client.client.close()
             await ctx.respond(f"Unsubscribed from {user.mention} notifications! :3", ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -108,7 +101,6 @@ class VoiceChannelAlerts(discord.Cog):
                 'Target': str(channel.id)
             }) > 0:
                 await ctx.respond(f"You are already subscribed to notifications from {channel.mention}! :3", ephemeral=True)
-                await client.client.close()
                 return
 
             await client['vc_notifs_channel'].insert_one({
@@ -116,7 +108,6 @@ class VoiceChannelAlerts(discord.Cog):
                 'Target': str(channel.id)
             })
 
-            await client.client.close()
             await ctx.respond(f"Subscribed to notifications from {channel.mention}! :3", ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -133,7 +124,6 @@ class VoiceChannelAlerts(discord.Cog):
                 'Target': str(channel.id)
             }) == 0:
                 await ctx.respond(f"You are not subscribed to notifications from {channel.mention}! :3", ephemeral=True)
-                await client.client.close()
                 return
 
             await client['vc_notifs_channel'].delete_one({
@@ -141,7 +131,6 @@ class VoiceChannelAlerts(discord.Cog):
                 'Target': str(channel.id)
             })
 
-            await client.client.close()
             await ctx.respond(f"Unsubscribed from {channel.mention} notifications! :3", ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -201,6 +190,5 @@ class VoiceChannelAlerts(discord.Cog):
                     except discord.Forbidden:
                         pass
 
-                await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)

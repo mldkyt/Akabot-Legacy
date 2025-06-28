@@ -45,7 +45,6 @@ class AddYoursModal(discord.ui.Modal):
             "UserID": str(interaction.user.id),
             "Message": self.message.value
         }}})
-        await client.client.close()
 
         await interaction.respond("Added message to collection.", ephemeral=True)
 
@@ -62,7 +61,6 @@ class AddYoursView(discord.ui.View):
 
         client = get_client()
         data = await client['CollectionMessageCapsule'].find_one({"MessageID": str(interaction.message.id)})
-        await client.client.close()
 
         if data is None:
             await interaction.respond("The message wasn't found.", ephemeral=True)
@@ -112,7 +110,6 @@ class MessageTimeCapsule(discord.Cog):
                 "Message": message,
                 "Time": target_time
             })
-            await client.client.close()
 
             target_time_str = target_time.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -128,7 +125,6 @@ class MessageTimeCapsule(discord.Cog):
         """List all messages"""
         client = get_client()
         messages = await client['MessageCapsule'].find({"GuildID": str(ctx.guild.id)}).to_list()
-        await client.client.close()
 
         if len(messages) == 0:
             await ctx.respond("You have no messages.", ephemeral=True)
@@ -179,7 +175,6 @@ class MessageTimeCapsule(discord.Cog):
                 "Message": message,
                 "Time": datetime.datetime.now() + datetime.timedelta(seconds=time_parsed)
             })
-            await client.client.close()
 
             await ctx.respond(f"Reminder scheduled on `{str(target_time)}`.", ephemeral=True)
             await sent_msg.delete(delay=10)
@@ -194,7 +189,6 @@ class MessageTimeCapsule(discord.Cog):
         try:
             client = get_client()
             reminders = await client['DMMessageCapsule'].find({"UserID": str(ctx.author.id)}).to_list()
-            await client.client.close()
 
             if len(reminders) == 0:
                 await ctx.respond("You have no reminders.", ephemeral=True)
@@ -257,7 +251,6 @@ class MessageTimeCapsule(discord.Cog):
 
             await client['CollectionMessageCapsule'].update_one({"_id": add.inserted_id}, {"$set": {"MessageID": str(sent_msg.id)}})
 
-            await client.client.close()
             await ctx.respond(f"Collection message scheduled on `{target_time_str}`.", ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -278,7 +271,6 @@ class MessageTimeCapsule(discord.Cog):
             except Exception as e:
                 sentry_sdk.capture_exception(e)
 
-        await client.client.close()
 
     @tasks.loop(minutes=1)
     async def check_guild_messages(self):
@@ -326,7 +318,6 @@ class MessageTimeCapsule(discord.Cog):
             except Exception as e:
                 sentry_sdk.capture_exception(e)
 
-        await client.client.close()
 
     @tasks.loop(minutes=1)
     async def check_collection_messages(self):
@@ -378,4 +369,3 @@ class MessageTimeCapsule(discord.Cog):
             except Exception as e:
                 sentry_sdk.capture_exception(e)
 
-        await client.client.close()

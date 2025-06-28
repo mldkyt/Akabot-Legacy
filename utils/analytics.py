@@ -29,7 +29,6 @@ async def db_add_analytics(command: str):
     else:
         await client['Analytics'].insert_one({'Command': command, 'RunCount': 1})
 
-    await client.client.close()
 
 
 async def db_upsert_active_user(user_id: int):
@@ -41,7 +40,6 @@ async def db_upsert_active_user(user_id: int):
             'LastBotUse': datetime.datetime.now()
         }
     }, upsert=True)
-    await client.client.close()
 
 
 def analytics(command: str):

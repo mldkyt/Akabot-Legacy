@@ -51,7 +51,6 @@ class ConfirmDeletionView(discord.ui.View):
         await client['UserBirthday'].delete_one({
             'UserID': str(interaction.user.id)
         })
-        await client.client.close()
 
         # Disable button list
         self.disable_all_items()
@@ -127,7 +126,6 @@ class PerUserSettings(discord.Cog):
             await client['UserBirthday'].update_one({'UserID': str(ctx.author.id)},
                                               {'$set': {'Birth.Year': year, 'Birth.Month': month, 'Birth.Day': day}},
                                               upsert=True)
-            await client.client.close()
             await ctx.respond((await trl(ctx.user.id, ctx.guild.id, 'birthday_set', append_tip=True)).format(
                 birthday=f'{year}/{month}/{day}'), ephemeral=True)
         except Exception as e:

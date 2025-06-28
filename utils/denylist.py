@@ -20,7 +20,6 @@ async def remove_channel_from_denylist(channel_id: int):
 async def is_denylisted(channel_id: int):
     client = get_client()
     a = await client['Denylisted'].count_documents({'ChannelID': str(channel_id)}) > 0
-    await client.client.close()
     return a
 
 # Sending queue
@@ -67,6 +66,5 @@ async def add_to_queue(user: discord.User | discord.Member, guild: discord.Guild
             } for embed in (embeds or [])],
             'DeleteAfter': delete_after
         })
-        await client.client.close()
     except Exception as e:
         sentry_sdk.capture_exception(e)

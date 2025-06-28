@@ -145,7 +145,6 @@ class V2TemporaryVCMenu(View):
 
             data = await client['TemporaryVC'].find_one(
                 {'ChannelID': str(interaction.channel.id), 'GuildID': str(interaction.guild.id)})
-            await client.client.close()
             if not data:
                 await interaction.response.send_message('This is not a temporary channel', ephemeral=True)
                 return
@@ -170,7 +169,6 @@ class V2TemporaryVCMenu(View):
             client = get_client()
             data = await client['TemporaryVC'].find_one(
                 {'ChannelID': str(interaction.channel.id), 'GuildID': str(interaction.guild.id)})
-            await client.client.close()
             if not data:
                 await interaction.response.send_message('This is not a temporary channel', ephemeral=True)
                 return
@@ -195,7 +193,6 @@ class V2TemporaryVCMenu(View):
             client = get_client()
             data = await client['TemporaryVC'].find_one(
                 {'ChannelID': str(interaction.channel.id), 'GuildID': str(interaction.guild.id)})
-            await client.client.close()
             if not data:
                 await interaction.response.send_message('This is not a temporary channel', ephemeral=True)
                 return
@@ -251,7 +248,6 @@ async def new_temporary_channel(from_ch: discord.VoiceChannel,
     except Exception as e:
         sentry_sdk.capture_exception(e)
 
-    await client.client.close()
 
     return new_ch
 
@@ -262,7 +258,6 @@ async def h_leave_channel(member: discord.Member, state: discord.VoiceState):
     data = await client['TemporaryVC'].find_one(
         {'ChannelID': str(state.channel.id), 'GuildID': str(state.channel.guild.id)})
     if not data:
-        await client.client.close()
         return
 
     await client['TemporaryVC'].update_one(
@@ -284,13 +279,11 @@ async def h_leave_channel(member: discord.Member, state: discord.VoiceState):
                 {'$set': {'CreatorID': new_c}}
             )
 
-        await client.client.close()
         return
 
     # Delete the channel if there are no users left
     await state.channel.delete(reason=await trl(0, member.guild.id, 'temporary_vc_mod_reason'))
     await client['TemporaryVC'].delete_one({'ChannelID': str(state.channel.id), 'GuildID': str(state.channel.guild.id)})
-    await client.client.close()
 
 async def h_join_channel(member: discord.Member, state: discord.VoiceState):
     logging.info('Member %s joined channel %s', member.display_name, state.channel.name)
@@ -368,7 +361,6 @@ class TemporaryVC(discord.Cog):
             else:
                 await ctx.respond((await trl(ctx.user.id, ctx.guild.id, 'temporary_vc_error_channel_not_in_creator')).format(
                     channel=channel.mention), ephemeral=True)
-            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

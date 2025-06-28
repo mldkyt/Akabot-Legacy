@@ -22,7 +22,6 @@ class Counting(discord.Cog):
         client = get_client()
         await client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id), },
                                       {'$set': {'Count': 1, 'LastMember': '0'}})
-        await client.client.close()
 
     async def fetch_counting_channel(self, guild_id: str, channel_id: str):
         guild = await self.bot.fetch_guild(int(guild_id))
@@ -43,7 +42,6 @@ class Counting(discord.Cog):
         for i in client["Counting"].find():
             tasks.append(asyncio.create_task(self.fetch_counting_channel(i["GuildID"], i["ChannelID"])))
 
-        await client.client.close()
 
         logging.info("Gathering %s tasks", str(len(tasks)))
         await asyncio.gather(*tasks)
@@ -62,22 +60,18 @@ class Counting(discord.Cog):
             data = await client["Counting"].find_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)})
 
             if data is None:
-                await client.client.close()
                 return
 
             if re.match("^[0-9]+$", message.content.strip()) is None:
                 await self.handle_fail(message, data)
-                await client.client.close()
                 return
 
             if (data["Count"] - 1) != int(message.content.strip()):
                 await self.handle_fail(message, data)
-                await client.client.close()
                 return
 
             if data["LastMember"] == str(message.author.id):
                 await self.handle_fail(message, data)
-                await client.client.close()
                 return
 
             if message.guild.me.guild_permissions.manage_webhooks and \
@@ -103,7 +97,6 @@ class Counting(discord.Cog):
 
             client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
                                           {'$set': {'LastMember': str(message.author.id)}})
-            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -114,7 +107,6 @@ class Counting(discord.Cog):
 
         client = get_client()
         data = await client["Counting"].find_one({'GuildID': str(after.guild.id), 'ChannelID': str(after.channel.id)})
-        await client.client.close()
 
         if data is None:
             return
@@ -131,13 +123,11 @@ class Counting(discord.Cog):
 
             if existing is not None:
                 await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "counting_channel_already_added"), ephemeral=True)
-                await client.client.close()
                 return
 
             client["Counting"].insert_one(
                 {'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id), 'Count': 1, 'LastMember': '0'})
 
-            await client.client.close()
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "counting_channel_added", append_tip=True), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -151,12 +141,10 @@ class Counting(discord.Cog):
 
             if existing is None:
                 await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "counting_channel_not_found"), ephemeral=True)
-                await client.client.close()
                 return
 
             await client["Counting"].delete_one({'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id)})
 
-            await client.client.close()
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "counting_channel_removed"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)

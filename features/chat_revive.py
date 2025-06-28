@@ -51,7 +51,6 @@ class ChatRevive(discord.Cog):
             await client['ChatRevive'].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
                                             {'$set': {'LastMessage': time.time(), 'Revived': False}})
 
-            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -82,7 +81,6 @@ class ChatRevive(discord.Cog):
                         await client['ChatRevive'].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
                                                         {'$set': {'Revived': True}})
 
-                await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -118,7 +116,6 @@ class ChatRevive(discord.Cog):
                  'RevivalTime': revival_minutes * 60, 'LastMessage': time.time(),
                  'Revived': False})
 
-            await client.client.close()
 
             # Embed for logs
             logging_embed = discord.Embed(title=await trl(ctx.user.id, ctx.guild.id, "chat_revive_log_set_title"))
@@ -156,7 +153,6 @@ class ChatRevive(discord.Cog):
 
             await client['ChatRevive'].delete_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})
 
-            await client.client.close()
 
             # Create embed
             logging_embed = discord.Embed(title=trl(ctx.user.id, ctx.guild.id, "chat_revive_remove_log_title"))
@@ -188,7 +184,6 @@ class ChatRevive(discord.Cog):
 
             result = await client['ChatRevive'].find_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})
 
-            await client.client.close()
 
             if not result:
                 await ctx.respond(

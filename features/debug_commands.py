@@ -56,7 +56,6 @@ class DebugCommands(discord.Cog):
         client = get_client()
 
         i = await client['ChatSummary'].find_one({'ChannelID': str(channel.id), 'GuildID': str(guild.id)})
-        await client.client.close()
 
         if mode == 0:
             await ctx.respond("Running normal chat summary...", ephemeral=True)

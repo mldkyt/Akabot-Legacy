@@ -49,7 +49,6 @@ class RolesOnJoin(discord.Cog):
                     # remove
                     await client['RolesOnJoin'].delete_one({'GuildID': str(member.guild.id)})
 
-            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -66,12 +65,10 @@ class RolesOnJoin(discord.Cog):
             res = await client['RolesOnJoin'].count_documents({'GuildID': str(ctx.guild.id)})
             if res > int(get_key("Max_RolesOnJoin", "3")):
                 await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "limits_max_rolesonjoin"), ephemeral=True)
-                await client.client.close()
                 return
             # check role position
             if role.position > ctx.me.top_role.position:
                 await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "roles_on_join_role_above_bot"), ephemeral=True)
-                await client.client.close()
                 return
 
             if await client['RolesOnJoin'].count_documents({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)}) == 0:
@@ -82,7 +79,6 @@ class RolesOnJoin(discord.Cog):
                 await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "roles_on_join_role_already_in_join_roles"),
                                   ephemeral=True)
 
-            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
@@ -101,7 +97,6 @@ class RolesOnJoin(discord.Cog):
                 await client['RolesOnJoin'].delete_one({'GuildID': str(ctx.guild.id)})
                 await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "roles_on_join_role_removed", append_tip=True),
                                   ephemeral=True)
-            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
@@ -118,7 +113,6 @@ class RolesOnJoin(discord.Cog):
                 await ctx.respond(
                     trl(ctx.user.id, ctx.guild.id, "roles_on_join_list_no_roles_on_join", append_tip=True),
                     ephemeral=True)
-                await client.client.close()
                 return
 
             msg = ""
@@ -131,7 +125,6 @@ class RolesOnJoin(discord.Cog):
                 msg = f"{msg}\n{role.mention}"
 
             embed = discord.Embed(title="Roles on Join", description=msg, color=discord.Color.blurple())
-            await client.client.close()
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)

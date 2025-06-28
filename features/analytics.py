@@ -28,7 +28,6 @@ class Analytics(discord.Cog):
             }
         }, upsert=True)
 
-        await client.client.close()
         
     @discord.Cog.listener()
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):

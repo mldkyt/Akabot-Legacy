@@ -64,7 +64,6 @@ class AutoReact(discord.Cog):
 
             await client['AutoReact'].insert_one({'GuildID': str(ctx.guild.id), 'TriggerText': trigger, 'Emoji': str(emoji)})
 
-            await client.client.close()
 
             # Respond
             await ctx.respond(
@@ -134,7 +133,6 @@ class AutoReact(discord.Cog):
             client = get_client()
             edited = await client['AutoReact'].update_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)},
                                                     {'$set': {'TriggerText': new_trigger}})
-            await client.client.close()
 
             if edited.matched_count == 0:
                 await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
@@ -154,7 +152,6 @@ class AutoReact(discord.Cog):
         try:
             client = get_client()
             delete = await client['AutoReact'].delete_one({'ID': id, 'GuildID': str(ctx.guild.id)})
-            await client.client.close()
 
             if delete.deleted_count == 0:
                 await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
@@ -200,7 +197,6 @@ class AutoReact(discord.Cog):
             client = get_client()
             updated = await client['AutoReact'].update_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)},
                                                      {'$set': {'Emoji': str(emoji)}})
-            await client.client.close()
 
             if updated.matched_count == 0:
                 await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
@@ -223,7 +219,6 @@ class AutoReact(discord.Cog):
             # Find all created settings
             client = get_client()
             data = await client['AutoReact'].find({'GuildID': str(msg.guild.id)}).to_list()
-            await client.client.close()
             for i in data:
                 # If it contains the message
                 if i['TriggerText'] in msg.content:

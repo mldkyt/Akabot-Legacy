@@ -56,7 +56,6 @@ class BirthdayAnnouncements(discord.Cog):
 
         birthdays = await client['UserBirthday'].find({'Birth.Month': now.month, 'Birth.Day': now.day}).to_list()
 
-        await client.client.close()
         for birthday in birthdays:
             try:
                 member = self.bot.get_user(int(birthday["UserID"]))

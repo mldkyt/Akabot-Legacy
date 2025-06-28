@@ -43,7 +43,6 @@ async def start_word_scrambler(channel_id: int, message_id: int, word: str):
         "Expires": datetime.datetime.now() + datetime.timedelta(minutes=5)
         # The game expires in 5 minutes
     })
-    await client.client.close()
 
 
 
@@ -51,7 +50,6 @@ async def is_word_scrambler_running(channel_id: int) -> bool:
     """Check if a word scramble game is running in a channel"""
     client = get_client()
     data = await client["WordScramble"].find_one({"ChannelID": str(channel_id)})
-    await client.client.close()
 
     if data is None:
         return False
@@ -63,7 +61,6 @@ async def attempt_guess_word_scrambler(channel_id: int, guess: str) -> bool:
     """Check if the guess is correct and update the message"""
     client = get_client()
     data = await client["WordScramble"].find_one({"ChannelID": str(channel_id)})
-    await client.client.close()
 
     if data is None:
         return False
@@ -81,7 +78,6 @@ async def get_word_scrambler_original_message(channel_id: int) -> int | None:
     """Get the original message ID of the word scramble game"""
     client = get_client()
     data = await client["WordScramble"].find_one({"ChannelID": str(channel_id)})
-    await client.client.close()
 
     if data is None:
         return None
@@ -92,7 +88,6 @@ async def get_word_scrambler_original_message(channel_id: int) -> int | None:
 async def end_word_scrambler(channel_id: int):
     client = get_client()
     await client["WordScramble"].delete_one({"ChannelID": str(channel_id)})
-    await client.client.close()
 
 
 async def get_word_by_context(channel: discord.TextChannel):
@@ -411,7 +406,6 @@ class WordScrambler(discord.Cog):
                         'Wallet': random.randint(100, 200),
                     }
                 })
-                await client.client.close()
 
                 await end_word_scrambler(msg.channel.id)
         except Exception as e:
@@ -479,4 +473,3 @@ class WordScrambler(discord.Cog):
                 word=game['Word']
             ))
             await end_word_scrambler(int(game["ChannelID"]))
-        await client.client.close()

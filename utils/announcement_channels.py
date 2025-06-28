@@ -25,7 +25,6 @@ async def db_add_announcement_channel(guild_id: int, channel_id: int):
     if not data:
         await client['AnnouncementChannels'].insert_one({'GuildID': str(guild_id), 'ChannelID': str(channel_id)})
 
-    await client.client.close()
 
 
 async def db_remove_announcement_channel(guild_id: int, channel_id: int):
@@ -35,28 +34,24 @@ async def db_remove_announcement_channel(guild_id: int, channel_id: int):
     if data:
         await client['AnnouncementChannels'].delete_one(
             {'GuildID': {'$eq': str(guild_id)}, 'ChannelID': {'$eq': str(channel_id)}})
-    await client.client.close()
 
 
 async def db_is_subscribed_to_announcements(guild_id: int, channel_id: int):
     client = get_client()
     data = await client['AnnouncementChannels'].find_one(
         {'GuildID': {'$eq': str(guild_id)}, 'ChannelID': {'$eq': str(channel_id)}})
-    await client.client.close()
     return data is not None
 
 
 async def db_get_announcement_channels(guild_id: int):
     client = get_client()
     data = await client['AnnouncementChannels'].find({'GuildID': {'$eq': str(guild_id)}}).to_list()
-    await client.client.close()
     return [(i['GuildID'], i['ChannelID']) for i in data]
 
 
 async def db_get_all_announcement_channels():
     client = get_client()
     data = await client['AnnouncementChannels'].find().to_list()
-    await client.client.close()
     return [(i['GuildID'], i['ChannelID']) for i in data]
 
 async def db_count_announcement_channels(guild_id: int):
@@ -64,5 +59,4 @@ async def db_count_announcement_channels(guild_id: int):
     data = await client['AnnouncementChannels'].count_documents({
         'GuildID': str(guild_id)
     })
-    await client.client.close()
     return data

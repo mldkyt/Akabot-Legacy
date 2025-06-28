@@ -42,7 +42,6 @@ async def migration_1():
                                                   {'$set': {'Upvotes': [str(x) for x in upvotes],
                                                             'Downvotes': [str(x) for x in downvotes]}})
 
-    await client.client.close()
 
 
 async def perform_basic_vote_checks(interaction: discord.Interaction) -> bool | tuple[bool, Any]:
@@ -57,7 +56,6 @@ async def perform_basic_vote_checks(interaction: discord.Interaction) -> bool | 
     client = get_client()
 
     data = await client['SuggestionMessagesV2'].find_one({'MessageID': str(interaction.message.id)})
-    await client.client.close()
     if not data:
         await interaction.response.send_message('This suggestion does not exist in the database', ephemeral=True)
         return False
@@ -82,7 +80,6 @@ async def update_existing_suggestions_message_interaction(interaction: discord.I
 
     suggestions_msg = await client['SuggestionMessagesV2'].find_one({'MessageID': str(interaction.message.id)})
 
-    await client.client.close()
 
     author = interaction.guild.get_member(int(suggestions_msg['AuthorID']))
 
@@ -105,7 +102,6 @@ async def update_existing_suggestions_message(msg: discord.Message):
 
     suggestions_msg = await client['SuggestionMessagesV2'].find_one({'MessageID': str(msg.id)})
 
-    await client.client.close()
 
     if not suggestions_msg:
         return
@@ -137,7 +133,6 @@ class V2SuggestionView(View):
         await client['SuggestionMessagesV2'].update_one({'MessageID': str(interaction.message.id)},
                                                   {'$push': {'Upvotes': str(interaction.user.id)}})
 
-        await client.client.close()
         await update_existing_suggestions_message_interaction(interaction)
 
     @discord.ui.button(label='👎', style=discord.ButtonStyle.primary, custom_id='downvote')
@@ -151,7 +146,6 @@ class V2SuggestionView(View):
         await client['SuggestionMessagesV2'].update_one({'MessageID': str(interaction.message.id)},
                                                   {'$push': {'Downvotes': str(interaction.user.id)}})
 
-        await client.client.close()
 
         await update_existing_suggestions_message_interaction(interaction)
 
@@ -159,7 +153,6 @@ class V2SuggestionView(View):
     async def get_info(self, button: discord.ui.Button, interaction: discord.Interaction):
         client = get_client()
         data = await client['SuggestionMessagesV2'].find_one({'MessageID': str(interaction.message.id)})
-        await client.client.close()
         if not data:
             await interaction.response.send_message('This suggestion does not exist in the database', ephemeral=True)
             return
@@ -201,7 +194,6 @@ class V2SuggestionEditMessageModal(Modal):
 
         await client['SuggestionMessagesV2'].update_one({'MessageID': self.msg_id},
                                                   {'$set': {'Suggestion': self.children[0].value}})
-        await client.client.close()
 
         ch = interaction.guild.get_channel(int(self.ch_id))
         msg = await ch.fetch_message(int(self.msg_id))
@@ -225,7 +217,6 @@ class V2SuggestionAuthorExtraView(View):
 async def generate_message_content(id: str):
     client = get_client()
     data = await client['SuggestionMessagesV2'].find_one({'MessageID': id})
-    await client.client.close()
     if not data:
         raise ValueError('Message not found')
 
@@ -291,7 +282,6 @@ class Suggestions(discord.Cog):
 
                     await client['SuggestionMessagesV2'].update_one({'MessageID': str(message.id)},
                                                               {'$set': {'MessageID': str(new_msg.id)}})
-                    await client.client.close()
 
                     if await get_setting(message.guild.id, "suggestions_thread_creating", "true") == "true":
                         # Name of thread is determined from the suggestion text but shortened to fit
@@ -332,7 +322,6 @@ class Suggestions(discord.Cog):
 
             if await client['SuggestionChannels'].count_documents({'ChannelID': str(ctx.guild.id)}) == 0:
                 await client['SuggestionChannels'].insert_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})
-                await client.client.close()
                 await ctx.respond((await trl(ctx.user.id, ctx.guild.id, 'suggestions_channel_added', append_tip=True)).format(
                     channel=channel.mention), ephemeral=True)
             else:
@@ -356,7 +345,6 @@ class Suggestions(discord.Cog):
                 await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "suggestions_channel_removed", append_tip=True)).format(
                     channel=channel.mention), ephemeral=True)
 
-            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

@@ -85,7 +85,6 @@ class Giveaways(discord.Cog):
                 {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'MessageID': str(msg1.id), 'Item': item,
                  'EndDate': end_date.isoformat(), 'Winners': winners})
 
-            await client.client.close()
 
             # Send success message
             await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "giveaways_new_success", append_tip=True)).format(
@@ -111,7 +110,6 @@ class Giveaways(discord.Cog):
             client = get_client()
 
             res = await client['Giveaways'].count_documents({'_id': ObjectId(giveaway_id)})
-            await client.client.close()
             if res == 0:
                 await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "giveaways_error_not_found"), ephemeral=True)
                 return
@@ -134,7 +132,6 @@ class Giveaways(discord.Cog):
         try:
             client = get_client()
             res = await client['Giveaways'].find({}).to_list()
-            await client.client.close()
 
             message = await trl(ctx.user.id, ctx.guild.id, "giveaways_list_title")
 
@@ -170,7 +167,6 @@ class Giveaways(discord.Cog):
             client = get_client()
             client['Giveaways'].update_one({'MessageID': str(reaction.message.id)},
                                            {'$push': {'Participants': str(user.id)}})
-            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -183,7 +179,6 @@ class Giveaways(discord.Cog):
             client = get_client()
             client['Giveaways'].update_one({'MessageID': str(reaction.message.id)},
                                            {'$pull': {'Participants': str(user.id)}})
-            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -192,7 +187,6 @@ class Giveaways(discord.Cog):
             client = get_client()
             res = await client['Giveaways'].find_one({'_id': ObjectId(giveaway_id)})
             if not res:
-                await client.client.close()
                 return
 
             # Fetch the channel and message
@@ -222,7 +216,6 @@ class Giveaways(discord.Cog):
                 await chan.send(msg2)
 
             await client['Giveaways'].delete_one({'_id': ObjectId(giveaway_id)})
-            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -231,7 +224,6 @@ class Giveaways(discord.Cog):
         try:
             client = get_client()
             res = await client['Giveaways'].find({}).to_list()
-            await client.client.close()
             for i in res:
                 channel_id = i['ChannelID']
                 channel = await self.bot.fetch_channel(channel_id)
