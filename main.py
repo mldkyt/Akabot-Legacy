@@ -66,7 +66,7 @@ BOT_VERSION = get_key("Bot_Version", "3.5")
 
 if get_key("Sentry_Enabled", "false") == "true":
     sentry_sdk.init(get_key("Sentry_DSN"),
-                    integrations=[LoggingIntegration(level=logging.INFO, event_level=logging.ERROR),
+                    integrations=[LoggingIntegration(level=logging.INFO, event_level=logging.WARNING),
                                   AioHttpIntegration(),
                                   AsyncioIntegration(),
                                   PyMongoIntegration()],

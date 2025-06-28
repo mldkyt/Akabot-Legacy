@@ -74,14 +74,14 @@ class Leveling(discord.Cog):
                     extra, extra_trigger, len(msg.content) // extra_trigger, extra * (len(msg.content) // extra_trigger))
                 logging.debug("Adding %d XP to %s (Message length: %d)", xp, msg.author.name, len(msg.content))
 
-                before_level = get_level_for_xp(msg.guild.id, await get_xp(msg.guild.id, msg.author.id))
+                before_level = await get_level_for_xp(msg.guild.id, await get_xp(msg.guild.id, msg.author.id))
                 await add_xp(msg.guild.id, msg.author.id, xp)
-                after_level = get_level_for_xp(msg.guild.id, await get_xp(msg.guild.id, msg.author.id))
+                after_level = await get_level_for_xp(msg.guild.id, await get_xp(msg.guild.id, msg.author.id))
             else:
                 xp = int(await get_setting(msg.guild.id, 'leveling_initial_xp', 3))
-                before_level = get_level_for_xp(msg.guild.id, await get_xp(msg.guild.id, msg.author.id))
+                before_level = await get_level_for_xp(msg.guild.id, await get_xp(msg.guild.id, msg.author.id))
                 await add_xp(msg.guild.id, msg.author.id, xp)
-                after_level = get_level_for_xp(msg.guild.id, await get_xp(msg.guild.id, msg.author.id))
+                after_level = await get_level_for_xp(msg.guild.id, await get_xp(msg.guild.id, msg.author.id))
 
             if not msg.channel.permissions_for(msg.guild.me).send_messages:
                 return
@@ -763,7 +763,7 @@ class Leveling(discord.Cog):
                 if user_obj is None:
                     continue
                 leaderboard_message += (await trl(ctx.user.id, ctx.guild.id, "leveling_leaderboard_row")).format(
-                    position=i, user=user_obj.mention, level=get_level_for_xp(ctx.guild.id, user['XP']), xp=user['XP'])
+                    position=i, user=user_obj.mention, level=await get_level_for_xp(ctx.guild.id, user['XP']), xp=user['XP'])
                 i += 1
                 insert_last = True
 

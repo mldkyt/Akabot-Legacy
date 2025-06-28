@@ -386,9 +386,9 @@ class WordScrambler(discord.Cog):
                 await rep.delete(delay=5)
 
                 # Leveling
-                before_level = get_level_for_xp(msg.guild.id, await get_xp(msg.guild.id, msg.author.id))
+                before_level = await get_level_for_xp(msg.guild.id, await get_xp(msg.guild.id, msg.author.id))
                 await add_xp(msg.guild.id, msg.author.id, await get_setting(msg.guild.id, "leveling_xp_per_word_scrambler", 100))
-                after_level = get_level_for_xp(msg.guild.id, await get_xp(msg.guild.id, msg.author.id))
+                after_level = await get_level_for_xp(msg.guild.id, await get_xp(msg.guild.id, msg.author.id))
 
                 if not msg.channel.permissions_for(msg.guild.me).send_messages:
                     return

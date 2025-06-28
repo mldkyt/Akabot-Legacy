@@ -201,7 +201,7 @@ class ChatStreaks(discord.Cog):
             if message.channel.type == discord.ChannelType.private:
                 return  # Don't calculate chat streaks for private messages (guild is None)
 
-            (state, old_streak, new_streak) = self.streak_storage.set_streak(message.guild.id, message.author.id)
+            (state, old_streak, new_streak) = await self.streak_storage.set_streak(message.guild.id, message.author.id)
 
             logging.debug('[Chat Streaks] Info %s, %s, %s', str(state), str(old_streak), str(new_streak))
 

@@ -697,7 +697,7 @@ class AnonymousQuefessions(Cog):
         try:
             client = get_client()
 
-            client['AnonymousQuefessions'].delete_many({
+            await client['AnonymousQuefessions'].delete_many({
                 'GuildID': str(message.guild.id),
                 'ChannelID': str(message.channel.id),
                 'MessageID': str(message.id)
