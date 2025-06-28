@@ -3,18 +3,15 @@
 ## Supported Versions
 
 The following versions are supported.
-The latest version, currently 3.5 is fully supported and new features are added to it.
-The 3.2 version receives bug fixes and some fixes only.
-Anything below 3.1 is unsupported.
+The latest version, currently 1.3 is fully supported and new features are added to it.
+Any previous version is unsupported.
 
 | Version | Supported                                      |
 |---------|------------------------------------------------|
-| 3.5     | ✅ Fully supported and under active development |
-| 3.4     | ✅ Fully supported version                      |
-| 3.3     | ⚠ Bugs and vulnerability fixes only            |
-| 3.2     | ⚠ Bugs and vulnerability fixes only            |
-| 3.1     | ❌ Unsupported for critical fixes               |
-| <3.1    | ❌ Not supported AT ALL (javascript-version)    |
+| 1.0     | ✅ Fully supported and under active development |
+| 4.x     | ⚠ Bugs and vulnerability fixes only            |
+| 3.x     | ❌ Unsupported                                  |
+| 2.x     | ❌ Unsupported                                  |
 
 ## Reporting a Vulnerability
 
