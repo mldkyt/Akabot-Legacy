@@ -27,12 +27,12 @@ from utils.tzutil import get_now_for_server
 def calc_multiplier(guild_id: int):
     multiplier = int(get_setting(guild_id, 'leveling_xp_multiplier', '1'))
 
+    now = get_now_for_server(guild_id)
     multipliers = mult_list(guild_id)
     for m in multipliers:
         start_month, start_day = map(int, m['StartDate'].split('-'))
         end_month, end_day = map(int, m['EndDate'].split('-'))
 
-        now = get_now_for_server(guild_id)
         start_date = datetime.datetime(now.year, start_month, start_day)
         end_date = datetime.datetime(now.year, end_month, end_day, hour=23, minute=59, second=59)
 
@@ -63,21 +63,25 @@ def add_xp(guild_id: int, user_id: int, xp: int):
 
 def get_level_for_xp(guild_id: int, xp: int):
     level = 0
-    xp_needed = calc_multiplier(guild_id) * int(get_setting(guild_id, 'leveling_xp_per_level', '500'))
+    multiplier = calc_multiplier(guild_id)
+    xp_per_level = get_setting(guild_id, 'leveling_xp_per_level', '500')
+    xp_needed = multiplier * int(xp_per_level)
     while xp >= xp_needed:
         level += 1
         xp -= xp_needed
-        xp_needed = calc_multiplier(guild_id) * int(get_setting(guild_id, 'leveling_xp_per_level', '500'))
+        xp_needed = multiplier * int(xp_per_level)
 
     return level
 
 
 def get_xp_for_level(guild_id: int, level: int):
     xp = 0
-    xp_needed = calc_multiplier(guild_id) * int(get_setting(guild_id, 'leveling_xp_per_level', '500'))
+    multiplier = calc_multiplier(guild_id)
+    xp_per_level = get_setting(guild_id, 'leveling_xp_per_level', '500')
+    xp_needed = multiplier * int(xp_per_level)
     for _ in range(level):
         xp += xp_needed
-        xp_needed = calc_multiplier(guild_id) * int(get_setting(guild_id, 'leveling_xp_per_level', '500'))
+        xp_needed = multiplier * int(xp_per_level)
 
     return xp
 
