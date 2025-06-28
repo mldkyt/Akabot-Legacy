@@ -140,8 +140,13 @@ class TicketMessageView(discord.ui.View):
         super().__init__(timeout=None)
 
 
-        self.disable_all_items()
+        self.close_button = discord.ui.Button(style=discord.ButtonStyle.danger, label="Close Ticket",
+                                              custom_id="close_ticket")
+        self.add_item(self.close_button)
+        self.close_button.callback = self.close_ticket
 
+    async def close_ticket(self, interaction: discord.Interaction):
+        self.disable_all_items()
         if not await db_is_ticket_channel(interaction.guild.id, interaction.channel.id):
             await interaction.response.send_message("This is not a ticket channel.", ephemeral=True)
             return
