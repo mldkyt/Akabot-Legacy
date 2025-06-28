@@ -256,7 +256,7 @@ class AdminGuildBanConfirm(View):
         try:
             client = get_client()
 
-            data = client['AnonymousQuefessions'].find_one(
+            data = await client['AnonymousQuefessions'].find_one(
                 {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
                  'MessageID': str(self.mod_message.id)})
             await client.client.close()
@@ -472,7 +472,7 @@ class InfoButtonView(View):
             return
 
         client = get_client()
-        data = client['AnonymousQuefessions'].find_one(
+        data = await client['AnonymousQuefessions'].find_one(
             {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
              'MessageID': str(interaction.message.id)})
         await client.client.close()

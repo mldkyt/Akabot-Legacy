@@ -129,7 +129,7 @@ class ChatStreaks(discord.Cog):
 
             client = get_client()
             # Rewards: GuildID, RoleID, RequiredStreak, set by admins
-            rewards = client['ChatStreaksRewards'].find(
+            rewards = await client['ChatStreaksRewards'].find(
                 {'GuildID': str(guild_id), 'RequiredStreak': {'$gte': streak}}).to_list()
             await client.client.close()
 
@@ -163,7 +163,7 @@ class ChatStreaks(discord.Cog):
         try:
             client = get_client()
             # Remove any roles from the member
-            rewarded = client['ChatStreaksRewards'].find({'GuildID': str(guild.id)}).to_list()
+            rewarded = await client['ChatStreaksRewards'].find({'GuildID': str(guild.id)}).to_list()
             await client.client.close()
 
             for i in rewarded:

@@ -56,10 +56,10 @@ class Counting(discord.Cog):
                 return
 
             client = get_client()
-            client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
+            await client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
                                           {'$inc': {'Count': 1}})
 
-            data = client["Counting"].find_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)})
+            data = await client["Counting"].find_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)})
 
             if data is None:
                 await client.client.close()
@@ -113,7 +113,7 @@ class Counting(discord.Cog):
             return
 
         client = get_client()
-        data = client["Counting"].find_one({'GuildID': str(after.guild.id), 'ChannelID': str(after.channel.id)})
+        data = await client["Counting"].find_one({'GuildID': str(after.guild.id), 'ChannelID': str(after.channel.id)})
         await client.client.close()
 
         if data is None:
@@ -127,7 +127,7 @@ class Counting(discord.Cog):
     async def add_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
             client = get_client()
-            existing = client["Counting"].find_one({'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id)})
+            existing = await client["Counting"].find_one({'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id)})
 
             if existing is not None:
                 await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "counting_channel_already_added"), ephemeral=True)

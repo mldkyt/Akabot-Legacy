@@ -190,7 +190,7 @@ class Giveaways(discord.Cog):
     async def process_send_giveaway(self, giveaway_id: str):
         try:
             client = get_client()
-            res = client['Giveaways'].find_one({'_id': ObjectId(giveaway_id)})
+            res = await client['Giveaways'].find_one({'_id': ObjectId(giveaway_id)})
             if not res:
                 await client.client.close()
                 return

@@ -19,7 +19,7 @@ async def remove_channel_from_denylist(channel_id: int):
 
 async def is_denylisted(channel_id: int):
     client = get_client()
-    a = client['Denylisted'].count_documents({'ChannelID': str(channel_id)}) > 0
+    a = await client['Denylisted'].count_documents({'ChannelID': str(channel_id)}) > 0
     await client.client.close()
     return a
 

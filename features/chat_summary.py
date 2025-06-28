@@ -65,7 +65,7 @@ async def init(guild_id: str, channel_id: str):
 
 async def inc(msg: discord.Message):
     client = get_client()
-    data = client['ChatSummary'].find_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)})
+    data = await client['ChatSummary'].find_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)})
     if await get_setting(msg.guild.id, "chatsummary_countconsencutive", "True") == "False":
         if data is None:
             await client.client.close()
@@ -90,9 +90,9 @@ async def inc(msg: discord.Message):
             if kwd in msg.content:
                 upd['$inc'][f'KeywordsCounting.{kwd}'] = 1
 
-    client['ChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
-    client['YearlyChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
-    client['MonthlyChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
+    await client['ChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
+    await client['YearlyChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
+    await client['MonthlyChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
     await client.client.close()
 
 
@@ -337,7 +337,7 @@ class ChatSummary(discord.Cog):
         try:
             client = get_client()
 
-            res = client['ChatSummary'].count_documents({
+            res = await client['ChatSummary'].count_documents({
                 'GuildID': str(ctx.guild.id), 'Enabled': True
             })
             if res > int(get_key("Max_ChatSummary_Channels", "3")):
@@ -349,7 +349,7 @@ class ChatSummary(discord.Cog):
             await init(str(ctx.guild.id), str(ctx.channel.id))
 
             # Set enabled to true
-            res = client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)},
+            res = await client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)},
                                                    {'$set': {'Enabled': True}})
             await client.client.close()
             if res.modified_count == 0:
@@ -379,7 +379,7 @@ class ChatSummary(discord.Cog):
     async def command_remove(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
             client = get_client()
-            res = client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)},
+            res = await client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)},
                                                    {'$set': {'Enabled': False}})
             await client.client.close()
             if res.modified_count == 0:

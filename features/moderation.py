@@ -38,9 +38,9 @@ from utils.warning import add_warning, db_get_warning_actions, db_add_warning_ac
 
 async def is_a_moderator(ctx: discord.ApplicationContext):
     client = get_client()
-    roles = await client['ModeratorRoles'].find({'GuildID': str(ctx.guild.id)})
+    roles = client['ModeratorRoles'].find({'GuildID': str(ctx.guild.id)})
     await client.client.close()
-    for role in roles:
+    async for role in roles:
         if int(role['RoleID']) in [role.id for role in ctx.user.roles]:
             return True
     return False
