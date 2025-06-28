@@ -24,7 +24,7 @@ from bson import ObjectId
 from discord.ext import commands as commands_ext
 from discord.ext import tasks
 
-from database import client
+from database import get_client
 from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.config import get_key
@@ -64,31 +64,35 @@ class Giveaways(discord.Cog):
             if days + hours < 0 or days < 0 or hours < 0 or minutes < 0 or winners < 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "giveaways_error_negative_parameters"), ephemeral=True)
                 return
-            
+
+            client = get_client()
+
             # Check if we didn't hit limit of giveaways
-            res = client['Giveaways'].count_documents({'GuildID': str(ctx.guild.id)})
+            res = await client['Giveaways'].count_documents({'GuildID': str(ctx.guild.id)})
             if res > int(get_key("Max_Giveaways", "3")):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "limits_max_giveaways"), ephemeral=True)
                 return
 
             # Determine ending date
-            end_date = get_now_for_server(ctx.guild.id)
+            end_date = await get_now_for_server(ctx.guild.id)
             end_date = end_date + datetime.timedelta(days=days, hours=hours, minutes=minutes)
 
             # Send message
-            msg1 = await ctx.channel.send(trl(0, ctx.guild.id, "giveaways_giveaway_text").format(item=item))
+            msg1 = await ctx.channel.send((await trl(0, ctx.guild.id, "giveaways_giveaway_text")).format(item=item))
             await msg1.add_reaction("🎉")
 
-            res = client['Giveaways'].insert_one(
+            res = await client['Giveaways'].insert_one(
                 {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'MessageID': str(msg1.id), 'Item': item,
                  'EndDate': end_date.isoformat(), 'Winners': winners})
 
+            await client.client.close()
+
             # Send success message
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "giveaways_new_success", append_tip=True).format(
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "giveaways_new_success", append_tip=True)).format(
                 id=str(res.inserted_id)), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @giveaways_group.command(name="end", description="End a giveaway IRREVERSIBLY")
     @discord.default_permissions(manage_guild=True)
@@ -104,7 +108,10 @@ class Giveaways(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "giveaways_error_not_found"), ephemeral=True)
                 return
 
-            res = client['Giveaways'].count_documents({'_id': ObjectId(giveaway_id)})
+            client = get_client()
+
+            res = await client['Giveaways'].count_documents({'_id': ObjectId(giveaway_id)})
+            await client.client.close()
             if res == 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "giveaways_error_not_found"), ephemeral=True)
                 return
@@ -125,7 +132,9 @@ class Giveaways(discord.Cog):
     @blocklist()
     async def giveaway_list(self, ctx: discord.ApplicationContext):
         try:
-            res = client['Giveaways'].find({}).to_list()
+            client = get_client()
+            res = await client['Giveaways'].find({}).to_list()
+            await client.client.close()
 
             message = trl(ctx.user.id, ctx.guild.id, "giveaways_list_title")
 
@@ -133,24 +142,24 @@ class Giveaways(discord.Cog):
                 id = str(i['_id'])
                 item = i['Item']
                 winners = i['Winners']
-                time_remaining = datetime.datetime.fromisoformat(i['EndDate']) - get_now_for_server(ctx.guild.id)
+                time_remaining = datetime.datetime.fromisoformat(i['EndDate']) - await get_now_for_server(ctx.guild.id)
                 time_remaining = time_remaining.total_seconds()
                 time_remaining = pretty_time_delta(time_remaining, user_id=ctx.user.id, server_id=ctx.guild.id)
 
-                message += trl(ctx.user.id, ctx.guild.id, "giveaways_list_line").format(id=id, item=item,
+                message += (await trl(ctx.user.id, ctx.guild.id, "giveaways_list_line")).format(id=id, item=item,
                                                                                         winners=winners,
                                                                                         time=time_remaining)
 
             if len(res) == 0:
-                message += trl(ctx.user.id, ctx.guild.id, "giveaways_list_empty")
+                message += await trl(ctx.user.id, ctx.guild.id, "giveaways_list_empty")
 
-            if get_per_user_setting(ctx.user.id, 'tips_enabled', 'true') == 'true':
-                language = get_language(ctx.guild.id, ctx.user.id)
+            if await get_per_user_setting(ctx.user.id, 'tips_enabled', 'true') == 'true':
+                language = await get_language(ctx.guild.id, ctx.user.id)
                 message = append_tip_to_message(ctx.guild.id, ctx.user.id, message, language)
             await ctx.respond(message, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic").format(e), ephemeral=True)
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "command_error_generic")).format(e), ephemeral=True)
 
     @discord.Cog.listener()
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
@@ -158,8 +167,10 @@ class Giveaways(discord.Cog):
             if user.bot:
                 return
 
+            client = get_client()
             client['Giveaways'].update_one({'MessageID': str(reaction.message.id)},
                                            {'$push': {'Participants': str(user.id)}})
+            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -169,15 +180,19 @@ class Giveaways(discord.Cog):
             if user.bot:
                 return
 
+            client = get_client()
             client['Giveaways'].update_one({'MessageID': str(reaction.message.id)},
                                            {'$pull': {'Participants': str(user.id)}})
+            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
     async def process_send_giveaway(self, giveaway_id: str):
         try:
+            client = get_client()
             res = client['Giveaways'].find_one({'_id': ObjectId(giveaway_id)})
             if not res:
+                await client.client.close()
                 return
 
             # Fetch the channel and message
@@ -187,7 +202,7 @@ class Giveaways(discord.Cog):
 
             # Check if there are enough members to select winners
             if len(users) < res['Winners']:
-                await chan.send(trl(0, chan.guild.id, "giveaways_warning_not_enough_participants"))
+                await chan.send(await trl(0, chan.guild.id, "giveaways_warning_not_enough_participants"))
                 winners = users
             else:
                 # Determine winners
@@ -195,32 +210,35 @@ class Giveaways(discord.Cog):
 
             # Get channel and send message
             if len(winners) == 1:
-                msg2 = trl(0, chan.guild.id, "giveaways_winner").format(item=res['Item'], mention=f"<@{winners[0]}>")
+                msg2 = (await trl(0, chan.guild.id, "giveaways_winner")).format(item=res['Item'], mention=f"<@{winners[0]}>")
                 await chan.send(msg2)
             else:
                 mentions = ", ".join([f"<@{j}>" for j in winners])
                 last_mention = mentions.rfind(", ")
                 last_mention = mentions[last_mention + 2:]
                 mentions = mentions[:last_mention]
-                msg2 = trl(0, chan.guild.id, "giveaways_winners").format(item=res['Item'], mentions=mentions,
+                msg2 = (await trl(0, chan.guild.id, "giveaways_winners")).format(item=res['Item'], mentions=mentions,
                                                                          last_mention=last_mention)
                 await chan.send(msg2)
 
-            client['Giveaways'].delete_one({'_id': ObjectId(giveaway_id)})
+            await client['Giveaways'].delete_one({'_id': ObjectId(giveaway_id)})
+            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
     @tasks.loop(minutes=1)
     async def giveaway_mng(self):
         try:
-            res = client['Giveaways'].find({}).to_list()
+            client = get_client()
+            res = await client['Giveaways'].find({}).to_list()
+            await client.client.close()
             for i in res:
                 channel_id = i['ChannelID']
                 channel = await self.bot.fetch_channel(channel_id)
 
                 time = datetime.datetime.now(datetime.UTC)
                 if channel is not None:
-                    time = get_now_for_server(channel.guild.id)
+                    time = await get_now_for_server(channel.guild.id)
                 # Check if the giveaway ended
                 end_date = datetime.datetime.fromisoformat(i['EndDate'])
                 if time > end_date:

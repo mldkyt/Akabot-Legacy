@@ -1,7 +1,7 @@
 import discord
 import sentry_sdk
 
-from database import client
+from database import get_client
 from utils.module_toggling import is_module_enabled
 from utils.settings import get_setting
 
@@ -17,24 +17,29 @@ class VoiceChannelAlerts(discord.Cog):
     @is_module_enabled("voice_channel_alerts")
     async def set_all_notifications(self, ctx: discord.ApplicationContext, subscribed: bool):
         try:
-            current_subscribed = client['vc_notifs_all'].count_documents({'Member': str(ctx.user.id)}) == 1
+            client = get_client()
+
+            current_subscribed = await client['vc_notifs_all'].count_documents({'Member': str(ctx.user.id)}) == 1
 
             if subscribed and not current_subscribed:
-                client['vc_notifs_all'].insert_one({
+                await client['vc_notifs_all'].insert_one({
                     'Member': str(ctx.user.id)
                 })
 
+                await client.client.close()
                 await ctx.respond("Subscribed to all notifications! :3", ephemeral=True)
                 return
 
             if not subscribed and current_subscribed:
-                client['vc_notifs_all'].delete_one({
+                await client['vc_notifs_all'].delete_one({
                     'Member': str(ctx.user.id)
                 })
 
+                await client.client.close()
                 await ctx.respond("Unsubscribed from ALL notifications! :3", ephemeral=True)
                 return
 
+            await client.client.close()
             if subscribed and current_subscribed:
                 await ctx.respond("You are already subscribed to all notifications! :3", ephemeral=True)
             else:
@@ -47,18 +52,21 @@ class VoiceChannelAlerts(discord.Cog):
     @is_module_enabled("voice_channel_alerts")
     async def sub_user(self, ctx: discord.ApplicationContext, user: discord.User):
         try:
-            if client['vc_notifs_user'].count_documents({
+            client = get_client()
+            if await client['vc_notifs_user'].count_documents({
                 'Member': str(ctx.user.id),
                 'Target': str(user.id)
             }) > 0:
                 await ctx.respond(f"You are already subscribed to notifications from {user.mention}! :3", ephemeral=True)
+                await client.client.close()
                 return
 
-            client['vc_notifs_user'].insert_one({
+            await client['vc_notifs_user'].insert_one({
                 'Member': str(ctx.user.id),
                 'Target': str(user.id)
             })
 
+            await client.client.close()
             await ctx.respond(f"Subscribed to notifications from {user.mention}! :3", ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -68,18 +76,22 @@ class VoiceChannelAlerts(discord.Cog):
     @is_module_enabled("voice_channel_alerts")
     async def unsub_user(self, ctx: discord.ApplicationContext, user: discord.User):
         try:
-            if client['vc_notifs_user'].count_documents({
+            client = get_client()
+
+            if await client['vc_notifs_user'].count_documents({
                 'Member': str(ctx.user.id),
                 'Target': str(user.id)
             }) == 0:
                 await ctx.respond(f"You are not subscribed to notifications from {user.mention}! :3", ephemeral=True)
+                await client.client.close()
                 return
 
-            client['vc_notifs_user'].delete_one({
+            await client['vc_notifs_user'].delete_one({
                 'Member': str(ctx.user.id),
                 'Target': str(user.id)
             })
 
+            await client.client.close()
             await ctx.respond(f"Unsubscribed from {user.mention} notifications! :3", ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -89,18 +101,22 @@ class VoiceChannelAlerts(discord.Cog):
     @is_module_enabled("voice_channel_alerts")
     async def sub_channel(self, ctx: discord.ApplicationContext, channel: discord.VoiceChannel):
         try:
-            if client['vc_notifs_channel'].count_documents({
+            client = get_client()
+
+            if await client['vc_notifs_channel'].count_documents({
                 'Member': str(ctx.user.id),
                 'Target': str(channel.id)
             }) > 0:
                 await ctx.respond(f"You are already subscribed to notifications from {channel.mention}! :3", ephemeral=True)
+                await client.client.close()
                 return
 
-            client['vc_notifs_channel'].insert_one({
+            await client['vc_notifs_channel'].insert_one({
                 'Member': str(ctx.user.id),
                 'Target': str(channel.id)
             })
 
+            await client.client.close()
             await ctx.respond(f"Subscribed to notifications from {channel.mention}! :3", ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -110,18 +126,22 @@ class VoiceChannelAlerts(discord.Cog):
     @is_module_enabled("voice_channel_alerts")
     async def unsub_channel(self, ctx: discord.ApplicationContext, channel: discord.VoiceChannel):
         try:
-            if client['vc_notifs_channel'].count_documents({
+            client = get_client()
+
+            if await client['vc_notifs_channel'].count_documents({
                 'Member': str(ctx.user.id),
                 'Target': str(channel.id)
             }) == 0:
                 await ctx.respond(f"You are not subscribed to notifications from {channel.mention}! :3", ephemeral=True)
+                await client.client.close()
                 return
 
-            client['vc_notifs_channel'].delete_one({
+            await client['vc_notifs_channel'].delete_one({
                 'Member': str(ctx.user.id),
                 'Target': str(channel.id)
             })
 
+            await client.client.close()
             await ctx.respond(f"Unsubscribed from {channel.mention} notifications! :3", ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -131,13 +151,14 @@ class VoiceChannelAlerts(discord.Cog):
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
         try:
             if before.channel is None and after.channel is not None:
-                if get_setting(after.channel.guild.id, "module_voice_channel_alerts_enabled", True):
+                if await get_setting(after.channel.guild.id, "module_voice_channel_alerts_enabled", True):
                     return
 
                 sent_to = []
 
+                client = get_client()
                 # Member joined
-                for i in client['vc_notifs_all'].find({}):
+                for i in await client['vc_notifs_all'].find({}):
                     try:
                         dm_target = member.guild.get_member(int(i['Member']))
                         if dm_target is not None:
@@ -148,7 +169,7 @@ class VoiceChannelAlerts(discord.Cog):
                     except discord.Forbidden:
                         pass
 
-                for i in client['vc_notifs_user'].find({
+                for i in await client['vc_notifs_user'].find({
                     'Target': str(member.id)
                 }):
                     try:
@@ -164,7 +185,7 @@ class VoiceChannelAlerts(discord.Cog):
                     except discord.Forbidden:
                         pass
 
-                for i in client['vc_notifs_channel'].find({
+                for i in await client['vc_notifs_channel'].find({
                     'Target': str(after.channel.id)
                 }):
                     try:
@@ -180,6 +201,6 @@ class VoiceChannelAlerts(discord.Cog):
                     except discord.Forbidden:
                         pass
 
-
+                await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)

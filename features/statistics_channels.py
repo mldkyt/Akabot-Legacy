@@ -21,7 +21,7 @@ import discord
 import sentry_sdk
 from discord.ext import tasks, pages
 
-from utils.languages import get_translation_for_key_localized as _
+from utils.languages import get_translation_for_key_localized as trl
 from utils.statistic_channels import db_get_statistic_channels, db_set_statistic_channel, db_remove_statistic_channel
 
 
@@ -39,7 +39,7 @@ def format_text(guild: discord.Guild, text: str):
 
 async def update_statistic_channels_for_guild(guild: discord.Guild):
     try:
-        statistic_channels = db_get_statistic_channels(guild.id)
+        statistic_channels = await db_get_statistic_channels(guild.id)
 
         for i in statistic_channels:
             channel = guild.get_channel(int(i['ChannelID']))
@@ -81,16 +81,16 @@ class StatisticChannels(discord.Cog):
     async def set_statistic_channel_settings(self, ctx: discord.ApplicationContext, channel: discord.VoiceChannel,
                                              statistic_text: str):
         try:
-            db_set_statistic_channel(ctx.guild.id, channel.id, statistic_text)
+            await db_set_statistic_channel(ctx.guild.id, channel.id, statistic_text)
             await ctx.respond("Settings updated.", ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e, scope='Akabot > Statistic Channels > Set Command')
-            await ctx.respond(_(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @statistic_channels_grp.command(name="help", description="Formatting help")
     async def statistic_channel_help(self, ctx: discord.ApplicationContext):
         try:
-            await ctx.respond(_(ctx.user.id, ctx.guild.id, "statistic_channels_help", append_tip=True).format(
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "statistic_channels_help", append_tip=True)).format(
                 members=ctx.guild.member_count,
                 bots=len([x for x in ctx.guild.members if x.bot]),
                 guild_name=ctx.guild.name,
@@ -102,15 +102,15 @@ class StatisticChannels(discord.Cog):
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e, scope='Akabot > Statistic Channels > Help Command')
-            await ctx.respond(_(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @statistic_channels_grp.command(name="list", description="List statistic channels")
     async def list_statistic_channels(self, ctx: discord.ApplicationContext):
         try:
-            statistic_channels = db_get_statistic_channels(ctx.guild.id)
+            statistic_channels = await db_get_statistic_channels(ctx.guild.id)
 
             if len(statistic_channels) == 0:
-                await ctx.respond(_(ctx.user.id, ctx.guild.id, "statistic_channels_list_empty", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "statistic_channels_list_empty", append_tip=True),
                                   ephemeral=True)
                 return
 
@@ -119,7 +119,7 @@ class StatisticChannels(discord.Cog):
             for i in range(0, len(statistic_channels), 10):
                 c = ""
                 for j in statistic_channels[i:i + 10]:
-                    c = c + _(ctx.user.id, ctx.guild.id, "statistic_channels_list_row").format(
+                    c = c + (await trl(ctx.user.id, ctx.guild.id, "statistic_channels_list_row")).format(
                         channel=ctx.guild.get_channel(int(j['ChannelID'])).mention,
                         formatted=format_text(ctx.guild, j['StatisticText']),
                         template=j['StatisticText']
@@ -131,16 +131,16 @@ class StatisticChannels(discord.Cog):
             await paginator.respond(ctx.interaction, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e, scope='Akabot > Statistic Channels > List Command')
-            await ctx.respond(_(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @statistic_channels_grp.command(name="remove", description="Remove statistic channel")
     async def delete_statistic_channel(self, ctx: discord.ApplicationContext):
         try:
-            db_remove_statistic_channel(ctx.guild.id, ctx.channel.id)
-            await ctx.respond(_(ctx.user.id, ctx.guild.id, 'statistic_channel_remove'), ephemeral=True)
+            await db_remove_statistic_channel(ctx.guild.id, ctx.channel.id)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'statistic_channel_remove'), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e, scope='Akabot > Statistic Channels > Remove Channel Command')
-            await ctx.respond(_(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @tasks.loop(minutes=1)
     async def update_statistic_channels(self):

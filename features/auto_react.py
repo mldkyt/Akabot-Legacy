@@ -22,7 +22,7 @@ from bson import ObjectId
 from discord.ext import commands as discord_commands_ext
 from discord.ext import pages as dc_pages
 
-from database import client
+from database import get_client
 from utils.languages import get_translation_for_key_localized as trl
 
 
@@ -47,28 +47,32 @@ class AutoReact(discord.Cog):
             if emoji.is_custom_emoji():
                 # Custom emoji check
                 if emoji.id is None:
-                    await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_invalid"), ephemeral=True)
+                    await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_invalid"), ephemeral=True)
                     return
 
                 emoji_s = await ctx.guild.fetch_emoji(emoji.id)
                 if emoji_s is None:
-                    await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_invalid"), ephemeral=True)
+                    await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_invalid"), ephemeral=True)
                     return
             else:
                 # Regex check
                 if not emoji_package.is_emoji(emoji_input):
-                    await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_invalid"), ephemeral=True)
+                    await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_invalid"), ephemeral=True)
                     return
 
-            client['AutoReact'].insert_one({'GuildID': str(ctx.guild.id), 'TriggerText': trigger, 'Emoji': str(emoji)})
+            client = get_client()
+
+            await client['AutoReact'].insert_one({'GuildID': str(ctx.guild.id), 'TriggerText': trigger, 'Emoji': str(emoji)})
+
+            await client.client.close()
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "auto_react_add_success").format(trigger=trigger, emoji=str(emoji)),
+                (await trl(ctx.user.id, ctx.guild.id, "auto_react_add_success")).format(trigger=trigger, emoji=str(emoji)),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_react_group.command(name="list", description="List auto react settings")
     @discord_commands_ext.has_permissions(manage_messages=True)
@@ -81,17 +85,19 @@ class AutoReact(discord.Cog):
             current_group = 0
             current_group_msg = ""
 
+            client = get_client()
+
             # List
-            all_settings = client['AutoReact'].find({'GuildID': {'$eq': str(ctx.guild.id)}}).to_list()
+            all_settings = await client['AutoReact'].find({'GuildID': {'$eq': str(ctx.guild.id)}}).to_list()
             if len(all_settings) == 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_list_empty"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_react_list_empty"), ephemeral=True)
                 return
 
             for i in all_settings:
                 # Format: **{id}**: {trigger} -> {reply}
 
                 # current_group_msg += f"**ID: `{i[0]}`**: Trigger: `{i[2]}` -> Will react with `{i[3]}`\n"
-                current_group_msg += trl(ctx.user.id, ctx.guild.id, "auto_react_list_row").format(id=str(i['_id']),
+                current_group_msg += (await trl(ctx.user.id, ctx.guild.id, "auto_react_list_row")).format(id=str(i['_id']),
                                                                                                   trigger=i[
                                                                                                       'TriggerText'],
                                                                                                   emoji=i['Emoji'])
@@ -125,8 +131,10 @@ class AutoReact(discord.Cog):
                                   ephemeral=True)
                 return
 
-            edited = client['AutoReact'].update_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)},
+            client = get_client()
+            edited = await client['AutoReact'].update_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)},
                                                     {'$set': {'TriggerText': new_trigger}})
+            await client.client.close()
 
             if edited.matched_count == 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
@@ -144,7 +152,9 @@ class AutoReact(discord.Cog):
     @discord.default_permissions(manage_messages=True)
     async def delete_auto_react(self, ctx: discord.ApplicationContext, id: int):
         try:
-            delete = client['AutoReact'].delete_one({'ID': id, 'GuildID': str(ctx.guild.id)})
+            client = get_client()
+            delete = await client['AutoReact'].delete_one({'ID': id, 'GuildID': str(ctx.guild.id)})
+            await client.client.close()
 
             if delete.deleted_count == 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
@@ -187,8 +197,10 @@ class AutoReact(discord.Cog):
                                   ephemeral=True)
                 return
 
-            updated = client['AutoReact'].update_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)},
+            client = get_client()
+            updated = await client['AutoReact'].update_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)},
                                                      {'$set': {'Emoji': str(emoji)}})
+            await client.client.close()
 
             if updated.matched_count == 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
@@ -209,7 +221,9 @@ class AutoReact(discord.Cog):
                 return
 
             # Find all created settings
-            data = client['AutoReact'].find({'GuildID': str(msg.guild.id)}).to_list()
+            client = get_client()
+            data = await client['AutoReact'].find({'GuildID': str(msg.guild.id)}).to_list()
+            await client.client.close()
             for i in data:
                 # If it contains the message
                 if i['TriggerText'] in msg.content:

@@ -18,7 +18,7 @@ class ModuleToggling(discord.Cog):
     @discord.option(name="module_name", choices=VALID_MODULE_NAMES)
     async def enable_module(self, ctx: discord.ApplicationContext, module_name: str):
         try:
-            set_setting(ctx.guild.id,f"module_{module_name}_enabled", True)
+            await set_setting(ctx.guild.id,f"module_{module_name}_enabled", True)
 
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, ""))
         except Exception as e:
@@ -29,7 +29,7 @@ class ModuleToggling(discord.Cog):
     @discord.option(name="module_name", choices=VALID_MODULE_NAMES)
     async def enable_module(self, ctx: discord.ApplicationContext, module_name: str):
         try:
-            set_setting(ctx.guild.id,f"module_{module_name}_enabled", False)
+            await set_setting(ctx.guild.id,f"module_{module_name}_enabled", False)
 
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, ""))
         except Exception as e:

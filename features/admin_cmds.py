@@ -25,7 +25,7 @@ from utils.announcement_channels import db_get_all_announcement_channels
 from utils.config import get_key
 # Let's say that trl is the short form of get_translation_for_key_localized across the codebase
 from utils.languages import get_translation_for_key_localized as trl
-from database import client
+from database import get_client
 
 ADMIN_GUILD = int(get_key("Admin_GuildID", "0"))
 OWNER_ID = int(get_key("Admin_OwnerID", "0"))
@@ -46,13 +46,17 @@ class AdminCommands(discord.Cog):
             servers = len(self.bot.guilds)
             channels = len([channel for channel in self.bot.get_all_channels()])
             members = len(set([member for member in self.bot.get_all_members()]))
-            
-            active_channels = client['AnalyticsActiveChannels'].count_documents({'LastUseTime': {'$gt': datetime.datetime.now() - datetime.timedelta(days=7)}})
-            active_users = client['AnalyticsActiveUsers'].count_documents({'LastUseTime': {'$gt': datetime.datetime.now() - datetime.timedelta(days=7)}})
-            active_akabot_users = client['AnalyticsAkabotUsers'].count_documents({'LastBotUse': {'$gt': datetime.datetime.now() - datetime.timedelta(days=7)}})
+
+            client = get_client()
+
+            active_channels = await client['AnalyticsActiveChannels'].count_documents({'LastUseTime': {'$gt': datetime.datetime.now() - datetime.timedelta(days=7)}})
+            active_users = await client['AnalyticsActiveUsers'].count_documents({'LastUseTime': {'$gt': datetime.datetime.now() - datetime.timedelta(days=7)}})
+            active_akabot_users = await client['AnalyticsAkabotUsers'].count_documents({'LastBotUse': {'$gt': datetime.datetime.now() - datetime.timedelta(days=7)}})
+
+            await client.client.close()
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "bot_status_message").format(servers=str(servers),
+                (await trl(ctx.user.id, ctx.guild.id, "bot_status_message")).format(servers=str(servers),
                                                                             channels=str(channels),
                                                                             activechannel=str(active_channels),
                                                                             activeuser=str(active_users),
@@ -60,7 +64,7 @@ class AdminCommands(discord.Cog):
                                                                             users=str(members)), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic").format(e), ephemeral=True)
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "command_error_generic")).format(e), ephemeral=True)
 
     @admin_subcommand.command(name="create_announcement", description="List all announcement channels")
     async def create_announcement(self, ctx: discord.ApplicationContext, announcement_file: discord.Attachment,
@@ -97,16 +101,16 @@ class AdminCommands(discord.Cog):
 
             await first_channel.send(announcement, file=discord.File(extra_attachment.filename))
 
-            await msg.edit(content=trl(ctx.user.id, ctx.guild.id, "announcement_sent_sending_to_subscribed"))
-            channels = db_get_all_announcement_channels()
+            await msg.edit(content=await trl(ctx.user.id, ctx.guild.id, "announcement_sent_sending_to_subscribed"))
+            channels = await db_get_all_announcement_channels()
             i = 0
             for channel in channels:
                 i += 1
 
                 if i % 10 == 0:
                     await msg.edit(
-                        content=trl(ctx.user.id, ctx.guild.id,
-                                    "announcement_sent_sending_to_subscribed_progress").format(
+                        content=(await trl(ctx.user.id, ctx.guild.id,
+                                    "announcement_sent_sending_to_subscribed_progress")).format(
                             progress=str(i), count=str(len(channels))))
 
                 try:
@@ -118,11 +122,11 @@ class AdminCommands(discord.Cog):
                 except discord.Forbidden:
                     continue
 
-            await msg.edit(content=trl(ctx.user.id, ctx.guild.id, "announcement_sent"))
+            await msg.edit(content=await trl(ctx.user.id, ctx.guild.id, "announcement_sent"))
 
             os.remove("temp.md")
             os.remove(extra_attachment.filename)
             os.remove(announcement_file.filename)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic").format(e), ephemeral=True)
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "command_error_generic")).format(e), ephemeral=True)

@@ -3,7 +3,7 @@ import datetime
 import logging
 import discord
 import sentry_sdk
-from database import client
+from database import get_client
 from discord.ext import tasks
 
 
@@ -42,13 +42,17 @@ class StickyMessage(discord.Cog):
     @sticky_message_group.command(name="set", description="Set sticky message")
     async def add_sticky_message(self, ctx: discord.ApplicationContext, message: str):
         try:
-            client['StickyMessages'].update_one({
+            client = get_client()
+
+            await client['StickyMessages'].update_one({
                 'ChannelID': str(ctx.channel.id),
             }, {
                 '$set': {
                     'Message': message
                 }
             }, upsert=True)
+
+            await client.client.close()
 
             await self.move_message_down(ctx.channel)
 
@@ -60,11 +64,14 @@ class StickyMessage(discord.Cog):
     @sticky_message_group.command(name="remove", description="Remove sticky message")
     async def remove_sticky_message(self, ctx: discord.ApplicationContext):
         try:
-            existing_settings = client['StickyMessages'].find_one({
+            client = get_client()
+
+            existing_settings = await client['StickyMessages'].find_one({
                 'ChannelID': str(ctx.channel.id)
             })
             if not existing_settings:
                 await ctx.respond("No sticky message set", ephemeral=True)
+                await client.client.close()
                 return
             
             if 'ExistingMessageID' in existing_settings:
@@ -72,9 +79,10 @@ class StickyMessage(discord.Cog):
                 if existing_message:
                     await existing_message.delete()
 
-            client['StickyMessages'].delete_one({
+            await client['StickyMessages'].delete_one({
                 'ChannelID': str(ctx.channel.id)
             })
+            await client.client.close()
             await ctx.respond(f"Sticky message removed", ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -82,22 +90,26 @@ class StickyMessage(discord.Cog):
 
     async def move_message_down(self, channel: discord.TextChannel):
         try:
-            existing_settings = client['StickyMessages'].find_one({
+            client = get_client()
+
+            existing_settings = await client['StickyMessages'].find_one({
                 'ChannelID': str(channel.id)
             })
             if existing_settings is None:
+                await client.client.close()
                 return
 
             if 'NextSendDate' in existing_settings:
                 if datetime.datetime.fromisoformat(existing_settings['NextSendDate']).replace(tzinfo=datetime.timezone.utc) > datetime.datetime.now(datetime.timezone.utc):
                     logging.debug("Too soon to send another sticky message")
-                    client['StickyMessages'].update_one({
+                    await client['StickyMessages'].update_one({
                         'ChannelID': str(channel.id),
                     }, {
                         '$set': {
                             'NewMessage': True
                         }
                     })
+                    await client.client.close()
                     return
 
             if 'ExistingMessageID' in existing_settings:
@@ -107,7 +119,7 @@ class StickyMessage(discord.Cog):
 
             new_message = await channel.send(existing_settings['Message'])
 
-            client['StickyMessages'].update_one({
+            await client['StickyMessages'].update_one({
                 'ChannelID': str(channel.id),
             }, {
                 '$set': {
@@ -117,12 +129,15 @@ class StickyMessage(discord.Cog):
                 }
             }, upsert=True)
 
+            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
     @tasks.loop(seconds=5)
     async def check_sticky_message(self):
-        for i in client['StickyMessages'].find({
+        client = get_client()
+
+        for i in await client['StickyMessages'].find({
             'NewMessage': True
         }):
             try:
@@ -140,3 +155,5 @@ class StickyMessage(discord.Cog):
                 logging.debug("Message moved down")
             except Exception as e:
                 sentry_sdk.capture_exception(e)
+
+        await client.client.close()

@@ -15,7 +15,7 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-from pymongo import MongoClient
+from pymongo import AsyncMongoClient
 
 from utils.config import get_key
 
@@ -25,4 +25,6 @@ host = get_key("DB_Host", "localhost")
 port = get_key("DB_Port", "27017")
 db = get_key("DB_Database", "akabot")
 
-client = MongoClient(f'mongodb://{name}:{password}@{host}:{port}/', 27017)[db]
+
+def get_client():
+    return AsyncMongoClient(f'mongodb://{name}:{password}@{host}:{port}/', 27017)[db]

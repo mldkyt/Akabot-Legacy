@@ -22,7 +22,7 @@ import sentry_sdk
 from discord.ext import commands as commands_ext
 from discord.ext import tasks
 
-from database import client
+from database import get_client
 from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
@@ -46,16 +46,22 @@ class ChatRevive(discord.Cog):
             if message.channel.type == discord.ChannelType.private:
                 return  # Don't try update chat revive settings in a DM
 
-            client['ChatRevive'].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
+            client = get_client()
+
+            await client['ChatRevive'].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
                                             {'$set': {'LastMessage': time.time(), 'Revived': False}})
+
+            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
     @tasks.loop(minutes=1)
     async def revive_channels(self):
         try:
+            client = get_client()
+
             for guild in self.bot.guilds:
-                data = client['ChatRevive'].find({'GuildID': str(guild.id)}).to_list()
+                data = await client['ChatRevive'].find({'GuildID': str(guild.id)}).to_list()
                 for revive_channel in data:
                     if revive_channel['Revived']:
                         continue
@@ -73,8 +79,10 @@ class ChatRevive(discord.Cog):
                             continue
 
                         await channel.send(f'{role.mention}, this channel has been inactive for a while.')
-                        client['ChatRevive'].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
+                        await client['ChatRevive'].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
                                                         {'$set': {'Revived': True}})
+
+                await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -94,32 +102,35 @@ class ChatRevive(discord.Cog):
         try:
             # Permission checks
             if not revival_role.mentionable and not ctx.guild.me.guild_permissions.manage_roles:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_revive_set_error_not_mentionable"),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "chat_revive_set_error_not_mentionable"),
                                   ephemeral=True)
                 return
 
             # Database access
+            client = get_client()
 
             # Delete existing record
-            client['ChatRevive'].delete_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})
+            await client['ChatRevive'].delete_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})
 
             # Set new one
-            client['ChatRevive'].insert_one(
+            await client['ChatRevive'].insert_one(
                 {'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id), 'RoleID': str(revival_role.id),
                  'RevivalTime': revival_minutes * 60, 'LastMessage': time.time(),
                  'Revived': False})
 
+            await client.client.close()
+
             # Embed for logs
-            logging_embed = discord.Embed(title=trl(ctx.user.id, ctx.guild.id, "chat_revive_log_set_title"))
-            logging_embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "logging_channel"),
+            logging_embed = discord.Embed(title=await trl(ctx.user.id, ctx.guild.id, "chat_revive_log_set_title"))
+            logging_embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "logging_channel"),
                                     value=f"{ctx.channel.mention}", inline=True)
-            logging_embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "logging_user"),
+            logging_embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "logging_user"),
                                     value=f"{ctx.user.mention}", inline=True)
-            logging_embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "chat_revive_list_role"),
+            logging_embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "chat_revive_list_role"),
                                     value=f"{revival_role.mention}", inline=False)
-            logging_embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "chat_revive_log_set_revival_time"),
-                                    value=trl(ctx.user.id, ctx.guild.id,
-                                              "chat_revive_log_set_revival_time_value").format(
+            logging_embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "chat_revive_log_set_revival_time"),
+                                    value=(await trl(ctx.user.id, ctx.guild.id,
+                                              "chat_revive_log_set_revival_time_value")).format(
                                         time=str(revival_minutes)), inline=True)
 
             # Send to logs
@@ -127,7 +138,7 @@ class ChatRevive(discord.Cog):
 
             # Send back response
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "chat_revive_set_response_success").format(channel=channel.mention),
+                (await trl(ctx.user.id, ctx.guild.id, "chat_revive_set_response_success")).format(channel=channel.mention),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -141,13 +152,17 @@ class ChatRevive(discord.Cog):
     @blocklist()
     async def remove_revive_settings(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
-            client['ChatRevive'].delete_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})
+            client = get_client()
+
+            await client['ChatRevive'].delete_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})
+
+            await client.client.close()
 
             # Create embed
             logging_embed = discord.Embed(title=trl(ctx.user.id, ctx.guild.id, "chat_revive_remove_log_title"))
-            logging_embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "logging_channel"),
+            logging_embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "logging_channel"),
                                     value=f"{ctx.channel.mention}", inline=True)
-            logging_embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "logging_user"),
+            logging_embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "logging_user"),
                                     value=f"{ctx.user.mention}", inline=True)
 
             # Send to logs
@@ -155,7 +170,7 @@ class ChatRevive(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "chat_revive_remove_success").format(channel=channel.mention),
+                (await trl(ctx.user.id, ctx.guild.id, "chat_revive_remove_success")).format(channel=channel.mention),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -169,21 +184,25 @@ class ChatRevive(discord.Cog):
     @blocklist()
     async def list_revive_settings(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
-            result = client['ChatRevive'].find_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})
+            client = get_client()
+
+            result = await client['ChatRevive'].find_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})
+
+            await client.client.close()
 
             if not result:
                 await ctx.respond(
-                    trl(ctx.user.id, ctx.guild.id, "chat_revive_list_empty").format(channel=channel.mention),
+                    (await trl(ctx.user.id, ctx.guild.id, "chat_revive_list_empty")).format(channel=channel.mention),
                     ephemeral=True)
                 return
 
             role = ctx.guild.get_role(int(result['RoleID']))
 
             embed = discord.Embed(
-                title=trl(ctx.user.id, ctx.guild.id, "chat_revive_list_title").format(name=channel.name),
+                title=(await trl(ctx.user.id, ctx.guild.id, "chat_revive_list_title")).format(name=channel.name),
                 color=discord.Color.blurple())
-            embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "chat_revive_list_role"), value=role.mention)
-            embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "chat_revive_list_time"),
+            embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "chat_revive_list_role"), value=role.mention)
+            embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "chat_revive_list_time"),
                             value=str(result['RevivalTime']))
 
             await ctx.respond(embed=embed, ephemeral=True)

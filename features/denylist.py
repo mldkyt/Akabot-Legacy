@@ -1,7 +1,7 @@
 import discord
 import sentry_sdk
 
-from database import client
+from database import get_client
 from utils.denylist import is_denylisted, add_channel_to_denylist, remove_channel_from_denylist
 from utils.languages import get_translation_for_key_localized as trl
 
@@ -15,24 +15,24 @@ class ChannelDenylist(discord.Cog):
     @denylist_subcommand.command(name="add", description="Add a channel to denylist.")
     async def add_to_denylist(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
-            if is_denylisted(channel.id):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "denylist_already_added").format(mention=channel.mention), ephemeral=True)
+            if await is_denylisted(channel.id):
+                await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "denylist_already_added")).format(mention=channel.mention), ephemeral=True)
                 return
 
-            add_channel_to_denylist(channel.id)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "denylist_added").format(mention=channel.mention), ephemeral=True)
+            await add_channel_to_denylist(channel.id)
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "denylist_added")).format(mention=channel.mention), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
     @denylist_subcommand.command(name="remove", description="Remove a channel from the denylist.")
     async def remove_to_denylist(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
-            if not is_denylisted(channel.id):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "denylist_already_removed").format(mention=channel.mention), ephemeral=True)
+            if not await is_denylisted(channel.id):
+                await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "denylist_already_removed")).format(mention=channel.mention), ephemeral=True)
                 return
 
-            remove_channel_from_denylist(channel.id)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "denylist_removed").format(mention=channel.mention), ephemeral=True)
+            await remove_channel_from_denylist(channel.id)
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "denylist_removed")).format(mention=channel.mention), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -43,11 +43,13 @@ class ChannelDenylist(discord.Cog):
                 return
             if msg.guild is None:
                 return
-            if is_denylisted(msg.channel.id):
+            if await is_denylisted(msg.channel.id):
                 return
 
+            client = get_client()
+
             # Send messages waiting in queue
-            messages = client['DenylistMessageQueue'].find({
+            messages = await client['DenylistMessageQueue'].find({
                 'GuildID': str(msg.guild.id),
                 'MemberID': str(msg.author.id)
             })
@@ -95,12 +97,14 @@ class ChannelDenylist(discord.Cog):
                 sent_message = await msg.reply(content=data_msg['Message'], embeds=embeds)
 
                 # Remove from database
-                client['DenylistMessageQueue'].delete_one({
+                await client['DenylistMessageQueue'].delete_one({
                     '_id': data_msg['_id']
                 })
 
                 # If delete is set, delete after interval
                 if data_msg['DeleteAfter'] > 0:
                     await sent_message.delete(delay=data_msg['DeleteAfter'])
+
+            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)

@@ -1,43 +1,49 @@
 import discord
 import sentry_sdk
 
-from database import client
+from database import get_client
 
-def add_channel_to_denylist(channel_id: int):
-    if client['Denylisted'].count_documents({'ChannelID': str(channel_id)}) > 0:
+async def add_channel_to_denylist(channel_id: int):
+    client = get_client()
+    if await client['Denylisted'].count_documents({'ChannelID': str(channel_id)}) > 0:
         return
 
-    client['Denylisted'].insert_one({'ChannelID': str(channel_id)})
+    await client['Denylisted'].insert_one({'ChannelID': str(channel_id)})
 
-def remove_channel_from_denylist(channel_id: int):
-    if client['Denylisted'].count_documents({'ChannelID': str(channel_id)}) == 0:
+async def remove_channel_from_denylist(channel_id: int):
+    client = get_client()
+    if await client['Denylisted'].count_documents({'ChannelID': str(channel_id)}) == 0:
         return
 
-    client['Denylisted'].delete_one({'ChannelID': str(channel_id)})
+    await client['Denylisted'].delete_one({'ChannelID': str(channel_id)})
 
-def is_denylisted(channel_id: int):
-    return client['Denylisted'].count_documents({'ChannelID': str(channel_id)}) > 0
+async def is_denylisted(channel_id: int):
+    client = get_client()
+    a = client['Denylisted'].count_documents({'ChannelID': str(channel_id)}) > 0
+    await client.client.close()
+    return a
 
 # Sending queue
 
 async def queue_send_message(message: discord.Message, content: str | None = None, embeds: list[discord.Embed] | None = None, delete_after: int = 0):
     try:
         # Check if the channel is NOT in the denylist
-        if not is_denylisted(message.channel.id):
+        if not await is_denylisted(message.channel.id):
             sent_msg = await message.reply(content=content, embeds=embeds)
             if delete_after != 0:
                 await sent_msg.delete(delay=delete_after)
             return
 
         # Add the content to the queue
-        add_to_queue(message.author, message.guild, content, embeds, delete_after)
+        await add_to_queue(message.author, message.guild, content, embeds, delete_after)
     except Exception as e:
         sentry_sdk.capture_exception(e)
 
-def add_to_queue(user: discord.User | discord.Member, guild: discord.Guild, content: str | None = None, embeds: list[discord.Embed] | None = None, delete_after: int = 0):
+async def add_to_queue(user: discord.User | discord.Member, guild: discord.Guild, content: str | None = None, embeds: list[discord.Embed] | None = None, delete_after: int = 0):
     try:
+        client = get_client()
         # Add the content to the queue
-        client['DenylistMessageQueue'].insert_one({
+        await client['DenylistMessageQueue'].insert_one({
             'MemberID': str(user.id),
             'GuildID': str(guild.id),
             'Message': content or '',
@@ -61,5 +67,6 @@ def add_to_queue(user: discord.User | discord.Member, guild: discord.Guild, cont
             } for embed in (embeds or [])],
             'DeleteAfter': delete_after
         })
+        await client.client.close()
     except Exception as e:
         sentry_sdk.capture_exception(e)

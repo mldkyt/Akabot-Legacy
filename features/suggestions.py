@@ -26,9 +26,11 @@ from utils.analytics import analytics
 from utils.config import get_key
 
 
-def migration_1():
+async def migration_1():
     # Convert user ID's in upvotes and downvotes to strings, if they are not already
-    for x in client['SuggestionMessagesV2'].find():
+    client = get_client()
+
+    for x in await client['SuggestionMessagesV2'].find():
         if all(isinstance(x, str) for x in x['Upvotes']) and all(isinstance(x, str) for x in x['Downvotes']):
             continue
 
@@ -36,9 +38,11 @@ def migration_1():
 
         upvotes = x['Upvotes']
         downvotes = x['Downvotes']
-        client['SuggestionMessagesV2'].update_one({'_id': x['_id']},
+        await client['SuggestionMessagesV2'].update_one({'_id': x['_id']},
                                                   {'$set': {'Upvotes': [str(x) for x in upvotes],
                                                             'Downvotes': [str(x) for x in downvotes]}})
+
+    await client.client.close()
 
 
 async def perform_basic_vote_checks(interaction: discord.Interaction) -> bool | tuple[bool, Any]:
@@ -50,7 +54,10 @@ async def perform_basic_vote_checks(interaction: discord.Interaction) -> bool | 
     Returns: False or True and the data when succeeded
 
     """
-    data = client['SuggestionMessagesV2'].find_one({'MessageID': str(interaction.message.id)})
+    client = get_client()
+
+    data = await client['SuggestionMessagesV2'].find_one({'MessageID': str(interaction.message.id)})
+    await client.client.close()
     if not data:
         await interaction.response.send_message('This suggestion does not exist in the database', ephemeral=True)
         return False
@@ -71,7 +78,11 @@ async def update_existing_suggestions_message_interaction(interaction: discord.I
     Returns: Nothing
 
     """
-    suggestions_msg = client['SuggestionMessagesV2'].find_one({'MessageID': str(interaction.message.id)})
+    client = get_client()
+
+    suggestions_msg = await client['SuggestionMessagesV2'].find_one({'MessageID': str(interaction.message.id)})
+
+    await client.client.close()
 
     author = interaction.guild.get_member(int(suggestions_msg['AuthorID']))
 
@@ -90,7 +101,11 @@ async def update_existing_suggestions_message(msg: discord.Message):
 
     Returns: Nothing
     """
-    suggestions_msg = client['SuggestionMessagesV2'].find_one({'MessageID': str(msg.id)})
+    client = get_client()
+
+    suggestions_msg = await client['SuggestionMessagesV2'].find_one({'MessageID': str(msg.id)})
+
+    await client.client.close()
 
     if not suggestions_msg:
         return
@@ -117,9 +132,12 @@ class V2SuggestionView(View):
         if not success:
             return
 
-        client['SuggestionMessagesV2'].update_one({'MessageID': str(interaction.message.id)},
+        client = get_client()
+
+        await client['SuggestionMessagesV2'].update_one({'MessageID': str(interaction.message.id)},
                                                   {'$push': {'Upvotes': str(interaction.user.id)}})
 
+        await client.client.close()
         await update_existing_suggestions_message_interaction(interaction)
 
     @discord.ui.button(label='👎', style=discord.ButtonStyle.primary, custom_id='downvote')
@@ -128,14 +146,20 @@ class V2SuggestionView(View):
         if not success:
             return
 
-        client['SuggestionMessagesV2'].update_one({'MessageID': str(interaction.message.id)},
+        client = get_client()
+
+        await client['SuggestionMessagesV2'].update_one({'MessageID': str(interaction.message.id)},
                                                   {'$push': {'Downvotes': str(interaction.user.id)}})
+
+        await client.client.close()
 
         await update_existing_suggestions_message_interaction(interaction)
 
     @discord.ui.button(label='See more information', style=discord.ButtonStyle.primary, custom_id='more_info')
     async def get_info(self, button: discord.ui.Button, interaction: discord.Interaction):
-        data = client['SuggestionMessagesV2'].find_one({'MessageID': str(interaction.message.id)})
+        client = get_client()
+        data = await client['SuggestionMessagesV2'].find_one({'MessageID': str(interaction.message.id)})
+        await client.client.close()
         if not data:
             await interaction.response.send_message('This suggestion does not exist in the database', ephemeral=True)
             return
@@ -154,7 +178,7 @@ class V2SuggestionView(View):
             downvoters = ['No downvoters']
 
         await interaction.response.send_message(
-            trl(interaction.user.id, interaction.guild.id, 'suggestions_v2_information', append_tip=True)
+            (await trl(interaction.user.id, interaction.guild.id, 'suggestions_v2_information', append_tip=True))
             .format(message=message, author=author.mention, upvotes=str(len(upvotes)), downvotes=str(len(downvotes)),
                     percent=f"{percent:.0f}",
                     upvoters=', '.join(upvoters), downvoters=', '.join(downvoters)),
@@ -173,8 +197,11 @@ class V2SuggestionEditMessageModal(Modal):
         self.add_item(InputText(label='New Message', placeholder='Enter the new message here', max_length=2000))
 
     async def callback(self, interaction: Interaction):
-        client['SuggestionMessagesV2'].update_one({'MessageID': self.msg_id},
+        client = get_client()
+
+        await client['SuggestionMessagesV2'].update_one({'MessageID': self.msg_id},
                                                   {'$set': {'Suggestion': self.children[0].value}})
+        await client.client.close()
 
         ch = interaction.guild.get_channel(int(self.ch_id))
         msg = await ch.fetch_message(int(self.msg_id))
@@ -195,8 +222,10 @@ class V2SuggestionAuthorExtraView(View):
         await interaction.response.send_modal(modal)
 
 
-def generate_message_content(id: str):
-    data = client['SuggestionMessagesV2'].find_one({'MessageID': id})
+async def generate_message_content(id: str):
+    client = get_client()
+    data = await client['SuggestionMessagesV2'].find_one({'MessageID': id})
+    await client.client.close()
     if not data:
         raise ValueError('Message not found')
 
@@ -215,7 +244,7 @@ import discord
 import sentry_sdk
 from discord.ext import commands
 
-from database import client
+from database import get_client
 from utils.languages import get_translation_for_key_localized as trl
 from utils.settings import get_setting, set_setting
 
@@ -235,11 +264,13 @@ class Suggestions(discord.Cog):
             if message.is_system():
                 return
 
-            if client['SuggestionChannels'].count_documents({'ChannelID': str(message.channel.id)}) > 0:
+            client = get_client()
+
+            if await client['SuggestionChannels'].count_documents({'ChannelID': str(message.channel.id)}) > 0:
                 if message.channel.permissions_for(message.guild.me).manage_messages and get_key('Message_Intent', "false") == "true":
                     # Version 2
 
-                    client['SuggestionMessagesV2'].insert_one({
+                    await client['SuggestionMessagesV2'].insert_one({
                         'MessageID': str(message.id),
                         'Suggestion': message.content,
                         'Upvotes': [],
@@ -258,10 +289,11 @@ class Suggestions(discord.Cog):
                                         description=generate_message_content(str(message.id)))
                     new_msg = await message.channel.send(embed=emb, view=V2SuggestionView())
 
-                    client['SuggestionMessagesV2'].update_one({'MessageID': str(message.id)},
+                    await client['SuggestionMessagesV2'].update_one({'MessageID': str(message.id)},
                                                               {'$set': {'MessageID': str(new_msg.id)}})
+                    await client.client.close()
 
-                    if get_setting(message.guild.id, "suggestions_thread_creating", "true") == "true":
+                    if await get_setting(message.guild.id, "suggestions_thread_creating", "true") == "true":
                         # Name of thread is determined from the suggestion text but shortened to fit
                         thr_name = message.content[:28]
                         if thr_name != message.content:
@@ -273,7 +305,7 @@ class Suggestions(discord.Cog):
                     await message.delete()
                 else:
                     # Version 1
-                    emojis = get_setting(message.guild.id, 'suggestion_emoji', '👍👎')
+                    emojis = await get_setting(message.guild.id, 'suggestion_emoji', '👍👎')
                     if emojis == '👍👎':
                         await message.add_reaction('👍')
                         await message.add_reaction('👎')
@@ -281,8 +313,8 @@ class Suggestions(discord.Cog):
                         await message.add_reaction('✅')
                         await message.add_reaction('❌')
 
-                    if get_setting(message.guild.id, "suggestion_reminder_enabled", "false") == "true":
-                        to_send = get_setting(message.guild.id, "suggestion_reminder_message", "")
+                    if await get_setting(message.guild.id, "suggestion_reminder_enabled", "false") == "true":
+                        to_send = await get_setting(message.guild.id, "suggestion_reminder_message", "")
                         sent = await message.reply(to_send)
                         await sent.delete(delay=5)
         except Exception as e:
@@ -296,15 +328,18 @@ class Suggestions(discord.Cog):
     @commands.has_permissions(manage_guild=True)
     async def cmd_add_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
-            if client['SuggestionChannels'].count_documents({'ChannelID': str(ctx.guild.id)}) == 0:
-                client['SuggestionChannels'].insert_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'suggestions_channel_added', append_tip=True).format(
+            client = get_client()
+
+            if await client['SuggestionChannels'].count_documents({'ChannelID': str(ctx.guild.id)}) == 0:
+                await client['SuggestionChannels'].insert_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})
+                await client.client.close()
+                await ctx.respond((await trl(ctx.user.id, ctx.guild.id, 'suggestions_channel_added', append_tip=True)).format(
                     channel=channel.mention), ephemeral=True)
             else:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'suggestions_channel_already_exists'), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, 'suggestions_channel_already_exists'), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @suggestions_group.command(name='remove_channel', description='Remove a suggestion channel')
     @discord.default_permissions(manage_guild=True)
@@ -312,15 +347,19 @@ class Suggestions(discord.Cog):
     @commands.has_permissions(manage_guild=True)
     async def cmd_remove_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
-            if client['SuggestionChannels'].count_documents({'ChannelID': str(ctx.guild.id)}) == 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "suggestions_channel_not_found"), ephemeral=True)
+            client = get_client()
+
+            if await client['SuggestionChannels'].count_documents({'ChannelID': str(ctx.guild.id)}) == 0:
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "suggestions_channel_not_found"), ephemeral=True)
             else:
-                client['SuggestionChannels'].delete_one({'ChannelID': str(ctx.guild.id)})
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "suggestions_channel_removed", append_tip=True).format(
+                await client['SuggestionChannels'].delete_one({'ChannelID': str(ctx.guild.id)})
+                await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "suggestions_channel_removed", append_tip=True)).format(
                     channel=channel.mention), ephemeral=True)
+
+            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @suggestions_group.command(name='set_thread_creating', description='Enable/disable creating of thread when suggesting (default: true)')
     @discord.default_permissions(manage_guild=True)
@@ -328,11 +367,11 @@ class Suggestions(discord.Cog):
     @commands.has_permissions(manage_guild=True)
     async def cmd_set_thread_creating(self, ctx: discord.ApplicationContext, thread_creating: bool):
         try:
-            set_setting(ctx.guild.id, "suggestions_thread_creating", 'true' if thread_creating else 'false')
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "suggestions_thread_creating_enabled" if thread_creating else "suggestions_thread_creating_disabled", append_tip=True), ephemeral=True)
+            await set_setting(ctx.guild.id, "suggestions_thread_creating", 'true' if thread_creating else 'false')
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "suggestions_thread_creating_enabled" if thread_creating else "suggestions_thread_creating_disabled", append_tip=True), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @suggestions_group.command(name='emoji', description='Choose emoji')
     @discord.default_permissions(manage_guild=True)
@@ -341,8 +380,8 @@ class Suggestions(discord.Cog):
     @discord.option(name='emoji', description='The emoji to use', choices=['👎👍', '✅❌'])
     async def cmd_choose_emoji(self, ctx: discord.ApplicationContext, emoji: str):
         try:
-            set_setting(ctx.guild.id, 'suggestion_emoji', emoji)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "suggestions_emoji_set").format(emoji=emoji),
+            await set_setting(ctx.guild.id, 'suggestion_emoji', emoji)
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "suggestions_emoji_set")).format(emoji=emoji),
                               ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -356,10 +395,10 @@ class Suggestions(discord.Cog):
         try:
             if len(message) < 1:
                 await ctx.respond("Invalid message input.", ephemeral=True)
-            set_setting(ctx.guild.id, 'suggestion_reminder_enabled', str(enabled).lower())
-            set_setting(ctx.guild.id, 'suggestion_reminder_message', message)
+            await set_setting(ctx.guild.id, 'suggestion_reminder_enabled', str(enabled).lower())
+            await set_setting(ctx.guild.id, 'suggestion_reminder_message', message)
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, 'suggestions_message_reminder_set', append_tip=True).format(
+                (await trl(ctx.user.id, ctx.guild.id, 'suggestions_message_reminder_set', append_tip=True)).format(
                     enabled=enabled, message=message),
                 ephemeral=True)
         except Exception as e:

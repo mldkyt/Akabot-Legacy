@@ -1,6 +1,6 @@
-from database import client
+from database import get_client
 
-def is_broadcast(user_id: int, guild_id: int):
+async def is_broadcast(user_id: int, guild_id: int):
     """
     Parameters
     ----------
@@ -11,9 +11,11 @@ def is_broadcast(user_id: int, guild_id: int):
     -------
     If member should be broadcast in a server or not. Also use 'AllowedServers' in data type
     """
-    data = client['UserBirthday'].find_one({
+    client = get_client()
+    data = await client['UserBirthday'].find_one({
         'UserID': str(user_id)
     })
+    await client.client.close()
 
     if data is None:
         return False
@@ -23,25 +25,31 @@ def is_broadcast(user_id: int, guild_id: int):
 
     return str(guild_id) in data['AllowedServers']
 
-def remove_broadcast(user_id: int, guild_id: int):
-    client['UserBirthday'].update_one({
+async def remove_broadcast(user_id: int, guild_id: int):
+    client = get_client()
+    await client['UserBirthday'].update_one({
         'UserID': str(user_id)
     }, {
         '$pull': {
             'AllowedServers': str(guild_id)
         }
     })
+    await client.client.close()
 
-def add_broadcast(user_id: int, guild_id: int):
-    client['UserBirthday'].update_one({
+
+async def add_broadcast(user_id: int, guild_id: int):
+    client = get_client()
+    await client['UserBirthday'].update_one({
         'UserID': str(user_id)
     }, {
         '$push': {
             'AllowedServers': str(guild_id)
         }
     })
+    await client.client.close()
 
-def set_broadcast(user_id: int, guild_id: int, state: bool):
+
+async def set_broadcast(user_id: int, guild_id: int, state: bool):
     """
     Set state of broadcasting
     Parameters
@@ -54,13 +62,13 @@ def set_broadcast(user_id: int, guild_id: int, state: bool):
     -------
     True if modified, False if not modified
     """
-    is_broadcasting = is_broadcast(user_id, guild_id)
+    is_broadcasting = await is_broadcast(user_id, guild_id)
 
     if not state and is_broadcasting:
-        remove_broadcast(user_id, guild_id)
+        await remove_broadcast(user_id, guild_id)
         return True
     elif state and not is_broadcasting:
-        add_broadcast(user_id, guild_id)
+        await add_broadcast(user_id, guild_id)
         return True
     else:
         return False

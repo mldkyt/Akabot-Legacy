@@ -21,7 +21,7 @@ import discord
 import sentry_sdk
 from discord.ext import tasks, commands
 
-from database import client
+from database import get_client
 from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
@@ -52,7 +52,11 @@ class BirthdayAnnouncements(discord.Cog):
         if now.hour != 12 or now.minute != 0:
             return
 
-        birthdays = client['UserBirthday'].find({'Birth.Month': now.month, 'Birth.Day': now.day}).to_list()
+        client = get_client()
+
+        birthdays = await client['UserBirthday'].find({'Birth.Month': now.month, 'Birth.Day': now.day}).to_list()
+
+        await client.client.close()
         for birthday in birthdays:
             try:
                 member = self.bot.get_user(int(birthday["UserID"]))
@@ -60,8 +64,8 @@ class BirthdayAnnouncements(discord.Cog):
                     continue
                 # Test DM
                 try:
-                    if get_per_user_setting(member.id, 'birthday_send_dm', True):
-                        await member.send(trl(member.id, 0, 'birthday_dm'))
+                    if await get_per_user_setting(member.id, 'birthday_send_dm', True):
+                        await member.send(await trl(member.id, 0, 'birthday_dm'))
                 except discord.Forbidden:
                     pass
 
@@ -71,16 +75,16 @@ class BirthdayAnnouncements(discord.Cog):
                     if guild is None:
                         continue
 
-                    if not get_setting(guild.id, "module_birthday_announcements_enabled", True):
+                    if not await get_setting(guild.id, "module_birthday_announcements_enabled", True):
                         continue
 
-                    channel_id = get_setting(int(guild_id), 'birthday_announcements_channel', '0')
+                    channel_id = await get_setting(int(guild_id), 'birthday_announcements_channel', '0')
                     channel = guild.get_channel(int(channel_id))
                     if channel is None:
                         continue
 
-                    bd_msg = str(get_setting(guild_id, "birthday_announcements_message",
-                                             trl(0, guild_id, "birthday_server")))
+                    bd_msg = str(await get_setting(guild_id, "birthday_announcements_message",
+                                             await trl(0, guild_id, "birthday_server")))
 
                     age = now.year - int(birthday["Birth"]["Year"])
 
@@ -112,9 +116,9 @@ class BirthdayAnnouncements(discord.Cog):
     @analytics("birthday_announcements channel")
     @blocklist()
     async def set_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
-        set_setting(ctx.guild.id, "birthday_announcements_channel", str(channel.id))
+        await set_setting(ctx.guild.id, "birthday_announcements_channel", str(channel.id))
         await ctx.respond(
-            trl(ctx.user.id, ctx.guild.id, "birthday_announcements_channel_set", append_tip=True).format(
+            (await trl(ctx.user.id, ctx.guild.id, "birthday_announcements_channel_set", append_tip=True)).format(
                 channel=channel.mention),
             ephemeral=True)
 
@@ -126,5 +130,5 @@ class BirthdayAnnouncements(discord.Cog):
     @analytics("birthday_announcements message")
     @blocklist()
     async def birthday_announcements_message(self, ctx: discord.ApplicationContext, message: str):
-        set_setting(ctx.guild.id, "birthday_announcements_message", message)
+        await set_setting(ctx.guild.id, "birthday_announcements_message", message)
         await ctx.respond("Birthday announcement message set", ephemeral=True)

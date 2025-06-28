@@ -106,12 +106,12 @@ class ReactionRoles(discord.Cog):
 
             await interaction.channel.send(content=message, view=view)
             await interaction.response.send_message(
-                trl(interaction.user.id, interaction.guild.id, "reaction_roles_created_response", append_tip=True),
+                await trl(interaction.user.id, interaction.guild.id, "reaction_roles_created_response", append_tip=True),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await interaction.response.send_message(
-                trl(interaction.user.id, interaction.guild.id, "command_error_generic"), ephemeral=True)
+                await trl(interaction.user.id, interaction.guild.id, "command_error_generic"), ephemeral=True)
 
     @reaction_roles_subcommand.command(name="edit", description="Edit a reaction role")
     @discord.default_permissions(manage_roles=True)
@@ -131,7 +131,7 @@ class ReactionRoles(discord.Cog):
         try:
             if not message.isdigit():
                 await interaction.response.send_message(
-                    trl(interaction.user.id, interaction.guild.id, "reaction_roles_edit_id_must_be_a_number"),
+                    await trl(interaction.user.id, interaction.guild.id, "reaction_roles_edit_id_must_be_a_number"),
                     ephemeral=True)
                 return
 
@@ -198,15 +198,15 @@ class ReactionRoles(discord.Cog):
             if split[0] == "rrn":
                 if role in interaction.user.roles:
                     await interaction.response.send_message(
-                        trl(interaction.user.id, interaction.guild.id, "reaction_roles_role_removed",
-                            append_tip=True).format(
+                        (await trl(interaction.user.id, interaction.guild.id, "reaction_roles_role_removed",
+                            append_tip=True)).format(
                             mention=role.mention), ephemeral=True)
                     await interaction.user.remove_roles(role, reason="Reaction role")
                     return
                 if role not in interaction.user.roles:
                     await interaction.response.send_message(
-                        trl(interaction.user.id, interaction.guild.id, "reaction_roles_role_added",
-                            append_tip=True).format(
+                        (await trl(interaction.user.id, interaction.guild.id, "reaction_roles_role_added",
+                            append_tip=True)).format(
                             mention=role.mention), ephemeral=True)
                     await interaction.user.add_roles(role, reason="Reaction role")
                     return
@@ -214,12 +214,12 @@ class ReactionRoles(discord.Cog):
             if split[0] == "rra":
                 if role in interaction.user.roles:
                     await interaction.response.send_message(
-                        trl(interaction.user.id, interaction.guild.id, "reaction_roles_already_have"), ephemeral=True)
+                        (await trl(interaction.user.id, interaction.guild.id, "reaction_roles_already_have")), ephemeral=True)
                     return
                 if role not in interaction.user.roles:
                     await interaction.response.send_message(
-                        trl(interaction.user.id, interaction.guild.id, "reaction_roles_role_added",
-                            append_tip=True).format(
+                        (await trl(interaction.user.id, interaction.guild.id, "reaction_roles_role_added",
+                            append_tip=True)).format(
                             mention=role.mention), ephemeral=True)
                     await interaction.user.add_roles(role, reason="Reaction role")
                     return
@@ -227,12 +227,12 @@ class ReactionRoles(discord.Cog):
             if split[0] == "rrr":
                 if role not in interaction.user.roles:
                     await interaction.response.send_message(
-                        trl(interaction.user.id, interaction.guild.id, "reaction_roles_already_dont"), ephemeral=True)
+                        (await trl(interaction.user.id, interaction.guild.id, "reaction_roles_already_dont")), ephemeral=True)
                     return
                 if role in interaction.user.roles:
                     await interaction.response.send_message(
-                        trl(interaction.user.id, interaction.guild.id, "reaction_roles_role_removed",
-                            append_tip=True).format(
+                        (await trl(interaction.user.id, interaction.guild.id, "reaction_roles_role_removed",
+                            append_tip=True)).format(
                             mention=role.mention), ephemeral=True)
                     await interaction.user.remove_roles(role, reason="Reaction role")
                     return
@@ -240,13 +240,13 @@ class ReactionRoles(discord.Cog):
             if split[0] == "rrs":
                 if role in interaction.user.roles:
                     await interaction.response.send_message(
-                        trl(interaction.user.id, interaction.guild.id, "reaction_roles_already_selected").format(
+                        (await trl(interaction.user.id, interaction.guild.id, "reaction_roles_already_selected")).format(
                             mention=role.mention), ephemeral=True)
                     return
 
                 roles = get_roles(interaction.message)
                 await interaction.response.send_message(
-                    trl(interaction.user.id, interaction.guild.id, "reaction_roles_selected", append_tip=True).format(
+                    (await trl(interaction.user.id, interaction.guild.id, "reaction_roles_selected", append_tip=True)).format(
                         mention=role.mention),
                     ephemeral=True)
                 await interaction.user.remove_roles(*roles, reason="Reaction role")

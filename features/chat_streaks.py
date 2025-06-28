@@ -22,7 +22,7 @@ import discord
 import sentry_sdk
 from discord.ext import commands as commands_ext, pages
 
-from database import client
+from database import get_client
 from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.denylist import queue_send_message
@@ -44,7 +44,7 @@ class ChatStreakStorage:
     def __init__(self) -> None:
         super().__init__()
 
-    def set_streak(self, guild_id: int, member_id: int) -> tuple[str, int, int]:
+    async def set_streak(self, guild_id: int, member_id: int) -> tuple[str, int, int]:
         """Set streak
 
         Args:
@@ -55,40 +55,46 @@ class ChatStreakStorage:
             str: The state of the streak
         """
 
-        res = client['ChatStreaks'].find_one({'GuildID': str(guild_id), 'MemberID': str(member_id)})
+        client = get_client()
+
+        res = await client['ChatStreaks'].find_one({'GuildID': str(guild_id), 'MemberID': str(member_id)})
 
         if not res:
-            start_time = get_server_midnight_time(guild_id)
-            client['ChatStreaks'].insert_one(
+            start_time = await get_server_midnight_time(guild_id)
+            await client['ChatStreaks'].insert_one(
                 {'GuildID': str(guild_id), 'MemberID': str(member_id), 'LastMessage': start_time,
                  'StartTime': start_time})
 
+            await client.client.close()
             return "started", 0, 0
 
         last_message = res['LastMessage']
         start_time = res['StartTime']
 
         # Check for streak expiry
-        if get_server_midnight_time(guild_id) - last_message > datetime.timedelta(days=1, hours=1):
+        if await get_server_midnight_time(guild_id) - last_message > datetime.timedelta(days=1, hours=1):
             streak = max((last_message - start_time).days, 0)
-            client['ChatStreaks'].update_one({'GuildID': str(guild_id), 'MemberID': str(member_id)}, {
-                '$set': {'LastMessage': get_server_midnight_time(guild_id),
-                         'StartTime': get_server_midnight_time(guild_id)}})
+            await client['ChatStreaks'].update_one({'GuildID': str(guild_id), 'MemberID': str(member_id)}, {
+                '$set': {'LastMessage': await get_server_midnight_time(guild_id),
+                         'StartTime': await get_server_midnight_time(guild_id)}})
+
+            await client.client.close()
             return "expired", streak, 0
 
         before_update = (last_message - start_time).days
 
-        client['ChatStreaks'].update_one({'GuildID': str(guild_id), 'MemberID': str(member_id)},
-                                         {'$set': {'LastMessage': get_server_midnight_time(guild_id)}})
+        await client['ChatStreaks'].update_one({'GuildID': str(guild_id), 'MemberID': str(member_id)},
+                                         {'$set': {'LastMessage': await get_server_midnight_time(guild_id)}})
 
-        after_update = (get_server_midnight_time(guild_id) - start_time).days
+        await client.client.close()
+        after_update = (await get_server_midnight_time(guild_id) - start_time).days
 
         if before_update != after_update:
             return "updated", before_update, after_update
 
         return "stayed", after_update, 0
 
-    def reset_streak(self, guild_id: int, member_id: int) -> None:
+    async def reset_streak(self, guild_id: int, member_id: int) -> None:
         """Reset streak
 
         Args:
@@ -96,14 +102,18 @@ class ChatStreakStorage:
             member_id (int): Member ID
         """
 
-        if client['ChatStreaks'].find_one({'GuildID': str(guild_id), 'MemberID': str(member_id)}) is None:
-            client['ChatStreaks'].insert_one({'GuildID': str(guild_id), 'MemberID': str(member_id),
+        client = get_client()
+
+        if await client['ChatStreaks'].find_one({'GuildID': str(guild_id), 'MemberID': str(member_id)}) is None:
+            await client['ChatStreaks'].insert_one({'GuildID': str(guild_id), 'MemberID': str(member_id),
                                               'LastMessage': get_server_midnight_time(guild_id),
                                               'StartTime': get_server_midnight_time(guild_id)})
         else:
-            client['ChatStreaks'].update_one({'GuildID': str(guild_id), 'MemberID': str(member_id)}, {
+            await client['ChatStreaks'].update_one({'GuildID': str(guild_id), 'MemberID': str(member_id)}, {
                 '$set': {'LastMessage': get_server_midnight_time(guild_id),
                          'StartTime': get_server_midnight_time(guild_id)}})
+
+        await client.client.close()
 
 
 class ChatStreaks(discord.Cog):
@@ -117,9 +127,11 @@ class ChatStreaks(discord.Cog):
             if streak == 0:
                 return
 
+            client = get_client()
             # Rewards: GuildID, RoleID, RequiredStreak, set by admins
             rewards = client['ChatStreaksRewards'].find(
                 {'GuildID': str(guild_id), 'RequiredStreak': {'$gte': streak}}).to_list()
+            await client.client.close()
 
             for i in rewards:
                 role = self.bot.get_guild(guild_id).get_role(int(i['RoleID']))
@@ -134,8 +146,8 @@ class ChatStreaks(discord.Cog):
 
         except discord.Forbidden:
 
-            log_embed = discord.Embed(title=trl(guild_id, member_id, "logging_missing_permissions"),
-                                      description=trl(guild_id, member_id,
+            log_embed = discord.Embed(title=await trl(guild_id, member_id, "logging_missing_permissions"),
+                                      description=await trl(guild_id, member_id,
                                                       "logging_missing_permissions_streak_rewards"),
                                       color=discord.Color.red())
 
@@ -149,8 +161,10 @@ class ChatStreaks(discord.Cog):
 
     async def reset_rewards(self, guild: discord.Guild, member: discord.Member):
         try:
+            client = get_client()
             # Remove any roles from the member
             rewarded = client['ChatStreaksRewards'].find({'GuildID': str(guild.id)}).to_list()
+            await client.client.close()
 
             for i in rewarded:
                 if 'RemoveOnLoss' in i and i['RemoveOnLoss'] == False:
@@ -163,8 +177,8 @@ class ChatStreaks(discord.Cog):
                 await member.remove_roles(role)
 
         except discord.Forbidden:
-            log_embed = discord.Embed(title=trl(guild.id, member.id, "logging_missing_permissions"),
-                                      description=trl(guild.id, member.id,
+            log_embed = discord.Embed(title=await trl(guild.id, member.id, "logging_missing_permissions"),
+                                      description=await trl(guild.id, member.id,
                                                       "logging_missing_permissions_streak_rewards"),
                                       color=discord.Color.red())
 
@@ -178,7 +192,7 @@ class ChatStreaks(discord.Cog):
             if message.guild is None:
                 return
 
-            if not get_setting(message.guild.id, "module_chat_streaks_enabled", True):
+            if not await get_setting(message.guild.id, "module_chat_streaks_enabled", True):
                 return
 
             if message.author.bot:
@@ -196,7 +210,7 @@ class ChatStreaks(discord.Cog):
 
                 if old_streak == 0:
                     return
-                if get_per_user_setting(message.author.id, 'chat_streaks_alerts', 'on') == 'off':
+                if await get_per_user_setting(message.author.id, 'chat_streaks_alerts', 'on') == 'off':
                     return
                 if not message.channel.can_send():
                     return  # Only send if we have permissions
@@ -206,15 +220,15 @@ class ChatStreaks(discord.Cog):
                 # This will either send the message immediately (no blocklist)
                 # or it will send it when the member goes to a non-blocklisted
                 # channel
-                await queue_send_message(message, content=trl(message.author.id, message.guild.id,
-                                                              "chat_streaks_expired").format(streak=old_streak),
+                await queue_send_message(message, content=(await trl(message.author.id, message.guild.id,
+                                                              "chat_streaks_expired")).format(streak=old_streak),
                                          delete_after=int(
-                                             get_setting(message.guild.id, 'chat_streaks_delete_sent_message_expired',
+                                             await get_setting(message.guild.id, 'chat_streaks_delete_sent_message_expired',
                                                          '60')))
             if state == "updated":
                 await self.check_chat_streak_rewards(message.guild.id, message.author.id, new_streak)
 
-                if get_per_user_setting(message.author.id, 'chat_streaks_alerts', 'on') != 'on':
+                if await get_per_user_setting(message.author.id, 'chat_streaks_alerts', 'on') != 'on':
                     return  # Only trigger if the user has the setting on
                 if not message.channel.can_send():
                     return  # Only send if we have permissions
@@ -224,10 +238,10 @@ class ChatStreaks(discord.Cog):
                 # This will either send the message immediately (no blocklist)
                 # or it will send it when the member goes to a non-blocklisted
                 # channel
-                await queue_send_message(message, content=trl(message.author.id, message.guild.id,
-                                                              "chat_streaks_updated").format(streak=new_streak),
+                await queue_send_message(message, content=(await trl(message.author.id, message.guild.id,
+                                                              "chat_streaks_updated")).format(streak=new_streak),
                                          delete_after=int(
-                                             get_setting(message.guild.id, 'chat_streaks_delete_sent_message_updated',
+                                             await get_setting(message.guild.id, 'chat_streaks_delete_sent_message_updated',
                                                          '10')))
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -245,20 +259,20 @@ class ChatStreaks(discord.Cog):
     async def reset_streak_command(self, ctx: discord.ApplicationContext, user: discord.Member):
         try:
             # Reset streak
-            self.streak_storage.reset_streak(ctx.guild.id, user.id)
+            await self.streak_storage.reset_streak(ctx.guild.id, user.id)
 
             # Create a embed for logs
             logging_embed = discord.Embed(title=trl(ctx.user.id, ctx.guild.id, "chat_streaks_reset_log_title"))
-            logging_embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "chat_streaks_reset_log_admin"),
+            logging_embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "chat_streaks_reset_log_admin"),
                                     value=f'{ctx.user.mention}')
-            logging_embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "logging_user"), value=f'{user.mention}')
+            logging_embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "logging_user"), value=f'{user.mention}')
 
             # Send to log
             await log_into_logs(ctx.guild, logging_embed)
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "chat_streaks_reset_success", append_tip=True).format(user=user.mention),
+                (await trl(ctx.user.id, ctx.guild.id, "chat_streaks_reset_success", append_tip=True)).format(user=user.mention),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -276,7 +290,7 @@ class ChatStreaks(discord.Cog):
         try:
             (_, streak, _) = self.streak_storage.set_streak(ctx.guild.id, user.id)
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "chat_streaks_streak_admin", append_tip=True).format(user=user.mention,
+                (await trl(ctx.user.id, ctx.guild.id, "chat_streaks_streak_admin", append_tip=True)).format(user=user.mention,
                                                                                                     streak=str(streak)),
                 ephemeral=True)
         except Exception as e:
@@ -297,11 +311,10 @@ class ChatStreaks(discord.Cog):
     async def configure_messages(self, ctx: discord.ApplicationContext, delete_sent_message_expired: int = -1,
                                  delete_sent_message_updated: int = -1):
         try:
-            prev_expired = get_setting(ctx.guild.id, 'chat_streaks_delete_sent_message_expired', '60')
-            prev_updated = get_setting(ctx.guild.id, 'chat_streaks_delete_sent_message_updated', '10')
-
-            set_setting(ctx.guild.id, 'chat_streaks_delete_sent_message_expired', str(delete_sent_message_expired))
-            set_setting(ctx.guild.id, 'chat_streaks_delete_sent_message_updated', str(delete_sent_message_updated))
+            await set_setting(ctx.guild.id, 'chat_streaks_delete_sent_message_expired',
+                              str(delete_sent_message_expired))
+            await set_setting(ctx.guild.id, 'chat_streaks_delete_sent_message_updated',
+                              str(delete_sent_message_updated))
 
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_streaks_configure_messages_success"), ephemeral=True)
         except Exception as e:
@@ -315,7 +328,7 @@ class ChatStreaks(discord.Cog):
         try:
             (_, streak, _) = self.streak_storage.set_streak(ctx.guild.id, ctx.user.id)
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "chat_streaks_streak", append_tip=True).format(streak=streak),
+                (await trl(ctx.user.id, ctx.guild.id, "chat_streaks_streak", append_tip=True)).format(streak=streak),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -330,9 +343,12 @@ class ChatStreaks(discord.Cog):
     @blocklist()
     async def streaks_lb(self, ctx: discord.ApplicationContext):
         try:
-            rows = client['ChatStreaks'].aggregate([{"$match": {"GuildID": str(ctx.guild.id)}}, {"$addFields": {
+            client = get_client()
+
+            rows = await client['ChatStreaks'].aggregate([{"$match": {"GuildID": str(ctx.guild.id)}}, {"$addFields": {
                 "MaxStreak": {"$max": {'$divide': [{"$subtract": ["$LastMessage", "$StartTime"]}, 86400000]}}}},
                                                     {"$sort": {"MaxStreak": -1}}]).to_list()
+            await client.client.close()
 
             lb_pages = []
             lb_last = False
@@ -346,7 +362,7 @@ class ChatStreaks(discord.Cog):
 
                 days = int(row['MaxStreak'])
 
-                message += trl(ctx.user.id, ctx.guild.id, "chat_streak_leaderboard_line").format(position=i,
+                message += (await trl(ctx.user.id, ctx.guild.id, "chat_streak_leaderboard_line")).format(position=i,
                                                                                                  user=member.mention,
                                                                                                  days=str(days))
 
@@ -354,8 +370,8 @@ class ChatStreaks(discord.Cog):
                 lb_last = True
 
                 if i % 10 == 0:
-                    if get_per_user_setting(ctx.user.id, 'tips_enabled', 'true') == 'true':
-                        language = get_language(ctx.guild.id, ctx.user.id)
+                    if await get_per_user_setting(ctx.user.id, 'tips_enabled', 'true') == 'true':
+                        language = await get_language(ctx.guild.id, ctx.user.id)
                         message = append_tip_to_message(ctx.guild.id, ctx.user.id, message, language)
 
                     lb_pages.append(message)
@@ -363,8 +379,8 @@ class ChatStreaks(discord.Cog):
                     lb_last = False
 
             if not lb_last:
-                if get_per_user_setting(ctx.user.id, 'tips_enabled', 'true') == 'true':
-                    language = get_language(ctx.guild.id, ctx.user.id)
+                if await get_per_user_setting(ctx.user.id, 'tips_enabled', 'true') == 'true':
+                    language = await get_language(ctx.guild.id, ctx.user.id)
                     message = append_tip_to_message(ctx.guild.id, ctx.user.id, message, language)
 
                 lb_pages.append(message)
@@ -387,9 +403,12 @@ class ChatStreaks(discord.Cog):
     async def add_reward(self, ctx: discord.ApplicationContext, role: discord.Role, required_streak: int,
                          remove_on_loss: bool = False):
         try:
-            client['ChatStreaksRewards'].insert_one(
+            client = get_client()
+
+            await client['ChatStreaksRewards'].insert_one(
                 {'GuildID': str(ctx.guild.id), 'RoleID': str(role.id), 'RequiredStreak': required_streak,
                  'RemoveOnLoss': remove_on_loss})
+            await client.client.close()
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_streaks_add_reward_success"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -405,7 +424,10 @@ class ChatStreaks(discord.Cog):
     @blocklist()
     async def remove_reward(self, ctx: discord.ApplicationContext, role: discord.Role):
         try:
-            client['ChatStreaksRewards'].delete_one({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)})
+            client = get_client()
+
+            await client['ChatStreaksRewards'].delete_one({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)})
+            await client.client.close()
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_streaks_remove_reward_success"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)

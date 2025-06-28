@@ -18,7 +18,6 @@
 import logging
 
 import discord
-from discord.ui.button import B
 import sentry_sdk
 from discord.ext import commands as discord_commands_ext
 from dotenv import load_dotenv
@@ -40,7 +39,6 @@ from features import welcoming, leveling, antiraid, chat_streaks, chat_revive, c
     anonymous_quefessions, analytics, economy, message_time_capsule, sticky_message, counting, denylist, \
     message_schedule, voice_channel_alerts, module_toggling_mod, private_temporary_vc
 from utils.config import get_key
-from utils.db_converter import update
 from utils.languages import get_translation_for_key_localized as trl
 
 log_level = get_key("Log_Level", "info")
@@ -79,8 +77,6 @@ intents = discord.Intents.default()
 intents.message_content = get_key('Message_Intent', "false") == "true"
 intents.members = True
 
-update()
-
 bot = discord.Bot(intents=intents)
 
 
@@ -106,31 +102,31 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
         seconds = int(error.retry_after % 60)
         if minutes > 0:
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "cooldown_2").format(minutes=str(minutes), seconds=str(seconds)),
+                (await trl(ctx.user.id, ctx.guild.id, "cooldown_2")).format(minutes=str(minutes), seconds=str(seconds)),
                 ephemeral=True)
         else:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "cooldown_1").format(seconds=str(seconds)), ephemeral=True)
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "cooldown_1")).format(seconds=str(seconds)), ephemeral=True)
         return
 
     if isinstance(error, discord_commands_ext.MissingPermissions):
         await ctx.respond(
-            trl(ctx.user.id, ctx.guild.id, "command_no_permission").format(
+            (await trl(ctx.user.id, ctx.guild.id, "command_no_permission")).format(
                 permissions=', '.join(error.missing_permissions)),
             ephemeral=True)
         return
 
     if isinstance(error, discord_commands_ext.NoPrivateMessage):
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_no_private"), ephemeral=True)
+        await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_no_private"), ephemeral=True)
         return
 
     if isinstance(error, discord_commands_ext.BotMissingPermissions):
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_bot_no_perm").format(
+        await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "command_bot_no_perm")).format(
             permissions=', '.join(error.missing_permissions)),
             ephemeral=True)
         return
 
     if isinstance(error, discord_commands_ext.PrivateMessageOnly):
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_private"), ephemeral=True)
+        await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_private"), ephemeral=True)
         return
 
     if isinstance(error, utils.blocklist.BlocklistError):
@@ -156,7 +152,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
     sentry_sdk.capture_exception(error)
     try:
         # respond
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+        await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
     except Exception as e:
         logging.error("Failed to respond to message")
         sentry_sdk.capture_exception(e)

@@ -1,18 +1,19 @@
 
-import discord
-from pytimeparse import parse
-import sentry_sdk
-from database import client
 import datetime
-from discord.ext import tasks
-from discord.ext.pages import Paginator
 import io
 
+import discord
+import sentry_sdk
+from discord.ext import tasks
+from discord.ext.commands import dm_only, guild_only
+from discord.ext.pages import Paginator
+from pytimeparse import parse
+
+from database import get_client
+from utils.leveling import add_xp
 from utils.module_toggling import is_module_enabled
 from utils.settings import get_setting
-from utils.config import get_key
-from utils.leveling import add_xp
-from discord.ext.commands import dm_only, guild_only
+
 
 class AddYoursModal(discord.ui.Modal):
     def __init__(self, message_id: str):
@@ -39,10 +40,12 @@ class AddYoursModal(discord.ui.Modal):
             await interaction.respond("Message cannot be longer than 280 characters.", ephemeral=True)
             return
 
-        client['CollectionMessageCapsule'].update_many({"MessageID": {"$eq": self.message_id}}, {"$push": {"Replies": {
+        client = get_client()
+        await client['CollectionMessageCapsule'].update_many({"MessageID": {"$eq": self.message_id}}, {"$push": {"Replies": {
             "UserID": str(interaction.user.id),
             "Message": self.message.value
         }}})
+        await client.client.close()
 
         await interaction.respond("Added message to collection.", ephemeral=True)
 
@@ -57,7 +60,10 @@ class AddYoursView(discord.ui.View):
             await interaction.respond("Invalid bot state. Please try again.", ephemeral=True)
             return
 
-        data = client['CollectionMessageCapsule'].find_one({"MessageID": str(interaction.message.id)})
+        client = get_client()
+        data = await client['CollectionMessageCapsule'].find_one({"MessageID": str(interaction.message.id)})
+        await client.client.close()
+
         if data is None:
             await interaction.respond("The message wasn't found.", ephemeral=True)
             return
@@ -98,13 +104,15 @@ class MessageTimeCapsule(discord.Cog):
 
             target_time = datetime.datetime.now() + datetime.timedelta(seconds=time_parsed)
 
-            client['MessageCapsule'].insert_one({
+            client = get_client()
+            await client['MessageCapsule'].insert_one({
                 "UserID": str(ctx.author.id),
                 "GuildID": str(ctx.guild.id),
                 "ChannelID": str(ctx.channel.id),
                 "Message": message,
                 "Time": target_time
             })
+            await client.client.close()
 
             target_time_str = target_time.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -118,7 +126,9 @@ class MessageTimeCapsule(discord.Cog):
     @guild_only()
     async def schedule_messages(self, ctx: discord.ApplicationContext):
         """List all messages"""
-        messages = client['MessageCapsule'].find({"GuildID": str(ctx.guild.id)}).to_list()
+        client = get_client()
+        messages = await client['MessageCapsule'].find({"GuildID": str(ctx.guild.id)}).to_list()
+        await client.client.close()
 
         if len(messages) == 0:
             await ctx.respond("You have no messages.", ephemeral=True)
@@ -162,12 +172,14 @@ class MessageTimeCapsule(discord.Cog):
 
             target_time = datetime.datetime.now() + datetime.timedelta(seconds=time_parsed)
 
-            client['DMMessageCapsule'].insert_one({
+            client = get_client()
+            await client['DMMessageCapsule'].insert_one({
                 "UserID": str(ctx.author.id),
                 "ChannelID": str(ctx.channel.id),
                 "Message": message,
                 "Time": datetime.datetime.now() + datetime.timedelta(seconds=time_parsed)
             })
+            await client.client.close()
 
             await ctx.respond(f"Reminder scheduled on `{str(target_time)}`.", ephemeral=True)
             await sent_msg.delete(delay=10)
@@ -180,7 +192,9 @@ class MessageTimeCapsule(discord.Cog):
     async def schedule_reminders(self, ctx: discord.ApplicationContext):
         """List all reminders"""
         try:
-            reminders = client['DMMessageCapsule'].find({"UserID": str(ctx.author.id)}).to_list()
+            client = get_client()
+            reminders = await client['DMMessageCapsule'].find({"UserID": str(ctx.author.id)}).to_list()
+            await client.client.close()
 
             if len(reminders) == 0:
                 await ctx.respond("You have no reminders.", ephemeral=True)
@@ -225,7 +239,8 @@ class MessageTimeCapsule(discord.Cog):
 
             target_time = datetime.datetime.now() + datetime.timedelta(seconds=time_parsed)
 
-            add = client['CollectionMessageCapsule'].insert_one({
+            client = get_client()
+            add = await client['CollectionMessageCapsule'].insert_one({
                 "UserID": str(ctx.author.id),
                 "GuildID": str(ctx.guild.id),
                 "ChannelID": str(ctx.channel.id),
@@ -240,8 +255,9 @@ class MessageTimeCapsule(discord.Cog):
 
             sent_msg = await channel.send(f"**Collection**: {message}", view=AddYoursView())
 
-            client['CollectionMessageCapsule'].update_one({"_id": add.inserted_id}, {"$set": {"MessageID": str(sent_msg.id)}})
+            await client['CollectionMessageCapsule'].update_one({"_id": add.inserted_id}, {"$set": {"MessageID": str(sent_msg.id)}})
 
+            await client.client.close()
             await ctx.respond(f"Collection message scheduled on `{target_time_str}`.", ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -249,48 +265,52 @@ class MessageTimeCapsule(discord.Cog):
 
     @tasks.loop(minutes=1)
     async def check_dm_messages(self):
-        for i in client['DMMessageCapsule'].find({"Time": {"$lt": datetime.datetime.now()}}).to_list():
+        client = get_client()
+        for i in await client['DMMessageCapsule'].find({"Time": {"$lt": datetime.datetime.now()}}).to_list():
             try:
                 user = self.bot.get_user(int(i["UserID"]))
                 if user is None:
-                    client['DMMessageCapsule'].delete_one({"_id": i["_id"]})
+                    await client['DMMessageCapsule'].delete_one({"_id": i["_id"]})
                     continue
 
                 await user.send(f'Reminder: {i["Message"]}')
-                client['DMMessageCapsule'].delete_one({"_id": i["_id"]})
+                await client['DMMessageCapsule'].delete_one({"_id": i["_id"]})
             except Exception as e:
                 sentry_sdk.capture_exception(e)
 
+        await client.client.close()
+
     @tasks.loop(minutes=1)
     async def check_guild_messages(self):
-        for i in client['MessageCapsule'].find({"Time": {"$lt": datetime.datetime.now()}}).to_list():
+        client = get_client()
+        for i in await client['MessageCapsule'].find({"Time": {"$lt": datetime.datetime.now()}}).to_list():
             try:
                 guild = self.bot.get_guild(int(i["GuildID"]))
                 if guild is None:
-                    client['MessageCapsule'].delete_one({"_id": i["_id"]})
+                    await client['MessageCapsule'].delete_one({"_id": i["_id"]})
                     continue
 
-                if not get_setting(guild.id, "module_time_capsule_enabled", True):
+                if not await get_setting(guild.id, "module_time_capsule_enabled", True):
                     continue
 
                 channel = guild.get_channel(int(i["ChannelID"]))
                 if channel is None:
-                    client['MessageCapsule'].delete_one({"_id": i["_id"]})
+                    await client['MessageCapsule'].delete_one({"_id": i["_id"]})
                     continue
 
                 author = self.bot.get_user(int(i["UserID"]))
                 if author is None:
-                    client['MessageCapsule'].delete_one({"_id": i["_id"]})
+                    await client['MessageCapsule'].delete_one({"_id": i["_id"]})
                     continue
 
                 # Add XP to user
-                xp = int(get_setting(guild.id, 'leveling_initial_xp', 3))
-                extra = int(get_setting(guild.id, 'leveling_extra_xp', 0))
-                extra_trigger = int(get_setting(guild.id, 'leveling_extra_xp_trigger', 1))
+                xp = int(await get_setting(guild.id, 'leveling_initial_xp', 3))
+                extra = int(await get_setting(guild.id, 'leveling_extra_xp', 0))
+                extra_trigger = int(await get_setting(guild.id, 'leveling_extra_xp_trigger', 1))
 
                 xp += extra * (len(i['Message']) // extra_trigger)
 
-                add_xp(guild.id, author.id, xp)
+                await add_xp(guild.id, author.id, xp)
 
                 embed = discord.Embed(
                     author=discord.EmbedAuthor(
@@ -302,30 +322,33 @@ class MessageTimeCapsule(discord.Cog):
                 )
 
                 await channel.send(embed=embed)
-                client['MessageCapsule'].delete_one({"_id": i["_id"]})
+                await client['MessageCapsule'].delete_one({"_id": i["_id"]})
             except Exception as e:
                 sentry_sdk.capture_exception(e)
 
+        await client.client.close()
+
     @tasks.loop(minutes=1)
     async def check_collection_messages(self):
-        for i in client['CollectionMessageCapsule'].find({"Time": {"$lt": datetime.datetime.now()}}).to_list():
+        client = get_client()
+        for i in await client['CollectionMessageCapsule'].find({"Time": {"$lt": datetime.datetime.now()}}).to_list():
             try:
                 guild = self.bot.get_guild(int(i["GuildID"]))
                 if guild is None:
-                    client['CollectionMessageCapsule'].delete_one({"_id": i["_id"]})
+                    await client['CollectionMessageCapsule'].delete_one({"_id": i["_id"]})
                     continue
 
-                if not get_setting(guild.id, "module_time_capsule_enabled", True):
+                if not await get_setting(guild.id, "module_time_capsule_enabled", True):
                     continue
 
                 channel: discord.TextChannel = self.bot.get_channel(int(i["ChannelID"]))
                 if channel is None:
-                    client['CollectionMessageCapsule'].delete_one({"_id": i["_id"]})
+                    await client['CollectionMessageCapsule'].delete_one({"_id": i["_id"]})
                     continue
 
                 author = self.bot.get_user(int(i["UserID"]))
                 if author is None:
-                    client['CollectionMessageCapsule'].delete_one({"_id": i["_id"]})
+                    await client['CollectionMessageCapsule'].delete_one({"_id": i["_id"]})
                     continue
 
                 responses = "# Collection expired!:\n"
@@ -338,19 +361,21 @@ class MessageTimeCapsule(discord.Cog):
                         responses += f"{member.display_name}: {j['Message']}\n"
 
                     # Add XP to user
-                    xp = int(get_setting(guild.id, 'leveling_initial_xp', 3))
-                    extra = int(get_setting(guild.id, 'leveling_extra_xp', 0))
-                    extra_trigger = int(get_setting(guild.id, 'leveling_extra_xp_trigger', 1))
+                    xp = int(await get_setting(guild.id, 'leveling_initial_xp', 3))
+                    extra = int(await get_setting(guild.id, 'leveling_extra_xp', 0))
+                    extra_trigger = int(await get_setting(guild.id, 'leveling_extra_xp_trigger', 1))
 
                     xp += extra * (len(j['Message']) // extra_trigger)
 
-                    add_xp(guild.id, author.id, xp)
+                    await add_xp(guild.id, author.id, xp)
 
                 if len(responses) > 2000:
                     await channel.send("**Collection**:", files=[discord.File(fp=io.BytesIO(responses.encode()), filename="collection.txt")])
                 else:
                     await channel.send(responses)
 
-                client['CollectionMessageCapsule'].delete_one({"_id": i["_id"]})
+                await client['CollectionMessageCapsule'].delete_one({"_id": i["_id"]})
             except Exception as e:
                 sentry_sdk.capture_exception(e)
+
+        await client.client.close()

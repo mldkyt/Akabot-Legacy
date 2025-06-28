@@ -24,10 +24,9 @@ from discord.ext import commands as commands_ext
 from discord.ext import tasks
 from discord.ext.pages import Paginator
 from discord.ui import button, View
-from pyexpat.errors import messages
 from sentry_sdk import capture_exception
 
-from database import client
+from database import get_client
 from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.config import get_key
@@ -37,37 +36,43 @@ from utils.settings import get_setting, set_setting
 from utils.tzutil import get_now_for_server
 
 
-def init(guild_id: str, channel_id: str):
-    if client['ChatSummary'].count_documents(
+async def init(guild_id: str, channel_id: str):
+    client = get_client()
+    if await client['ChatSummary'].count_documents(
             {'GuildID': guild_id, 'ChannelID': channel_id}) == 0:
-        client['ChatSummary'].insert_one({
+        await client['ChatSummary'].insert_one({
             'GuildID': guild_id,
             'ChannelID': channel_id,
             'Enabled': False,
             'MessageCount': 0,
             'Keywords': []
         })
-        client['YearlyChatSummary'].insert_one({
+        await client['YearlyChatSummary'].insert_one({
             'GuildID': guild_id,
             'ChannelID': channel_id,
             'MessageCount': 0,
             'Keywords': []
         })
-        client['MonthlyChatSummary'].insert_one({
+        await client['MonthlyChatSummary'].insert_one({
             'GuildID': guild_id,
             'ChannelID': channel_id,
             'MessageCount': 0,
             'Keywords': []
         })
 
+    await client.client.close()
 
-def inc(msg: discord.Message):
+
+async def inc(msg: discord.Message):
+    client = get_client()
     data = client['ChatSummary'].find_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)})
-    if get_setting(msg.guild.id, "chatsummary_countconsencutive", "True") == "False":
+    if await get_setting(msg.guild.id, "chatsummary_countconsencutive", "True") == "False":
         if data is None:
+            await client.client.close()
             raise ValueError("This value should not be null, but it was! ChatSummary")
 
         if 'LastMessageAuthor' in data and data['LastMessageAuthor'] == str(msg.author.id):
+            await client.client.close()
             return
 
     upd = {
@@ -88,6 +93,7 @@ def inc(msg: discord.Message):
     client['ChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
     client['YearlyChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
     client['MonthlyChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
+    await client.client.close()
 
 
 class OpenPaginatorView(View):
@@ -97,9 +103,12 @@ class OpenPaginatorView(View):
     @button(label='View full list', style=discord.ButtonStyle.primary, custom_id='view_full_list')
     async def view_full_list(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
-            data = client['ChatSummaryLeaderboard'].find_one(
+            client = get_client()
+
+            data = await client['ChatSummaryLeaderboard'].find_one(
                 {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
                  'MessageID': str(interaction.message.id)})
+            await client.client.close()
             if data is None:
                 await interaction.respond('Summary not found', ephemeral=True)
                 return
@@ -115,13 +124,17 @@ class OpenPaginatorView(View):
 async def special_chat_summary(channel, date, guild, i, override_month: bool = False, override_year: bool = False):
     # Check for year first
 
-    now = get_now_for_server(channel.guild.id)
+    now = await get_now_for_server(channel.guild.id)
 
     if (now.month == 1 and now.day == 1) or override_year:  # 1st January
-        i = client['YearlyChatSummary'].find_one({'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id)})
+        client = get_client()
+        i = await client['YearlyChatSummary'].find_one({'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id)})
+        await client.client.close()
         return await normal_chat_summary(channel, date, guild, i, summary_title="yearly")
     elif now.day == 1 or override_month:
-        i = client['MonthlyChatSummary'].find_one({'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id)})
+        client = get_client()
+        i = await client['MonthlyChatSummary'].find_one({'GuildID': str(channel.guild.id), 'ChannelID': str(channel.id)})
+        await client.client.close()
         return await normal_chat_summary(channel, date, guild, i, summary_title="monthly")
     else:
         return await normal_chat_summary(channel, date, guild, i)
@@ -145,9 +158,9 @@ async def normal_chat_summary(channel, date, guild, i, summary_title: str = ""):
 
     pages = []
 
-    chat_summary_message = trl(0, guild.id, chat_summary_title_key).format(date=date)
+    chat_summary_message = (await trl(0, guild.id, chat_summary_title_key)).format(date=date)
     chat_summary_message += '\n'
-    chat_summary_message += trl(0, guild.id, "chat_summary_messages").format(
+    chat_summary_message += (await trl(0, guild.id, "chat_summary_messages")).format(
         messages=str(i['MessageCount']))
     top_members = {k: v for k, v in sorted(i['Messages'].items(), key=lambda item: item[1], reverse=True)}
     j = 0  # idk
@@ -155,15 +168,15 @@ async def normal_chat_summary(channel, date, guild, i, summary_title: str = ""):
         j += 1
         member = guild.get_member(int(k))
         if member is not None:
-            chat_summary_message += trl(0, guild.id, "chat_summary_line").format(position=j,
+            chat_summary_message += (await trl(0, guild.id, "chat_summary_line")).format(position=j,
                                                                                  name=member.display_name,
                                                                                  messages=v)
         else:
-            chat_summary_message += trl(0, guild.id, "chat_summary_line_unknown_user").format(position=j,
+            chat_summary_message += (await trl(0, guild.id, "chat_summary_line_unknown_user")).format(position=j,
                                                                                               id=k,
                                                                                               messages=v)
 
-        if j % int(get_setting(guild.id, chat_summary_top_count_key, chat_summary_top_count_default)) == 0:
+        if j % int(await get_setting(guild.id, chat_summary_top_count_key, chat_summary_top_count_default)) == 0:
             pages.append(chat_summary_message)
             chat_summary_message = ""
 
@@ -182,12 +195,13 @@ async def normal_chat_summary(channel, date, guild, i, summary_title: str = ""):
                 if v == 0:
                     continue
                 logging.debug('Appending keyword %s with count %d', k, v)
-                chat_summary_message += trl(0, guild.id, "chat_summary_keywords_line").format(keyword=k,
+                chat_summary_message += (await trl(0, guild.id, "chat_summary_keywords_line")).format(keyword=k,
                                                                                               count=v)
 
+    client = get_client()
     try:
         sent = await channel.send(pages[0], view=OpenPaginatorView())
-        client['ChatSummaryLeaderboard'].insert_one({
+        await client['ChatSummaryLeaderboard'].insert_one({
             'GuildID': str(guild.id),
             'ChannelID': str(channel.id),
             'MessageID': str(sent.id),
@@ -197,6 +211,7 @@ async def normal_chat_summary(channel, date, guild, i, summary_title: str = ""):
         sentry_sdk.capture_exception(e)
     client[db].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
                           {'$set': {'Messages': {}, 'MessageCount': 0, 'KeywordsCounting': {}}})
+    await client.client.close()
 
 
 class ChatSummary(discord.Cog):
@@ -217,9 +232,9 @@ class ChatSummary(discord.Cog):
             if message.author.bot:
                 return
 
-            init(str(message.guild.id), str(message.channel.id))
+            await init(str(message.guild.id), str(message.channel.id))
 
-            inc(message)
+            await inc(message)
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -232,12 +247,12 @@ class ChatSummary(discord.Cog):
             if new_message.author.bot:
                 return
 
-            countedits = get_setting(new_message.guild.id, "chatsummary_countedits", "False")
+            countedits = await get_setting(new_message.guild.id, "chatsummary_countedits", "False")
             if countedits == "False":
                 return
 
-            init(str(new_message.guild.id), str(new_message.channel.id))
-            inc(new_message)
+            await init(str(new_message.guild.id), str(new_message.channel.id))
+            await inc(new_message)
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -245,9 +260,11 @@ class ChatSummary(discord.Cog):
     async def summarize(self):
         try:
             logging.info('Running summarize task')
+            client = get_client()
             res = client['ChatSummary'].find({'Enabled': True}).to_list()
+            await client.client.close()
             for i in res:
-                yesterday = get_now_for_server(i['GuildID'])
+                yesterday = await get_now_for_server(i['GuildID'])
 
                 if yesterday.hour != 0 or yesterday.minute != 0:
                     continue
@@ -270,7 +287,7 @@ class ChatSummary(discord.Cog):
                 yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)  # Get yesterday
 
                 # Get date format
-                date_format = get_setting(guild.id, "chatsummary_dateformat", "YYYY/MM/DD")
+                date_format = await get_setting(guild.id, "chatsummary_dateformat", "YYYY/MM/DD")
 
                 # Better formatting for day
                 day = str(yesterday.day)
@@ -296,7 +313,7 @@ class ChatSummary(discord.Cog):
                 else:
                     date = f"{yesterday.year}/{month}/{day}"
 
-                setting = get_setting(guild.id, "chatsummary_mode", "normal")
+                setting = await get_setting(guild.id, "chatsummary_mode", "normal")
 
                 if setting == "normal":
                     await normal_chat_summary(channel, date, guild, i)
@@ -318,27 +335,31 @@ class ChatSummary(discord.Cog):
     @blocklist()
     async def command_add(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
+            client = get_client()
+
             res = client['ChatSummary'].count_documents({
                 'GuildID': str(ctx.guild.id), 'Enabled': True
             })
             if res > int(get_key("Max_ChatSummary_Channels", "3")):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "limits_max_chatsummary_channels"))
+                await client.client.close()
                 return
 
             # Insert chat summary element if not found
-            init(str(ctx.guild.id), str(ctx.channel.id))
+            await init(str(ctx.guild.id), str(ctx.channel.id))
 
             # Set enabled to true
             res = client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)},
                                                    {'$set': {'Enabled': True}})
+            await client.client.close()
             if res.modified_count == 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_summary_add_already_added"), ephemeral=True)
                 return
 
             # Logging embed
             logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "chat_summary_add_log_title"))
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_channel"), value=f"{channel.mention}")
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_channel"), value=f"{channel.mention}")
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
 
             # Log into logs
             await log_into_logs(ctx.guild, logging_embed)
@@ -357,16 +378,18 @@ class ChatSummary(discord.Cog):
     @blocklist()
     async def command_remove(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
+            client = get_client()
             res = client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)},
                                                    {'$set': {'Enabled': False}})
+            await client.client.close()
             if res.modified_count == 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'chat_summary_remove_already_removed'), ephemeral=True)
 
             # Logging embed
             logging_embed = discord.Embed(title=trl(ctx.user.id, ctx.guild.id, "chat_summary_remove_log_title"))
-            logging_embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "logging_channel"),
+            logging_embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "logging_channel"),
                                     value=f"{channel.mention}")
-            logging_embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "logging_user"),
+            logging_embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "logging_user"),
                                     value=f"{ctx.user.mention}")
 
             # Send
@@ -390,16 +413,16 @@ class ChatSummary(discord.Cog):
     async def summary_dateformat(self, ctx: discord.ApplicationContext, date_format: str):
         try:
             # Get old setting
-            old_date_format = get_setting(ctx.guild.id, "chatsummary_dateformat", "YYYY/MM/DD")
+            old_date_format = await get_setting(ctx.guild.id, "chatsummary_dateformat", "YYYY/MM/DD")
 
             # Save setting
-            set_setting(ctx.guild.id, "chatsummary_dateformat", date_format)
+            await set_setting(ctx.guild.id, "chatsummary_dateformat", date_format)
 
             # Create logging embed
             logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "chat_summary_dateformat_log_title"))
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "chat_summary_dateformat_log_dateformat"),
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "chat_summary_dateformat_log_dateformat"),
                                     value=f"{old_date_format} -> {date_format}")
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"),
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_user"),
                                     value=f"{ctx.user.mention}")
 
             # Send
@@ -407,7 +430,7 @@ class ChatSummary(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "chat_summary_dateformat_set", append_tip=True).format(
+                (await trl(ctx.user.id, ctx.guild.id, "chat_summary_dateformat_set", append_tip=True)).format(
                     format=date_format),
                 ephemeral=True)
         except Exception as e:
@@ -428,11 +451,11 @@ class ChatSummary(discord.Cog):
                                 yearly_count: int = -1):
         try:
             # Old settings
-            old_top_count = get_setting(ctx.guild.id, "chatsummary_top_count",
+            old_top_count = await get_setting(ctx.guild.id, "chatsummary_top_count",
                                         5 if normal_count == -1 else normal_count)
-            old_yearly_top_count = get_setting(ctx.guild.id, "chatsummary_yearly_top_count",
+            old_yearly_top_count = await get_setting(ctx.guild.id, "chatsummary_yearly_top_count",
                                                10 if yearly_count == -1 else yearly_count)
-            old_monthly_top_count = get_setting(ctx.guild.id, "chatsummary_monthly_top_count",
+            old_monthly_top_count = await get_setting(ctx.guild.id, "chatsummary_monthly_top_count",
                                                 10 if monthly_count == -1 else monthly_count)
 
             if normal_count == -1:
@@ -443,13 +466,13 @@ class ChatSummary(discord.Cog):
                 yearly_count = old_yearly_top_count
 
             # Set new settings
-            set_setting(ctx.guild.id, "chatsummary_top_count", normal_count)
-            set_setting(ctx.guild.id, "chatsummary_yearly_top_count", yearly_count)
-            set_setting(ctx.guild.id, "chatsummary_monthly_top_count", monthly_count)
+            await set_setting(ctx.guild.id, "chatsummary_top_count", normal_count)
+            await set_setting(ctx.guild.id, "chatsummary_yearly_top_count", yearly_count)
+            await set_setting(ctx.guild.id, "chatsummary_monthly_top_count", monthly_count)
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "chat_summary_top_count_set", append_tip=True).format(
+                (await trl(ctx.user.id, ctx.guild.id, "chat_summary_top_count_set", append_tip=True)).format(
                     normal=str(normal_count),
                     monthly=str(monthly_count),
                     yearly=str(yearly_count)
@@ -469,17 +492,17 @@ class ChatSummary(discord.Cog):
     async def chatsummary_countedits(self, ctx: discord.ApplicationContext, countedits: bool):
         try:
             # Get old setting
-            old_count_edits = get_setting(ctx.guild.id, "chatsummary_count_edits", str(False))
+            old_count_edits = await get_setting(ctx.guild.id, "chatsummary_count_edits", str(False))
 
             # Save setting
-            set_setting(ctx.guild.id, "chatsummary_countedits", str(countedits))
+            await set_setting(ctx.guild.id, "chatsummary_countedits", str(countedits))
 
             # Create logging embed
             logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "chat_summary_count_edits_log_title"))
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "chat_summary_count_edits_log_count_edits"),
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "chat_summary_count_edits_log_count_edits"),
                                     value="{old} -> {new}".format(old=("Yes" if old_count_edits == "True" else "No"),
                                                                   new=("Yes" if countedits else "No")))
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"),
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_user"),
                                     value=f"{ctx.user.mention}")
 
             # Send
@@ -504,17 +527,17 @@ class ChatSummary(discord.Cog):
     async def chatsummary_countconsencutive(self, ctx: discord.ApplicationContext, countconsencutive: bool):
         try:
             # Get old setting
-            old_count_counsencutive = get_setting(ctx.guild.id, "chatsummary_count_consencutive", "True")
+            old_count_counsencutive = await get_setting(ctx.guild.id, "chatsummary_count_consencutive", "True")
 
             # Save setting
-            set_setting(ctx.guild.id, "chatsummary_countconsencutive", str(countconsencutive))
+            await set_setting(ctx.guild.id, "chatsummary_countconsencutive", str(countconsencutive))
 
             # Create logging embed
             logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "chat_summary_count_consencutive_log_title"))
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "chat_summary_count_consencutive_log_count_consencutive"),
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "chat_summary_count_consencutive_log_count_consencutive"),
                                     value="{old} -> {new}".format(old=("Yes" if old_count_counsencutive == "True" else "No"),
                                                                   new=("Yes" if countconsencutive else "No")))
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"),
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_user"),
                                     value=f"{ctx.user.mention}")
 
             # Send
@@ -545,21 +568,23 @@ class ChatSummary(discord.Cog):
             await ctx.respond('Please provide a single keyword.', ephemeral=True)
             return
 
-        res = client['ChatSummary'].update_one(
+        client = get_client()
+        res = await client['ChatSummary'].update_one(
             {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'Keywords': {'$exists': False}},
             {'$set': {'Keywords': []}})
         logging.debug('Added Keywords field to %s, matched %d, modified %d', ctx.guild.id, res.matched_count,
                       res.modified_count)
 
-        res = client['ChatSummary'].find_one(
+        res = await client['ChatSummary'].find_one(
             {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'Keywords': kwd})
 
         if res is not None:
             logging.debug('Keyword %s already added', kwd)
             await ctx.respond('Keyword already added.', ephemeral=True)
+            await client.client.close()
             return
 
-        res = client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id)},
+        res = await client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id)},
                                                {'$push': {'Keywords': kwd}})
         logging.debug('Added keyword %s, affected %d, matched %d', kwd, res.modified_count, res.matched_count)
 
@@ -576,17 +601,21 @@ class ChatSummary(discord.Cog):
             await ctx.respond("This instance doesn\'t support message intent. Keywords aren\'t available.", ephemeral=True)
             return
 
+        client = get_client()
+
         logging.debug('Removing keyword %s', kwd)
-        res = client['ChatSummary'].find_one(
+        res = await client['ChatSummary'].find_one(
             {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'Keywords': kwd})
 
         if res is None:
             logging.debug('Keyword wasn\'t found')
             await ctx.respond('Keyword not found.', ephemeral=True)
+            await client.client.close()
             return
 
-        res = client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id)},
+        res = await client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id)},
                                                {'$pull': {'Keywords': kwd}, '$unset': {f'KeywordsCounting.{kwd}': ''}})
+        await client.client.close()
         logging.debug('Removed %s, affected %d, matched %d', kwd, res.modified_count, res.matched_count)
 
         await ctx.respond('Keyword removed.', ephemeral=True)

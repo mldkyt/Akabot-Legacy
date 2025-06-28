@@ -62,13 +62,13 @@ class AntiRaid(discord.Cog):
     @discord.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         try:
-            if not get_setting(member.guild.id, "module_antiraid_enabled", True):
+            if not await get_setting(member.guild.id, "module_antiraid_enabled", True):
                 return
 
             self.join_violation_counters.filter_expired_actions()
 
-            antiraid_join_threshold = get_setting(member.guild.id, "antiraid_join_threshold", "5")
-            antiraid_join_threshold_per = get_setting(member.guild.id, "antiraid_join_threshold_per", "60")
+            antiraid_join_threshold = await get_setting(member.guild.id, "antiraid_join_threshold", "5")
+            antiraid_join_threshold_per = await get_setting(member.guild.id, "antiraid_join_threshold_per", "60")
 
             if self.join_violation_counters.count_actions('join', member) > int(antiraid_join_threshold):
                 if not member.guild.me.guild_permissions.kick_members:
@@ -76,8 +76,8 @@ class AntiRaid(discord.Cog):
 
                 if member.can_send():
                     await member.send(
-                        content=trl(member.id, member.guild.id, "antiraid_kicked_message"))
-                await member.kick(reason=trl(0, member.guild.id, "antiraid_kicked_audit"))
+                        content=await trl(member.id, member.guild.id, "antiraid_kicked_message"))
+                await member.kick(reason=await trl(0, member.guild.id, "antiraid_kicked_audit"))
                 return
 
             self.join_violation_counters.add_action('join', member, int(antiraid_join_threshold_per))
@@ -92,7 +92,7 @@ class AntiRaid(discord.Cog):
             if not message.guild:
                 return
 
-            if not get_setting(message.guild.id, "module_antiraid_enabled", True):
+            if not await get_setting(message.guild.id, "module_antiraid_enabled", True):
                 return
 
             if message.author.bot:
@@ -110,8 +110,8 @@ class AntiRaid(discord.Cog):
 
             self.message_violation_counters.filter_expired_actions()
 
-            antiraid_message_threshold = get_setting(message.guild.id, "antiraid_message_threshold", "5")
-            antiraid_message_threshold_per = get_setting(message.guild.id, "antiraid_message_threshold_per", "5")
+            antiraid_message_threshold = await get_setting(message.guild.id, "antiraid_message_threshold", "5")
+            antiraid_message_threshold_per = await get_setting(message.guild.id, "antiraid_message_threshold_per", "5")
 
             if self.message_violation_counters.count_actions('message', message.author) > int(
                     antiraid_message_threshold):
@@ -121,7 +121,7 @@ class AntiRaid(discord.Cog):
                 await message.delete()
                 if self.message_send_violation_counters.count_actions('message_send', message.author) == 0:
                     await message.channel.send(
-                        trl(message.author.id, message.guild.id, "antiraid_dontspam_message").format(
+                        (await trl(message.author.id, message.guild.id, "antiraid_dontspam_message")).format(
                             user_id=message.author.id), delete_after=5)
                     self.message_send_violation_counters.add_action('message_send', message.author, 5)
                 return
@@ -142,20 +142,20 @@ class AntiRaid(discord.Cog):
     async def set_join_threshold(self, ctx: discord.ApplicationContext, people: int, per: int):
         try:
             # Get old settings
-            old_join_threshold = get_setting(ctx.guild.id, "antiraid_join_threshold", "5")
-            old_join_threshold_per = get_setting(ctx.guild.id, "antiraid_join_threshold_per", "60")
+            old_join_threshold = await get_setting(ctx.guild.id, "antiraid_join_threshold", "5")
+            old_join_threshold_per = await get_setting(ctx.guild.id, "antiraid_join_threshold_per", "60")
 
             # Set new settings
-            set_setting(ctx.guild.id, 'antiraid_join_threshold', str(people))
-            set_setting(ctx.guild.id, 'antiraid_join_threshold_per', str(per))
+            await set_setting(ctx.guild.id, 'antiraid_join_threshold', str(people))
+            await set_setting(ctx.guild.id, 'antiraid_join_threshold_per', str(per))
 
             # Create logging embed
             logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "logging_antiraid_join_threshold_changed"))
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_join_threshold"),
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_join_threshold"),
                                     value=f"{str(old_join_threshold)} -> {str(people)}", inline=True)
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_per"),
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_per"),
                                     value=f"{str(old_join_threshold_per)} -> {str(per)}", inline=True)
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"),
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_user"),
                                     value=f"{ctx.user.mention}", inline=False)
 
             # Send log into logs
@@ -163,7 +163,7 @@ class AntiRaid(discord.Cog):
 
             # Send response to user
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "antiraid_join_threshold_changed", append_tip=True).format(
+                (await trl(ctx.user.id, ctx.guild.id, "antiraid_join_threshold_changed", append_tip=True)).format(
                     people=str(people), per=str(per)),
                 ephemeral=True)
         except Exception as e:
@@ -180,21 +180,21 @@ class AntiRaid(discord.Cog):
     async def set_message_threshold(self, ctx: discord.ApplicationContext, messages: int, per: int):
         try:
             # Get old settings
-            old_message_threshold = get_setting(ctx.guild.id, "antiraid_message_threshold", "5")
-            old_message_threshold_per = get_setting(ctx.guild.id, "antiraid_message_threshold_per", "5")
+            old_message_threshold = await get_setting(ctx.guild.id, "antiraid_message_threshold", "5")
+            old_message_threshold_per = await get_setting(ctx.guild.id, "antiraid_message_threshold_per", "5")
 
             # Set new settings
-            set_setting(ctx.guild.id, 'antiraid_message_threshold', str(messages))
-            set_setting(ctx.guild.id, 'antiraid_message_threshold_per', str(per))
+            await set_setting(ctx.guild.id, 'antiraid_message_threshold', str(messages))
+            await set_setting(ctx.guild.id, 'antiraid_message_threshold_per', str(per))
 
             # Create logging embed
             logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "logging_antiraid_message_threshold_changed"))
             logging_embed.add_field(
-                name=trl(0, ctx.guild.id, "logging_message_threshold"),
+                name=await trl(0, ctx.guild.id, "logging_message_threshold"),
                 value=f"{str(old_message_threshold)} -> {str(messages)}", inline=True)
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_per"),
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_per"),
                                     value=f"{str(old_message_threshold_per)} -> {str(per)}", inline=True)
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"),
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_user"),
                                     value=f"{ctx.user.mention}", inline=False)
 
             # Send log into logs
@@ -202,7 +202,7 @@ class AntiRaid(discord.Cog):
 
             # Send response to user
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "antiraid_message_threshold_changed", append_tip=True).format(
+                (await trl(ctx.user.id, ctx.guild.id, "antiraid_message_threshold_changed", append_tip=True)).format(
                     messages=str(messages),
                     per=str(per)),
                 ephemeral=True)
@@ -218,13 +218,13 @@ class AntiRaid(discord.Cog):
     @blocklist()
     async def list_settings(self, ctx: discord.ApplicationContext):
         try:
-            join_threshold = get_setting(ctx.guild.id, 'antiraid_join_threshold', '5')
-            join_threshold_per = get_setting(ctx.guild.id, 'antiraid_join_threshold_per', '60')
+            join_threshold = await get_setting(ctx.guild.id, 'antiraid_join_threshold', '5')
+            join_threshold_per = await get_setting(ctx.guild.id, 'antiraid_join_threshold_per', '60')
 
             embed = discord.Embed(title=trl(ctx.user.id, ctx.guild.id, "antiraid_settings"),
                                   color=discord.Color.blurple())
-            embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "logging_join_threshold"),
-                            value=trl(ctx.user.id, ctx.guild.id, "antiraid_settings_join_threshold_value").format(
+            embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "logging_join_threshold"),
+                            value=(await trl(ctx.user.id, ctx.guild.id, "antiraid_settings_join_threshold_value")).format(
                                 joins=join_threshold, seconds=join_threshold_per), inline=True)
 
             await ctx.respond(embed=embed, ephemeral=True)

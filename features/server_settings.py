@@ -37,12 +37,12 @@ class ServerSettings(discord.Cog):
     async def server_language(self, ctx: discord.ApplicationContext, lang: str):
         try:
             lang_code = language_name_to_code(lang)
-            set_setting(ctx.guild.id, 'language', lang_code)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "server_language_response", append_tip=True).format(
+            await set_setting(ctx.guild.id, 'language', lang_code)
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "server_language_response", append_tip=True)).format(
                 lang=get_language_name(lang_code, completeness=False)), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @server_settings_group.command(name='tz', description='Timezone setting')
     @discord.option(name='tz', description='Timezone')
@@ -51,22 +51,22 @@ class ServerSettings(discord.Cog):
     async def tz_setting(self, ctx: discord.ApplicationContext, tz: float):
         try:
             if not re.match(r"^[+-]?\d+(\.\d)?$", str(tz)):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "server_tz_invalid"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "server_tz_invalid"), ephemeral=True)
                 return
 
             # check range
             if tz > 14 or tz < -12:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "server_tz_invalid"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "server_tz_invalid"), ephemeral=True)
                 return
 
-            set_setting(ctx.guild.id, 'timezone_offset', str(tz))
+            await set_setting(ctx.guild.id, 'timezone_offset', str(tz))
 
             tz_formatted = str(tz)
             if re.match(r'^[+-]?\d+\.0$', tz_formatted):
                 tz_formatted = tz_formatted[:-2]
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "server_tz_response", append_tip=True).format(tz=tz_formatted),
+                (await trl(ctx.user.id, ctx.guild.id, "server_tz_response", append_tip=True)).format(tz=tz_formatted),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

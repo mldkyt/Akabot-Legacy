@@ -14,6 +14,7 @@
 #      You should have received a copy of the GNU Affero General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+import asyncio
 import datetime
 import logging
 
@@ -25,7 +26,7 @@ from discord.ext.commands import has_guild_permissions, guild_only
 from discord.ui import Modal, InputText, View, button, Button
 from sentry_sdk import capture_exception
 
-from database import client
+from database import get_client
 from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
@@ -33,12 +34,12 @@ from utils.settings import get_setting, set_setting
 
 
 class CreateModal(Modal):
-    def __init__(self, channel: TextChannel):
+    def __init__(self, channel: TextChannel, modal_text_label: str, modal_title: str):
         super().__init__(
-            InputText(label=trl(0, channel.guild.id, 'quefessions_submit_modal_text_label'),
-                      placeholder=trl(0, channel.guild.id, 'quefessions_submit_modal_text_label'), min_length=1,
+            InputText(label=modal_text_label,
+                      placeholder=modal_text_label, min_length=1,
                       max_length=1000, required=True),
-            title=trl(0, channel.guild.id, 'quefessions_submit_modal_title')
+            title=modal_title
         )
 
         self.channel = channel
@@ -49,7 +50,7 @@ class CreateModal(Modal):
 
             msg = await self.channel.send(
                 embed=Embed(
-                    title=trl(0, self.channel.guild.id, 'quefessions_embed_title'),
+                    title=await trl(0, self.channel.guild.id, 'quefessions_embed_title'),
                     description=text,
                     author=EmbedAuthor(
                         name=interaction.user.display_name,
@@ -57,10 +58,12 @@ class CreateModal(Modal):
                     ),
                     timestamp=datetime.datetime.now(datetime.timezone.utc)
                 ),
-                view=InfoButtonView(interaction.guild_id, interaction.channel_id)
+                view=InfoButtonView(interaction.guild.id, interaction.channel.id)
             )
 
-            client['AnonymousQuefessions'].insert_one({
+            client = get_client()
+
+            await client['AnonymousQuefessions'].insert_one({
                 'GuildID': str(interaction.guild.id),
                 'ChannelID': str(interaction.channel.id),
                 'MessageID': str(msg.id),
@@ -69,19 +72,19 @@ class CreateModal(Modal):
             })
 
             await interaction.respond(
-                trl(interaction.user.id, interaction.guild.id, 'quefessions_created', append_tip=True), ephemeral=True)
+                await trl(interaction.user.id, interaction.guild.id, 'quefessions_created', append_tip=True), ephemeral=True)
         except Exception as e:
             capture_exception(e)
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
+            await interaction.respond(await trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
 
 class ReportTextModal(Modal):
-    def __init__(self, author: tuple[str, str, str], message: Message, original_content: str):
+    def __init__(self, author: tuple[str, str, str], message: Message, original_content: str, report_label: str, report_placeholder: str, report_title: str):
         super().__init__(
-            InputText(label=trl(int(author[2]), message.guild.id, "quefessions_report_description_label"),
-                      placeholder=trl(int(author[2]), message.guild.id, "quefessions_report_description_placeholder")),
-            title=trl(int(author[2]), message.guild.id, 'quefessions_report_title').format(user=author[0]))
+            InputText(label=report_label,
+                      placeholder=report_placeholder),
+            title=report_title.format(user=author[0]))
 
         self.author = author
         self.mod_message = message
@@ -89,7 +92,9 @@ class ReportTextModal(Modal):
 
     async def callback(self, interaction: Interaction):
         try:
-            client['AnonymousQuefessionsReports'].insert_one({
+            client = get_client()
+
+            await client['AnonymousQuefessionsReports'].insert_one({
                 'GuildID': str(interaction.guild.id),
                 'ChannelID': str(interaction.channel.id),
                 'MessageID': str(self.mod_message.id),
@@ -97,8 +102,8 @@ class ReportTextModal(Modal):
             })
 
             log_embed = Embed(
-                title=trl(0, interaction.guild.id, 'quefessions_log_report_title'),
-                description=trl(0, interaction.guild.id, 'quefessions_log_report_description').format(
+                title=await trl(0, interaction.guild.id, 'quefessions_log_report_title'),
+                description=(await trl(0, interaction.guild.id, 'quefessions_log_report_description')).format(
                     jump_url=self.mod_message.jump_url, author=self.author[0], author_username=self.author[1],
                     author_id=self.author[2], reporter=interaction.user.display_name,
                     reporter_username=interaction.user.name, reporter_id=interaction.user.id,
@@ -115,11 +120,11 @@ class ReportTextModal(Modal):
                                       ephemeral=True)
 
 class ReplyModal(discord.ui.Modal):
-    def __init__(self, message: discord.Message):
-        super().__init__(title=trl(message.author.id, message.guild.id, "quefessions_reply_title"))
+    def __init__(self, message: discord.Message, reply_title: str, reply_label: str, reply_placeholder: str):
+        super().__init__(title=reply_title)
 
-        self.message_field = InputText(label=trl(message.author.id, message.guild.id, "quefessions_reply_label"),
-                      placeholder=trl(message.author.id, message.guild.id, "quefessions_reply_placeholder"), min_length=1, max_length=1000)
+        self.message_field = InputText(label=reply_label,
+                      placeholder=reply_placeholder, min_length=1, max_length=1000)
         self.add_item(self.message_field)
 
         self.message = message
@@ -145,7 +150,9 @@ class ReplyModal(discord.ui.Modal):
                     view=InfoButtonView(self.message.guild.id, self.message.channel.id)
                 )
 
-            client['AnonymousQuefessions'].insert_one({
+            client = get_client()
+
+            await client['AnonymousQuefessions'].insert_one({
                 'GuildID': str(data.guild.id),
                 'ChannelID': str(data.channel.id),
                 'MessageID': str(data.id),
@@ -164,8 +171,10 @@ class CreateButtonView(View):
     @button(label='Submit Anonymous Quefession', custom_id='anonymous_quefession')
     async def create_anonymous_quefession(self, button: Button, interaction: Interaction):
         try:
+            client = get_client()
+
             # Let's check bans
-            del_result = client['AnonymousQuefessionsBans'].delete_many({
+            del_result = await client['AnonymousQuefessionsBans'].delete_many({
                 '$and': [
                     {'BanEnd': {'$exists': True}},
                     {'BanEnd': {'$lt': datetime.datetime.now()}}
@@ -174,7 +183,7 @@ class CreateButtonView(View):
 
             logging.debug(str(del_result))
 
-            ban = client['AnonymousQuefessionsBans'].find_one({
+            ban = await client['AnonymousQuefessionsBans'].find_one({
                 'MemberID': str(interaction.user.id)
             })
 
@@ -185,7 +194,10 @@ class CreateButtonView(View):
                                           ephemeral=True)
                 return
 
-            await interaction.response.send_modal(CreateModal(interaction.channel))
+            await interaction.response.send_modal(
+                CreateModal(interaction.channel,
+                            modal_text_label=await trl(0, interaction.guild.id, 'quefessions_submit_modal_text_label'),
+                            modal_title=await trl(0, interaction.guild.id, 'quefessions_submit_modal_title')))
         except Exception as e:
             capture_exception(e)
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
@@ -242,9 +254,13 @@ class AdminGuildBanConfirm(View):
     @button(label='Confirm Guild Ban', style=ButtonStyle.danger)
     async def confirm_guild_ban(self, button: Button, interaction: Interaction):
         try:
+            client = get_client()
+
             data = client['AnonymousQuefessions'].find_one(
                 {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
                  'MessageID': str(self.mod_message.id)})
+            await client.client.close()
+
             if data is None:
                 await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
                                           ephemeral=True)
@@ -252,7 +268,7 @@ class AdminGuildBanConfirm(View):
 
             member = interaction.guild.get_member(int(data['MemberID']))
 
-            await member.ban(reason=trl(0, interaction.guild.id, 'quefessions_ban_reason'), delete_message_seconds=604800)
+            await member.ban(reason=await trl(0, interaction.guild.id, 'quefessions_ban_reason'), delete_message_seconds=604800)
 
             self.stop()
             self.disable_all_items()
@@ -277,12 +293,14 @@ class AdminQuefessionBanDurationChoice(View):
         super().__init__()
         self.mod_message = message
 
-    def fetch_author(self):
-        data = client['AnonymousQuefessions'].find_one({
+    async def fetch_author(self):
+        client = get_client()
+        data = await client['AnonymousQuefessions'].find_one({
             'GuildID': str(self.mod_message.guild.id),
             'ChannelID': str(self.mod_message.channel.id),
             'MessageID': str(self.mod_message.id)
         })
+        await client.client.close()
 
         if data is None:
             return None
@@ -290,24 +308,28 @@ class AdminQuefessionBanDurationChoice(View):
         return data['AuthorID']
 
     async def ban_temp(self, minutes: int):
-        author = self.fetch_author()
+        author = await self.fetch_author()
         if author is None:
             return
 
-        client['AnonymousQuefessionsBans'].insert_one({
+        client = get_client()
+        await client['AnonymousQuefessionsBans'].insert_one({
             'MemberID': author,
             'BanEnd': datetime.datetime.now() + datetime.timedelta(minutes=minutes)
         })
+        await client.client.close()
 
     async def ban_perm(self):
-        author = self.fetch_author()
+        author = await self.fetch_author()
         if author is None:
             return
 
-        client['AnonymousQuefessionsBans'].insert_one({
+        client = get_client()
+        await client['AnonymousQuefessionsBans'].insert_one({
             'MemberID': author,
             'Permanent': True
         })
+        await client.client.close()
 
     @button(label='10 minutes', style=ButtonStyle.danger)
     async def ban_10_minutes(self, button: Button, interaction: Interaction):
@@ -412,7 +434,11 @@ class InfoButtonView(View):
     def __init__(self, guild_id: int, channel_id: int):
         super().__init__(timeout=None)
 
-        if guild_id == 0 or channel_id == 0 or get_setting(guild_id, f"quefessions_replies_{channel_id}", False):
+        asyncio.create_task(self.second_init(guild_id, channel_id))
+
+    async def second_init(self, guild_id: int, channel_id: int):
+
+        if guild_id == 0 or channel_id == 0 or await get_setting(guild_id, f"quefessions_replies_{channel_id}", False):
             btn = discord.ui.Button(label="Reply Anonymously", custom_id="anonymous_reply")
             btn.callback = self.reply_anonymously
             self.add_item(
@@ -430,7 +456,10 @@ class InfoButtonView(View):
 
     async def reply_anonymously(self, interaction: discord.Interaction):
         try:
-            reply_modal = ReplyModal(interaction.message)
+            reply_modal = ReplyModal(interaction.message,
+                                     reply_title=await trl(interaction.user.id, interaction.guild.id, "quefessions_reply_title"),
+                                     reply_label=await trl(interaction.user.id, interaction.guild.id, "quefessions_reply_label"),
+                                     reply_placeholder=await trl(interaction.user.id, interaction.guild.id, "quefessions_reply_placeholder"))
             await interaction.response.send_modal(reply_modal)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -442,9 +471,11 @@ class InfoButtonView(View):
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'no_permission'), ephemeral=True)
             return
 
+        client = get_client()
         data = client['AnonymousQuefessions'].find_one(
             {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
              'MessageID': str(interaction.message.id)})
+        await client.client.close()
 
         if data is None:
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
@@ -471,9 +502,11 @@ class InfoButtonView(View):
 
     async def report_quefession(self, button: Button, interaction: Interaction):
         try:
-            data = client['AnonymousQuefessions'].find_one(
+            client = get_client()
+            data = await client['AnonymousQuefessions'].find_one(
                 {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
                  'MessageID': str(interaction.message.id)})
+            await client.client.close()
 
             if data is None:
                 await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
@@ -497,9 +530,15 @@ class InfoButtonView(View):
                     await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'), ephemeral=True)
                     return
 
-                await interaction.response.send_modal(modal=ReportTextModal(author, interaction.message, message.content))
-            else: 
-                await interaction.response.send_modal(modal=ReportTextModal(author, interaction.message, data['Text']))
+                await interaction.response.send_modal(modal=ReportTextModal(author, interaction.message, message.content,
+                                                                            report_label=await trl(int(author[2]), interaction.guild.id, "quefessions_report_description_label"),
+                                                                            report_placeholder=await trl(int(author[2]), interaction.guild.id, "quefessions_report_description_placeholder"),
+                                                                            report_title=await trl(int(author[2]), interaction.guild.id, "quefessions_report_title")))
+            else:
+                await interaction.response.send_modal(modal=ReportTextModal(author, interaction.message, data['Text'],
+                                                                            report_label=await trl(int(author[2]), interaction.guild.id, "quefessions_report_description_label"),
+                                                                            report_placeholder=await trl(int(author[2]), interaction.guild.id, "quefessions_report_description_placeholder"),
+                                                                            report_title=await trl(int(author[2]), interaction.guild.id, "quefessions_report_title")))
         except Exception as e:
             capture_exception(e)
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
@@ -551,7 +590,7 @@ class AnonymousQuefessions(Cog):
             return
 
         try:
-            set_setting(ctx.guild.id, f'quefessions_enabled_{ctx.channel.id}', enabled)
+            await set_setting(ctx.guild.id, f'quefessions_enabled_{ctx.channel.id}', enabled)
             await ctx.respond(
                 trl(ctx.user.id, ctx.guild.id, 'quefessions_channel_enabled') if enabled else
                 trl(ctx.user.id, ctx.guild.id, 'quefessions_channel_disabled'),
@@ -565,7 +604,7 @@ class AnonymousQuefessions(Cog):
     @has_guild_permissions(manage_guild=True)
     async def set_quefessions_reply(self, ctx: ApplicationContext, enabled: bool):
         try:
-            set_setting(ctx.guild.id, f'quefessions_replies_{ctx.channel.id}', enabled)
+            await set_setting(ctx.guild.id, f'quefessions_replies_{ctx.channel.id}', enabled)
             await ctx.respond(
                 trl(ctx.user.id, ctx.guild.id, 'quefessions_replies_enabled') if enabled else
                 trl(ctx.user.id, ctx.guild.id, 'quefessions_replies_disabled'),
@@ -606,24 +645,26 @@ class AnonymousQuefessions(Cog):
             if message.author.bot:
                 return
 
-            if not get_setting(message.guild.id, f'quefessions_enabled_{message.channel.id}', False) == True:
+            if not await get_setting(message.guild.id, f'quefessions_enabled_{message.channel.id}', False) == True:
                 return
 
-            client['AnonymousQuefessionsBans'].delete_many({
+            client = get_client()
+            await client['AnonymousQuefessionsBans'].delete_many({
                 '$and': [
                     {'BanEnd': {'$exists': True}},
                     {'BanEnd': {'$lt': datetime.datetime.now()}}
                 ]
             })
 
-            ban = client['AnonymousQuefessionsBans'].find_one({
+            ban = await client['AnonymousQuefessionsBans'].find_one({
                 'MemberID': str(message.author.id)
             })
 
             if ban is not None:
-                reply = await message.reply(trl(message.author.id, message.guild.id, 'quefessions_banned'))
+                reply = await message.reply(await trl(message.author.id, message.guild.id, 'quefessions_banned'))
                 await message.delete()
                 await reply.delete(delay=5)
+                await client.client.close()
                 return
 
             msg = await message.channel.send(
@@ -639,13 +680,14 @@ class AnonymousQuefessions(Cog):
                 view=InfoButtonView(message.guild.id, message.channel.id)
             )
 
-            client['AnonymousQuefessions'].insert_one({
+            await client['AnonymousQuefessions'].insert_one({
                 'GuildID': str(message.guild.id),
                 'ChannelID': str(message.channel.id),
                 'MessageID': str(msg.id),
                 'AuthorID': str(message.author.id)
             })
 
+            await client.client.close()
             await message.delete()
         except Exception as e:
             capture_exception(e)
@@ -653,10 +695,13 @@ class AnonymousQuefessions(Cog):
     @Cog.listener()
     async def on_message_delete(self, message: Message):
         try:
+            client = get_client()
+
             client['AnonymousQuefessions'].delete_many({
                 'GuildID': str(message.guild.id),
                 'ChannelID': str(message.channel.id),
                 'MessageID': str(message.id)
             })
+            await client.client.close()
         except Exception as e:
             capture_exception(e)

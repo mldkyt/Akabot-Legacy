@@ -13,8 +13,8 @@ class ModuleNotEnabled(commands_ext.CheckFailure):
         return self.message
 
 def is_module_enabled(module_name: str):
-    def predicate(ctx: commands_ext.Context):
-        if not get_setting(ctx.guild.id, f"module_{module_name}_enabled", True):
+    async def predicate(ctx: commands_ext.Context):
+        if not await get_setting(ctx.guild.id, f"module_{module_name}_enabled", True):
             raise ModuleNotEnabled(module_name)
 
         return True

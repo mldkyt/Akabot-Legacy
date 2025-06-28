@@ -1,7 +1,7 @@
 
 import datetime
 import discord
-from database import client
+from database import get_client
 
 
 class Analytics(discord.Cog):
@@ -11,31 +11,37 @@ class Analytics(discord.Cog):
         
     @discord.Cog.listener()
     async def on_message(self, msg: discord.Message):
-        client['AnalyticsActiveUsers'].update_one({
+        client = get_client()
+
+        await client['AnalyticsActiveUsers'].update_one({
             'UserID': str(msg.author.id)
         }, {
             '$set': {
                 'LastUseTime': datetime.datetime.now()
             }
         }, upsert=True)
-        client['AnalyticsActiveChannels'].update_one({
+        await client['AnalyticsActiveChannels'].update_one({
             'ChannelID': str(msg.channel.id)
         }, {
             '$set': {
                 'LastUseTime': datetime.datetime.now()
             }
         }, upsert=True)
+
+        await client.client.close()
         
     @discord.Cog.listener()
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
-        client['AnalyticsActiveUsers'].update_one({
+        client = get_client()
+
+        await client['AnalyticsActiveUsers'].update_one({
             'UserID': str(user.id)
         }, {
             '$set': {
                 'LastUseTime': datetime.datetime.now()
             }
         }, upsert=True)
-        client['AnalyticsActiveChannels'].update_one({
+        await client['AnalyticsActiveChannels'].update_one({
             'ChannelID': str(reaction.message.channel.id)
         }, {
             '$set': {

@@ -24,7 +24,7 @@ from discord import Interaction, Embed, Color
 from discord.ext import commands
 from discord.ui import View, Modal, InputText
 
-from database import client
+from database import get_client
 from utils.languages import get_translation_for_key_localized as trl
 from utils.module_toggling import is_module_enabled
 from utils.settings import get_setting, set_setting
@@ -40,7 +40,7 @@ class V2NameChangeModal(Modal):
 
     async def callback(self, interaction: Interaction):
         try:
-            if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
+            if not await get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
                 await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
                 return
 
@@ -69,7 +69,7 @@ class V2MaxUsersChangeModal(Modal):
 
     async def callback(self, interaction: Interaction):
         try:
-            if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
+            if not await get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
                 await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
                 return
 
@@ -105,7 +105,7 @@ class V2BitrateChangeModal(Modal):
 
     async def callback(self, interaction: Interaction):
         try:
-            if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
+            if not await get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
                 await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
                 return
 
@@ -137,12 +137,15 @@ class V2TemporaryVCMenu(View):
     @discord.ui.button(label='Change Name', style=discord.ButtonStyle.primary)
     async def change_name(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
-            if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
+            if not await get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
                 await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
                 return
 
-            data = client['TemporaryVC'].find_one(
+            client = get_client()
+
+            data = await client['TemporaryVC'].find_one(
                 {'ChannelID': str(interaction.channel.id), 'GuildID': str(interaction.guild.id)})
+            await client.client.close()
             if not data:
                 await interaction.response.send_message('This is not a temporary channel', ephemeral=True)
                 return
@@ -160,12 +163,14 @@ class V2TemporaryVCMenu(View):
     @discord.ui.button(label='Change Max Users', style=discord.ButtonStyle.primary)
     async def change_max_users(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
-            if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
+            if not await get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
                 await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
                 return
 
-            data = client['TemporaryVC'].find_one(
+            client = get_client()
+            data = await client['TemporaryVC'].find_one(
                 {'ChannelID': str(interaction.channel.id), 'GuildID': str(interaction.guild.id)})
+            await client.client.close()
             if not data:
                 await interaction.response.send_message('This is not a temporary channel', ephemeral=True)
                 return
@@ -183,12 +188,14 @@ class V2TemporaryVCMenu(View):
     @discord.ui.button(label='Change Bitrate', style=discord.ButtonStyle.primary)
     async def change_bitrate(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
-            if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
+            if not await get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
                 await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
                 return
 
-            data = client['TemporaryVC'].find_one(
+            client = get_client()
+            data = await client['TemporaryVC'].find_one(
                 {'ChannelID': str(interaction.channel.id), 'GuildID': str(interaction.guild.id)})
+            await client.client.close()
             if not data:
                 await interaction.response.send_message('This is not a temporary channel', ephemeral=True)
                 return
@@ -208,22 +215,23 @@ async def new_temporary_channel(from_ch: discord.VoiceChannel,
                                 for_user: discord.Member) -> discord.VoiceChannel:
     category = from_ch.category
 
-    new_ch_name = get_setting(for_user.guild.id, 'temporary_vc_name', '{name}\'s channel')
+    new_ch_name = await get_setting(for_user.guild.id, 'temporary_vc_name', '{name}\'s channel')
 
     new_ch_name = new_ch_name.replace('{name}', for_user.display_name)
     new_ch_name = new_ch_name.replace('{username}', for_user.name)
     new_ch_name = new_ch_name.replace('{guild}', for_user.guild.name)
 
     if not category:
-        new_ch = await from_ch.guild.create_voice_channel(name=new_ch_name, reason=trl(0, for_user.guild.id,
+        new_ch = await from_ch.guild.create_voice_channel(name=new_ch_name, reason=await trl(0, for_user.guild.id,
                                                                                        'temporary_vc_mod_reason'),
                                                           bitrate=from_ch.bitrate, user_limit=from_ch.user_limit)
     else:
         new_ch = await category.create_voice_channel(name=new_ch_name,
-                                                     reason=trl(0, for_user.guild.id, 'temporary_vc_mod_reason'),
+                                                     reason=await trl(0, for_user.guild.id, 'temporary_vc_mod_reason'),
                                                      bitrate=from_ch.bitrate, user_limit=from_ch.user_limit)
 
-    res = client['TemporaryVC'].insert_one(
+    client = get_client()
+    res = await client['TemporaryVC'].insert_one(
         {'ChannelID': str(new_ch.id), 'GuildID': str(new_ch.guild.id), 'CreatorID': str(for_user.id)})
 
     if '{id}' in new_ch_name:
@@ -239,21 +247,25 @@ async def new_temporary_channel(from_ch: discord.VoiceChannel,
             colour=Color.blue()
         )
         msg_2 = await new_ch.send(content=for_user.mention, embed=emb, view=V2TemporaryVCMenu())
-        client['TemporaryVC'].update_one({'_id': res.inserted_id}, {'$set': {'ManagementMenuMsgID': str(msg_2.id)}})
+        await client['TemporaryVC'].update_one({'_id': res.inserted_id}, {'$set': {'ManagementMenuMsgID': str(msg_2.id)}})
     except Exception as e:
         sentry_sdk.capture_exception(e)
+
+    await client.client.close()
 
     return new_ch
 
 
 async def h_leave_channel(member: discord.Member, state: discord.VoiceState):
     logging.info('Member %s left channel %s', member.display_name, state.channel.name)
-    data = client['TemporaryVC'].find_one(
+    client = get_client()
+    data = await client['TemporaryVC'].find_one(
         {'ChannelID': str(state.channel.id), 'GuildID': str(state.channel.guild.id)})
     if not data:
+        await client.client.close()
         return
 
-    client['TemporaryVC'].update_one(
+    await client['TemporaryVC'].update_one(
         {'ChannelID': str(state.channel.id), 'GuildID': str(state.channel.guild.id)},
         {'$pull': {'Users': str(member.id)}})
 
@@ -267,28 +279,30 @@ async def h_leave_channel(member: discord.Member, state: discord.VoiceState):
             if new_c == str(member.id):
                 new_c = data['Users'][1]
             logging.info('Promoting %s -> %s to channel creator', str(member.id), new_c)
-            client['TemporaryVC'].update_one(
+            await client['TemporaryVC'].update_one(
                 {'ChannelID': str(state.channel.id), 'GuildID': str(state.channel.guild.id)},
                 {'$set': {'CreatorID': new_c}}
             )
 
+        await client.client.close()
         return
 
     # Delete the channel if there are no users left
-    await state.channel.delete(reason=trl(0, member.guild.id, 'temporary_vc_mod_reason'))
-    client['TemporaryVC'].delete_one({'ChannelID': str(state.channel.id), 'GuildID': str(state.channel.guild.id)})
-
+    await state.channel.delete(reason=await trl(0, member.guild.id, 'temporary_vc_mod_reason'))
+    await client['TemporaryVC'].delete_one({'ChannelID': str(state.channel.id), 'GuildID': str(state.channel.guild.id)})
+    await client.client.close()
 
 async def h_join_channel(member: discord.Member, state: discord.VoiceState):
     logging.info('Member %s joined channel %s', member.display_name, state.channel.name)
-    client['TemporaryVC'].update_one(
+    client = get_client()
+    await client['TemporaryVC'].update_one(
         {'ChannelID': str(state.channel.id), 'GuildID': str(state.channel.guild.id)},
         {'$push': {'Users': str(member.id)}})
 
-    if client['TemporaryVCCreators'].count_documents(
+    if await client['TemporaryVCCreators'].count_documents(
             {'ChannelID': str(state.channel.id), 'GuildID': str(state.channel.guild.id)}) > 0:
         vc = await new_temporary_channel(state.channel, member)
-        await member.move_to(vc, reason=trl(0, member.guild.id, 'temporary_vc_mod_reason'))
+        await member.move_to(vc, reason=await trl(0, member.guild.id, 'temporary_vc_mod_reason'))
 
 
 class TemporaryVC(discord.Cog):
@@ -303,7 +317,7 @@ class TemporaryVC(discord.Cog):
                                     after: discord.VoiceState):
         try:
             # check if the module is enabled
-            if not get_setting(member.guild.id, "module_temporary_vc_enabled", True):
+            if not await get_setting(member.guild.id, "module_temporary_vc_enabled", True):
                 return
 
             # First let's check joining for temporary voice channel creation
@@ -328,13 +342,14 @@ class TemporaryVC(discord.Cog):
     @commands.has_permissions(manage_guild=True)
     async def add_creator_channel(self, ctx: discord.ApplicationContext, channel: discord.VoiceChannel):
         try:
-            client['TemporaryVCCreators'].insert_one({'ChannelID': str(channel.id), 'GuildID': str(channel.guild.id)})
+            client = get_client()
+            await client['TemporaryVCCreators'].insert_one({'ChannelID': str(channel.id), 'GuildID': str(channel.guild.id)})
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, 'temporary_vc_creator_channel_add').format(channel=channel.mention),
+                (await trl(ctx.user.id, ctx.guild.id, 'temporary_vc_creator_channel_add')).format(channel=channel.mention),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @temporary_vc_commands.command(name='remove_creator_channel',
                                    description='Remove a channel to create temporary voice channels')
@@ -343,27 +358,29 @@ class TemporaryVC(discord.Cog):
     @commands.has_permissions(manage_guild=True)
     async def remove_creator_channel(self, ctx: discord.ApplicationContext, channel: discord.VoiceChannel):
         try:
-            if client['TemporaryVCCreators'].delete_one(
+            client = get_client()
+            if await client['TemporaryVCCreators'].delete_one(
                     {'ChannelID': str(channel.id), 'GuildID': str(channel.guild.id)}).deleted_count > 0:
                 await ctx.respond(
-                    trl(ctx.user.id, ctx.guild.id, 'temporary_vc_creator_channel_remove').format(
+                    (await trl(ctx.user.id, ctx.guild.id, 'temporary_vc_creator_channel_remove')).format(
                         channel=channel.mention),
                     ephemeral=True)
             else:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'temporary_vc_error_channel_not_in_creator').format(
+                await ctx.respond((await trl(ctx.user.id, ctx.guild.id, 'temporary_vc_error_channel_not_in_creator')).format(
                     channel=channel.mention), ephemeral=True)
+            await client.client.close()
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @temporary_vc_commands.command(name='change_default_name',
                                    description='Default name syntax. {name}, {username}, {guild}, {id} are available')
     @is_module_enabled("temporary_vc")
     async def change_default_name(self, ctx: discord.ApplicationContext, name: str):
         try:
-            set_setting(ctx.guild.id, 'temporary_vc_name', name)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'temporary_vc_name_format_change').format(name=name),
+            await set_setting(ctx.guild.id, 'temporary_vc_name', name)
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, 'temporary_vc_name_format_change')).format(name=name),
                               ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

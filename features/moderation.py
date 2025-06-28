@@ -21,7 +21,7 @@ import discord
 import sentry_sdk
 from discord.ext import commands as commands_ext
 
-from database import client
+from database import get_client
 from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.config import get_key
@@ -36,8 +36,10 @@ from utils.warning import add_warning, db_get_warning_actions, db_add_warning_ac
     db_remove_warning_action, db_remove_warning
 
 
-def is_a_moderator(ctx: discord.ApplicationContext):
-    roles = client['ModeratorRoles'].find({'GuildID': str(ctx.guild.id)})
+async def is_a_moderator(ctx: discord.ApplicationContext):
+    client = get_client()
+    roles = await client['ModeratorRoles'].find({'GuildID': str(ctx.guild.id)})
+    await client.client.close()
     for role in roles:
         if int(role['RoleID']) in [role.id for role in ctx.user.roles]:
             return True
@@ -55,7 +57,7 @@ class UnbanView(discord.ui.View):
     async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
         await self.guild.unban(self.user, reason=self.reason)
         await interaction.respond(
-            trl(interaction.user.id, self.guild.id, "moderation_unban_response", append_tip=True).format(
+            (await trl(interaction.user.id, self.guild.id, "moderation_unban_response", append_tip=True)).format(
                 mention=self.user.mention, reason=self.reason), ephemeral=True)
         self.stop()
 
@@ -82,28 +84,28 @@ class Moderation(discord.Cog):
     async def kick_user(self, ctx: discord.ApplicationContext, user: discord.Member, reason: str):
         try:
             if not is_a_moderator(ctx):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_not_moderator"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "moderation_not_moderator"), ephemeral=True)
                 return
 
             if user.id == self.bot.user.id:  # Check if the user is the bot
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_kick_error_self_bot"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "moderation_kick_error_self_bot"), ephemeral=True)
                 return
 
             if user.id == ctx.user.id:  # Check if the user is the author
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_kick_error_self_user"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "moderation_kick_error_self_user"), ephemeral=True)
                 return
 
             if user.top_role >= ctx.user.top_role:  # Check if the user has a higher role
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_kick_error_insufficient_role"),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "moderation_kick_error_insufficient_role"),
                                   ephemeral=True)
                 return
 
-            ephemerality = get_setting(ctx.guild.id, "moderation_ephemeral", "true")
+            ephemerality = await get_setting(ctx.guild.id, "moderation_ephemeral", "true")
             await ctx.defer(ephemeral=ephemerality == "true")
 
             try:
                 await user.send(
-                    trl(0, ctx.guild.id, "moderation_kick_dm").format(guild=ctx.guild.name, reason=reason,
+                    (await trl(0, ctx.guild.id, "moderation_kick_dm")).format(guild=ctx.guild.name, reason=reason,
                                                                       moderator=ctx.user.display_name))
             except Exception as e:
                 sentry_sdk.capture_exception(e, scope="kick_user_dm")  # TO HANDLE LATER
@@ -112,7 +114,7 @@ class Moderation(discord.Cog):
             await user.kick(reason=reason)
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "moderation_kick_response", append_tip=True).format(mention=user.mention,
+                (await trl(ctx.user.id, ctx.guild.id, "moderation_kick_response", append_tip=True)).format(mention=user.mention,
                                                                                                    reason=reason))
 
             log_embed = discord.Embed(title="User Kicked",
@@ -120,7 +122,7 @@ class Moderation(discord.Cog):
             log_embed.add_field(name="Kicked User", value=user.mention)
             log_embed.add_field(name="Kicked By", value=ctx.user.mention)
             log_embed.add_field(name="Kicked Reason", value=reason)
-            log_embed.add_field(name="Kicked Time", value=get_now_for_server(ctx.guild.id).isoformat())
+            log_embed.add_field(name="Kicked Time", value=(await get_now_for_server(ctx.guild.id)).isoformat())
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
@@ -157,12 +159,12 @@ class Moderation(discord.Cog):
                                   ephemeral=True)
                 return
 
-            ephemerality = get_setting(ctx.guild.id, "moderation_ephemeral", "true")
+            ephemerality = await get_setting(ctx.guild.id, "moderation_ephemeral", "true")
             await ctx.defer(ephemeral=ephemerality == "true")
 
             try:
                 await user.send(
-                    trl(ctx.user.id, ctx.guild.id, "moderation_ban_dm").format(guild=ctx.guild.name, reason=reason,
+                    (await trl(ctx.user.id, ctx.guild.id, "moderation_ban_dm")).format(guild=ctx.guild.name, reason=reason,
                                                                                moderator=ctx.user.display_name))
             except Exception as e:
                 sentry_sdk.capture_exception(e, scope="ban_user_dm")
@@ -171,7 +173,7 @@ class Moderation(discord.Cog):
             await ctx.guild.ban(user, reason=reason, delete_message_seconds=604800)
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "moderation_ban_response", append_tip=True).format(mention=user.mention,
+                (await trl(ctx.user.id, ctx.guild.id, "moderation_ban_response", append_tip=True)).format(mention=user.mention,
                                                                                                   reason=reason))
 
             log_embed = discord.Embed(title="User Banned",
@@ -179,7 +181,7 @@ class Moderation(discord.Cog):
             log_embed.add_field(name="Banned User", value=user.mention)
             log_embed.add_field(name="Banned By", value=ctx.user.mention)
             log_embed.add_field(name="Banned Reason", value=reason)
-            log_embed.add_field(name="Banned Time", value=get_now_for_server(ctx.guild.id).isoformat())
+            log_embed.add_field(name="Banned Time", value=(await get_now_for_server(ctx.guild.id)).isoformat())
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
@@ -206,17 +208,17 @@ class Moderation(discord.Cog):
             async for member in ctx.guild.bans():
                 if userid != "" and userid == str(member.user.id):
                     await ctx.respond(
-                        trl(ctx.user.id, ctx.guild.id, "moderation_unban_ask", append_tip=True).format(
+                        (await trl(ctx.user.id, ctx.guild.id, "moderation_unban_ask", append_tip=True)).format(
                             mention=member.user.mention, reason=reason), ephemeral=True, view=UnbanView(ctx.guild, member.user, reason))
                     break
 
                 if username != "" and username in member.user.name:
                     await ctx.respond(
-                        trl(ctx.user.id, ctx.guild.id, "moderation_unban_ask", append_tip=True).format(
+                        (await trl(ctx.user.id, ctx.guild.id, "moderation_unban_ask", append_tip=True)).format(
                             mention=member.user.mention, reason=reason), ephemeral=True, view=UnbanView(ctx.guild, member.user, reason))
                     break
             else:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_unban_fail", append_tip=True),
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "moderation_unban_fail", append_tip=True),
                                   ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -270,15 +272,15 @@ class Moderation(discord.Cog):
             dm_has_updated = False
 
             if user.timed_out:
-                await user.remove_timeout(reason=trl(0, ctx.guild.id, "moderation_timeout_reason_changing"))
+                await user.remove_timeout(reason=await trl(0, ctx.guild.id, "moderation_timeout_reason_changing"))
                 dm_has_updated = True
 
-            ephemerality = get_setting(ctx.guild.id, "moderation_ephemeral", "true")
+            ephemerality = await get_setting(ctx.guild.id, "moderation_ephemeral", "true")
             await ctx.defer(ephemeral=ephemerality == "true")
 
             if dm_has_updated:
                 try:
-                    await user.send(trl(0, ctx.guild.id, "moderation_timeout_dm_changing")
+                    await user.send((await trl(0, ctx.guild.id, "moderation_timeout_dm_changing"))
                                     .format(guild=ctx.guild.name, time=pretty_time_delta(total_seconds, user_id=user.id,
                                                                                          server_id=ctx.guild.id),
                                             moderator=ctx.user.display_name, reason=reason))
@@ -288,7 +290,7 @@ class Moderation(discord.Cog):
             else:
                 try:
                     await user.send(
-                        trl(0, ctx.guild.id, "moderation_timeout_dm").format(guild=ctx.guild.name, reason=reason,
+                        (await trl(0, ctx.guild.id, "moderation_timeout_dm")).format(guild=ctx.guild.name, reason=reason,
                                                                              moderator=ctx.user.display_name))
                 except Exception as e:
                     sentry_sdk.capture_exception(e, scope="timeout_user_dm")
@@ -297,7 +299,7 @@ class Moderation(discord.Cog):
             await user.timeout_for(datetime.timedelta(seconds=total_seconds), reason=reason)
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "moderation_timeout_response", append_tip=True).format(
+                (await trl(ctx.user.id, ctx.guild.id, "moderation_timeout_response", append_tip=True)).format(
                     mention=user.mention, reason=reason))
 
             log_embed = discord.Embed(title="User Timed Out",
@@ -305,7 +307,7 @@ class Moderation(discord.Cog):
             log_embed.add_field(name="Timed Out User", value=user.mention)
             log_embed.add_field(name="Timed Out By", value=ctx.user.mention)
             log_embed.add_field(name="Timed Out Reason", value=reason)
-            log_embed.add_field(name="Timed Out Time", value=get_now_for_server(ctx.guild.id).isoformat())
+            log_embed.add_field(name="Timed Out Time", value=(await get_now_for_server(ctx.guild.id)).isoformat())
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
@@ -342,12 +344,12 @@ class Moderation(discord.Cog):
                                   ephemeral=True)
                 return
 
-            ephemerality = get_setting(ctx.guild.id, "moderation_ephemeral", "true")
+            ephemerality = await get_setting(ctx.guild.id, "moderation_ephemeral", "true")
             await ctx.defer(ephemeral=ephemerality == "true")
 
             try:
                 await user.send(
-                    trl(ctx.user.id, ctx.guild.id, "moderation_remove_timeout_dm")
+                    (await trl(ctx.user.id, ctx.guild.id, "moderation_remove_timeout_dm"))
                     .format(guild=ctx.guild.name, reason=reason, moderator=ctx.user.display_name))
             except discord.Forbidden:
                 pass
@@ -355,7 +357,7 @@ class Moderation(discord.Cog):
             await user.remove_timeout(reason=reason)
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "moderation_remove_timeout_response", append_tip=True).format(
+                (await trl(ctx.user.id, ctx.guild.id, "moderation_remove_timeout_response", append_tip=True)).format(
                     mention=user.mention,
                     reason=reason))
 
@@ -364,7 +366,7 @@ class Moderation(discord.Cog):
             log_embed.add_field(name="Timeout Removed User", value=user.mention)
             log_embed.add_field(name="Timeout Removed By", value=ctx.user.mention)
             log_embed.add_field(name="Timeout Removed Reason", value=reason)
-            log_embed.add_field(name="Timeout Removed Time", value=get_now_for_server(ctx.guild.id).isoformat())
+            log_embed.add_field(name="Timeout Removed Time", value=(await get_now_for_server(ctx.guild.id)).isoformat())
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
@@ -387,10 +389,10 @@ class Moderation(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_not_moderator"), ephemeral=True)
                 return
 
-            ephemerality = get_setting(ctx.guild.id, "moderation_ephemeral", "true")
+            ephemerality = await get_setting(ctx.guild.id, "moderation_ephemeral", "true")
             await ctx.defer(ephemeral=ephemerality == "true")
             if amount > int(get_key("Moderation_MaxPurge", "1000")):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_purge_max_messages").format(amount),
+                await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "moderation_purge_max_messages")).format(amount),
                                   ephemeral=True)
                 return
 
@@ -409,7 +411,7 @@ class Moderation(discord.Cog):
                 await ctx.channel.delete_messages(chunk)
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "moderation_purge_response", append_tip=True).format(
+                (await trl(ctx.user.id, ctx.guild.id, "moderation_purge_response", append_tip=True)).format(
                     messages=str(len(messages))),
                 ephemeral=True)
 
@@ -418,7 +420,7 @@ class Moderation(discord.Cog):
             log_embed.add_field(name="Purged Messages", value=str(len(messages)))
             log_embed.add_field(name="Purged By", value=ctx.user.mention)
             log_embed.add_field(name="Purged Channel", value=ctx.channel.mention)
-            log_embed.add_field(name="Purged Time", value=get_now_for_server(ctx.guild.id).isoformat())
+            log_embed.add_field(name="Purged Time", value=(await get_now_for_server(ctx.guild.id)).isoformat())
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
@@ -441,9 +443,9 @@ class Moderation(discord.Cog):
                 return
 
             warning_id = await add_warning(user, ctx.guild, reason)
-            ephemerality = get_setting(ctx.guild.id, "moderation_ephemeral", "true")
+            ephemerality = await get_setting(ctx.guild.id, "moderation_ephemeral", "true")
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "warn_add_response", append_tip=True).format(mention=user.mention,
+                (await trl(ctx.user.id, ctx.guild.id, "warn_add_response", append_tip=True)).format(mention=user.mention,
                                                                                             reason=reason,
                                                                                             id=str(warning_id)),
                 ephemeral=ephemerality == "true")
@@ -453,7 +455,7 @@ class Moderation(discord.Cog):
             log_embed.add_field(name="Warned User", value=user.mention)
             log_embed.add_field(name="Warned By", value=ctx.user.mention)
             log_embed.add_field(name="Warned Reason", value=reason)
-            log_embed.add_field(name="Warned Time", value=get_now_for_server(ctx.guild.id).isoformat())
+            log_embed.add_field(name="Warned Time", value=(await get_now_for_server(ctx.guild.id)).isoformat())
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
@@ -474,21 +476,21 @@ class Moderation(discord.Cog):
                 return
 
             # check: warning exists
-            warnings = db_get_warnings(ctx.guild.id, user.id)
+            warnings = await db_get_warnings(ctx.guild.id, user.id)
             if not warnings:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "warn_list_no_warnings"), ephemeral=True)
                 return
 
             if warning_id not in [str(warning['_id']) for warning in warnings]:
                 await ctx.respond(
-                    trl(ctx.user.id, ctx.guild.id, "warn_remove_error_warning_not_found").format(id=warning_id),
+                    (await trl(ctx.user.id, ctx.guild.id, "warn_remove_error_warning_not_found")).format(id=warning_id),
                     ephemeral=True)
                 return
 
-            db_remove_warning(ctx.guild.id, warning_id)
-            ephemerality = get_setting(ctx.guild.id, "moderation_ephemeral", "true")
+            await db_remove_warning(ctx.guild.id, warning_id)
+            ephemerality = await get_setting(ctx.guild.id, "moderation_ephemeral", "true")
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "warn_remove_response", append_tip=True).format(id=warning_id,
+                (await trl(ctx.user.id, ctx.guild.id, "warn_remove_response", append_tip=True)).format(id=warning_id,
                                                                                                user=user.mention),
                 ephemeral=ephemerality == "true")
 
@@ -497,7 +499,7 @@ class Moderation(discord.Cog):
             log_embed.add_field(name="Warning Removed User", value=user.mention)
             log_embed.add_field(name="Warning Removed By", value=ctx.user.mention)
             log_embed.add_field(name="Warning Removed ID", value=str(warning_id))
-            log_embed.add_field(name="Warning Removed Time", value=get_now_for_server(ctx.guild.id).isoformat())
+            log_embed.add_field(name="Warning Removed Time", value=(await get_now_for_server(ctx.guild.id)).isoformat())
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
@@ -516,19 +518,19 @@ class Moderation(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_not_moderator"), ephemeral=True)
                 return
 
-            warnings = db_get_warnings(ctx.guild.id, user.id)
+            warnings = await db_get_warnings(ctx.guild.id, user.id)
             if not warnings:
                 await ctx.respond(f'{user.mention} has no warnings.', ephemeral=True)
                 return
 
-            warning_str = trl(ctx.user.id, ctx.guild.id, "warn_list_title").format(user=user.mention)
+            warning_str = (await trl(ctx.user.id, ctx.guild.id, "warn_list_title")).format(user=user.mention)
             for warning in warnings:
-                warning_str += trl(ctx.user.id, ctx.guild.id, "warn_list_line").format(id=str(warning['_id']),
+                warning_str += (await trl(ctx.user.id, ctx.guild.id, "warn_list_line")).format(id=str(warning['_id']),
                                                                                        reason=warning['Reason'],
                                                                                        date=warning['Timestamp'])
 
-            if get_per_user_setting(ctx.user.id, 'tips_enabled', 'true') == 'true':
-                language = get_language(ctx.guild.id, ctx.user.id)
+            if await get_per_user_setting(ctx.user.id, 'tips_enabled', 'true') == 'true':
+                language = await get_language(ctx.guild.id, ctx.user.id)
                 warning_str = append_tip_to_message(ctx.guild.id, ctx.user.id, warning_str, language)
             await ctx.respond(warning_str, ephemeral=True)
         except Exception as e:
@@ -546,8 +548,8 @@ class Moderation(discord.Cog):
     async def set_warning_message(self, ctx: discord.ApplicationContext, enable: bool, message: str):
         try:
             # Get old
-            old_send_warning_message = get_setting(ctx.guild.id, 'send_warning_message', 'true')
-            old_warning_message = get_setting(ctx.guild.id, 'warning_message',
+            old_send_warning_message = await get_setting(ctx.guild.id, 'send_warning_message', 'true')
+            old_warning_message = await get_setting(ctx.guild.id, 'warning_message',
                                               'You have been warned in {guild} for {reason}.')
 
             # Create logging embed
@@ -557,29 +559,29 @@ class Moderation(discord.Cog):
             )
 
             if old_send_warning_message != str(enable).lower():
-                log_embed.add_field(name=trl(0, ctx.guild.id, "logging_send_warning_message"),
+                log_embed.add_field(name=await trl(0, ctx.guild.id, "logging_send_warning_message"),
                                     value=f'{old_send_warning_message} -> {str(enable).lower()}')
 
             if old_warning_message != message:
-                log_embed.add_field(name=trl(0, ctx.guild.id, "logging_message"),
+                log_embed.add_field(name=await trl(0, ctx.guild.id, "logging_message"),
                                     value=f'{old_warning_message} -> {message}')
 
             # Log the change
             await log_into_logs(ctx.guild, log_embed)
 
             # Set settings
-            set_setting(ctx.guild.id, 'send_warning_message', str(enable).lower())
-            set_setting(ctx.guild.id, 'warning_message', message)
+            await set_setting(ctx.guild.id, 'send_warning_message', str(enable).lower())
+            await set_setting(ctx.guild.id, 'warning_message', message)
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "warn_set_message_response", append_tip=True).format(message=message),
+                (await trl(ctx.user.id, ctx.guild.id, "warn_set_message_response", append_tip=True)).format(message=message),
                 ephemeral=True)
 
             log_embed = discord.Embed(title="Warning Message Set",
                                       description=f"{ctx.user.mention} has set the warning message to {message}")
             log_embed.add_field(name="Warning Message", value=message)
             log_embed.add_field(name="Warning Message Enabled", value=str(enable).lower())
-            log_embed.add_field(name="Warning Message Time", value=get_now_for_server(ctx.guild.id).isoformat())
+            log_embed.add_field(name="Warning Message Time", value=(await get_now_for_server(ctx.guild.id)).isoformat())
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
@@ -600,9 +602,9 @@ class Moderation(discord.Cog):
     @blocklist()
     async def add_warning_action(self, ctx: discord.ApplicationContext, warnings: int, action: str):
         try:
-            db_add_warning_action(ctx.guild.id, action, warnings)
+            await db_add_warning_action(ctx.guild.id, action, warnings)
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "warn_actions_add_response", append_tip=True).format(action=action,
+                (await trl(ctx.user.id, ctx.guild.id, "warn_actions_add_response", append_tip=True)).format(action=action,
                                                                                                     warnings=warnings),
                 ephemeral=True)
 
@@ -610,7 +612,7 @@ class Moderation(discord.Cog):
                                       description=f"{ctx.user.mention} has added a warning action to {action} for {warnings} warnings")
             log_embed.add_field(name="Warning Action", value=action)
             log_embed.add_field(name="Warning Action Warnings", value=str(warnings))
-            log_embed.add_field(name="Warning Action Time", value=get_now_for_server(ctx.guild.id).isoformat())
+            log_embed.add_field(name="Warning Action Time", value=(await get_now_for_server(ctx.guild.id)).isoformat())
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
@@ -627,21 +629,21 @@ class Moderation(discord.Cog):
     @blocklist()
     async def list_warning_actions(self, ctx: discord.ApplicationContext):
         try:
-            actions = db_get_warning_actions(ctx.guild.id)
+            actions = await db_get_warning_actions(ctx.guild.id)
             if not actions:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "warn_actions_list_empty"), ephemeral=True)
                 return
 
-            action_str = trl(ctx.user.id, ctx.guild.id, "warn_actions_list_title")
+            action_str = await trl(ctx.user.id, ctx.guild.id, "warn_actions_list_title")
             for action in actions:
-                action_str += trl(ctx.user.id, ctx.guild.id, "warn_actions_list_line").format(id=action[0],
+                action_str += (await trl(ctx.user.id, ctx.guild.id, "warn_actions_list_line")).format(id=action[0],
                                                                                               action=action[1],
                                                                                               warnings=action[2])
 
-            ephemerality = get_setting(ctx.guild.id, "moderation_ephemeral", "true")
+            ephemerality = await get_setting(ctx.guild.id, "moderation_ephemeral", "true")
 
-            if get_per_user_setting(ctx.user.id, 'tips_enabled', 'true') == 'true':
-                language = get_language(ctx.guild.id, ctx.user.id)
+            if await get_per_user_setting(ctx.user.id, 'tips_enabled', 'true') == 'true':
+                language = await get_language(ctx.guild.id, ctx.user.id)
                 action_str = append_tip_to_message(ctx.guild.id, ctx.user.id, action_str, language)
             await ctx.respond(action_str, ephemeral=ephemerality == "true")
         except Exception as e:
@@ -662,7 +664,7 @@ class Moderation(discord.Cog):
                                   ephemeral=True)
                 return
 
-            actions = db_get_warning_actions(ctx.guild.id)
+            actions = await db_get_warning_actions(ctx.guild.id)
             if not actions:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "warn_actions_list_empty"), ephemeral=True)
                 return
@@ -671,15 +673,15 @@ class Moderation(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "warn_actions_doesnt_exist"), ephemeral=True)
                 return
 
-            db_remove_warning_action(warning_action_id)
-            ephemerality = get_setting(ctx.guild.id, "moderation_ephemeral", "true")
+            await db_remove_warning_action(warning_action_id)
+            ephemerality = await get_setting(ctx.guild.id, "moderation_ephemeral", "true")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "warn_actions_remove_response", append_tip=True),
                               ephemeral=ephemerality == "true")
 
             log_embed = discord.Embed(title="Warning Action Removed",
                                       description=f"{ctx.user.mention} has removed a warning action with ID {warning_action_id}")
             log_embed.add_field(name="Warning Action ID", value=str(warning_action_id))
-            log_embed.add_field(name="Warning Action Time", value=get_now_for_server(ctx.guild.id).isoformat())
+            log_embed.add_field(name="Warning Action Time", value=(await get_now_for_server(ctx.guild.id)).isoformat())
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
@@ -692,7 +694,7 @@ class Moderation(discord.Cog):
     @discord.default_permissions(manage_guild=True)
     async def toggle_ephemeral(self, ctx: discord.ApplicationContext, ephemeral: bool):
         try:
-            set_setting(ctx.guild.id, "moderation_ephemeral", str(ephemeral).lower())
+            await set_setting(ctx.guild.id, "moderation_ephemeral", str(ephemeral).lower())
             await ctx.respond(
                 trl(ctx.user.id, ctx.guild.id, "moderation_ephemeral_on", append_tip=True)
                 if ephemeral else trl(ctx.user.id, ctx.guild.id, "moderation_ephemeral_off", append_tip=True),
@@ -701,7 +703,7 @@ class Moderation(discord.Cog):
             log_embed = discord.Embed(title="Ephemeral Toggled",
                                       description=f"{ctx.user.mention} has toggled the ephemeral status to {ephemeral}")
             log_embed.add_field(name="Ephemeral Status", value=str(ephemeral))
-            log_embed.add_field(name="Ephemeral Time", value=get_now_for_server(ctx.guild.id).isoformat())
+            log_embed.add_field(name="Ephemeral Time", value=(await get_now_for_server(ctx.guild.id)).isoformat())
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
@@ -714,15 +716,18 @@ class Moderation(discord.Cog):
     @discord.default_permissions(manage_guild=True)
     async def add_moderator_role(self, ctx: discord.ApplicationContext, role: discord.Role):
         try:
-            if client['ModeratorRoles'].count_documents({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)}) > 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_moderator_role_already_exists").format(
+            client = get_client()
+            if await client['ModeratorRoles'].count_documents({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)}) > 0:
+                await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "moderation_moderator_role_already_exists")).format(
                     role=role.mention), ephemeral=True)
+                await client.client.close()
                 return
 
-            client['ModeratorRoles'].insert_one({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)})
+            await client['ModeratorRoles'].insert_one({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)})
+            await client.client.close()
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "moderation_add_moderator_role_response").format(role=role.mention),
+                (await trl(ctx.user.id, ctx.guild.id, "moderation_add_moderator_role_response")).format(role=role.mention),
                 ephemeral=True)
 
             log_embed = discord.Embed(title="Moderator Role Added",
@@ -740,13 +745,16 @@ class Moderation(discord.Cog):
     @discord.default_permissions(manage_guild=True)
     async def remove_moderator_role(self, ctx: discord.ApplicationContext, role: discord.Role):
         try:
-            if client['ModeratorRoles'].delete_one(
+            client = get_client()
+            if await client['ModeratorRoles'].delete_one(
                     {'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)}).deleted_count > 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_remove_moderator_role_response").format(
+                await client.client.close()
+                await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "moderation_remove_moderator_role_response")).format(
                     role=role.mention), ephemeral=True)
             else:
+                await client.client.close()
                 await ctx.respond(
-                    trl(ctx.user.id, ctx.guild.id, "moderation_moderator_role_doesnt_exist").format(role=role.mention),
+                    (await trl(ctx.user.id, ctx.guild.id, "moderation_moderator_role_doesnt_exist")).format(role=role.mention),
                     ephemeral=True)
 
             log_embed = discord.Embed(title="Moderator Role Removed",
@@ -764,7 +772,9 @@ class Moderation(discord.Cog):
     @discord.default_permissions(manage_guild=True)
     async def list_moderator_roles(self, ctx: discord.ApplicationContext):
         try:
-            roles = client['ModeratorRoles'].find({'GuildID': str(ctx.guild.id)})
+            client = get_client()
+            roles = await client['ModeratorRoles'].find({'GuildID': str(ctx.guild.id)})
+            await client.client.close()
 
             if not roles:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_no_moderator_roles"), ephemeral=True)
@@ -772,7 +782,7 @@ class Moderation(discord.Cog):
 
             message = trl(ctx.user.id, ctx.guild.id, "moderation_moderator_roles_title")
 
-            role_mentions = [trl(ctx.user.id, ctx.guild.id, "moderation_moderator_roles_line").format(
+            role_mentions = [(await trl(ctx.user.id, ctx.guild.id, "moderation_moderator_roles_line")).format(
                 role=ctx.guild.get_role(int(role['RoleID'])).mention) for role in roles]
             message += "\n".join(role_mentions)
             await ctx.respond(message, ephemeral=True)

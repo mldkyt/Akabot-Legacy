@@ -3,7 +3,7 @@ import sentry_sdk
 from bson import ObjectId
 from discord.ext import tasks
 
-from database import client
+from database import get_client
 from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 from utils.module_toggling import is_module_enabled
@@ -34,19 +34,22 @@ class MessageSchedule(discord.Cog):
     @is_module_enabled("schedule")
     async def schedule_daily(self, ctx: discord.ApplicationContext, text: str):
         try:
-            if client['ScheduledMessages'].count_documents({'GuildID': str(ctx.guild.id)}) >= int(
+            client = get_client()
+            if await client['ScheduledMessages'].count_documents({'GuildID': str(ctx.guild.id)}) >= int(
                     get_key("MAX_SCHEDULED_MESSAGES", "5")):
-                await ctx.respond(trl(ctx.guild.id, ctx.user.id, "message_schedule_max_reached"), ephemeral=True)
+                await ctx.respond(await trl(ctx.guild.id, ctx.user.id, "message_schedule_max_reached"), ephemeral=True)
+                await client.client.close()
                 return
 
-            inserted = client['ScheduledMessages'].insert_one(
+            inserted = await client['ScheduledMessages'].insert_one(
                 {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'Type': 'Daily', 'Content': text})
 
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_daily_added", append_tip=True).format(
+            await client.client.close()
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "message_schedule_daily_added", append_tip=True)).format(
                 id=str(inserted.inserted_id)), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="weekly")
     @is_module_enabled("schedule")
@@ -54,18 +57,22 @@ class MessageSchedule(discord.Cog):
                                                                                                  description="Day of week to send the message at (1 - Monday, 7 - Sunday)"),
                               text: discord.Option(str, description="Text to send")):
         try:
-            if client['ScheduledMessages'].count_documents({'GuildID': str(ctx.guild.id)}) >= int(
+            client = get_client()
+
+            if await client['ScheduledMessages'].count_documents({'GuildID': str(ctx.guild.id)}) >= int(
                     get_key("MAX_SCHEDULED_MESSAGES", "5")):
                 await ctx.respond(trl(ctx.guild.id, ctx.user.id, "message_schedule_max_reached"), ephemeral=True)
+                await client.client.close()
                 return
 
-            inserted = client['ScheduledMessages'].insert_one(
+            inserted = await client['ScheduledMessages'].insert_one(
                 {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'Type': 'Weekly', 'Day': day_of_week,
                  'Content': text})
+            await client.client.close()
 
             day_of_week_word = number_to_day_of_week(day_of_week)
 
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_weekly_added", append_tip=True).format(
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "message_schedule_weekly_added", append_tip=True)).format(
                 day_of_week=day_of_week_word, id=str(inserted.inserted_id)), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -77,17 +84,20 @@ class MessageSchedule(discord.Cog):
                                day: discord.Option(int, description="Day of month to send at"),
                                text: discord.Option(str, description="Text to send")):
         try:
-            if client['ScheduledMessages'].count_documents({'GuildID': str(ctx.guild.id)}) >= int(
+            client = get_client()
+            if await client['ScheduledMessages'].count_documents({'GuildID': str(ctx.guild.id)}) >= int(
                     get_key("MAX_SCHEDULED_MESSAGES", "5")):
                 await ctx.respond(trl(ctx.guild.id, ctx.user.id, "message_schedule_max_reached"), ephemeral=True)
+                await client.client.close()
                 return
 
-            inserted = client['ScheduledMessages'].insert_one(
+            inserted = await client['ScheduledMessages'].insert_one(
                 {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'Type': 'Monthly', 'Day': day,
                  'Content': text})
 
+            await client.client.close()
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "message_schedule_monthly_added", append_tip=True).format(day=day,
+                (await trl(ctx.user.id, ctx.guild.id, "message_schedule_monthly_added", append_tip=True)).format(day=day,
                                                                                                          id=str(
                                                                                                              inserted.inserted_id)),
                 ephemeral=True)
@@ -102,17 +112,21 @@ class MessageSchedule(discord.Cog):
                               day: discord.Option(int, description="Day of month to send message at"),
                               text: discord.Option(str, description="Text to send")):
         try:
-            if client['ScheduledMessages'].count_documents({'GuildID': str(ctx.guild.id)}) >= int(
+            client = get_client()
+
+            if await client['ScheduledMessages'].count_documents({'GuildID': str(ctx.guild.id)}) >= int(
                     get_key("MAX_SCHEDULED_MESSAGES", "5")):
                 await ctx.respond(trl(ctx.guild.id, ctx.user.id, "message_schedule_max_reached"), ephemeral=True)
+                await client.client.close()
                 return
 
-            inserted = client['ScheduledMessages'].insert_one(
+            inserted = await client['ScheduledMessages'].insert_one(
                 {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'Type': 'Yearly', 'Day': day,
                  'Month': month, 'Content': text})
 
+            await client.client.close()
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "message_schedule_yearly_added", append_tip=True).format(month=month,
+                (await trl(ctx.user.id, ctx.guild.id, "message_schedule_yearly_added", append_tip=True)).format(month=month,
                                                                                                         day=day, id=str(
                         inserted.inserted_id)), ephemeral=True)
         except Exception as e:
@@ -129,8 +143,10 @@ class MessageSchedule(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_invalid_id"), ephemeral=True)
                 return
 
-            update_result = client['ScheduledMessages'].update_one({'_id': ObjectId(object_id)},
+            client = get_client()
+            update_result = await client['ScheduledMessages'].update_one({'_id': ObjectId(object_id)},
                                                                    {'$set': {'Content': new_text}})
+            await client.client.close()
 
             if update_result.modified_count > 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_updated_content", append_tip=True),
@@ -151,7 +167,9 @@ class MessageSchedule(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_invalid_id"), ephemeral=True)
                 return
 
-            delete_result = client['ScheduledMessages'].delete_one({'_id': ObjectId(object_id)})
+            client = get_client()
+            delete_result = await client['ScheduledMessages'].delete_one({'_id': ObjectId(object_id)})
+            await client.client.close()
 
             if delete_result.deleted_count > 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_deleted", append_tip=True),
@@ -167,9 +185,11 @@ class MessageSchedule(discord.Cog):
     async def list(self, ctx: discord.ApplicationContext):
 
         try:
-            list_for_server = client['ScheduledMessages'].find({'GuildID': str(ctx.guild.id)}).to_list()
+            client = get_client()
+            list_for_server = await client['ScheduledMessages'].find({'GuildID': str(ctx.guild.id)}).to_list()
+            await client.client.close()
 
-            message_content = trl(ctx.user.id, ctx.guild.id, "message_schedule_list_title") + '\n'
+            message_content = (await trl(ctx.user.id, ctx.guild.id, "message_schedule_list_title")) + '\n'
 
             for i in list_for_server:
                 channel = ctx.guild.get_channel(int(i['ChannelID']))
@@ -192,7 +212,7 @@ class MessageSchedule(discord.Cog):
                     brief_content = i['Content'][:60] + '...'
 
                 message_content += (
-                            trl(ctx.user.id, ctx.guild.id, "message_schedule_list_row").format(channel=channel.mention,
+                            (await trl(ctx.user.id, ctx.guild.id, "message_schedule_list_row")).format(channel=channel.mention,
                                                                                                id=str(i['_id']),
                                                                                                date=date,
                                                                                                brief_content=brief_content,
@@ -207,17 +227,19 @@ class MessageSchedule(discord.Cog):
     async def handle_message_schedule(self):
         try:
             # Check if it is 12 PM
-            schedules_list = client['ScheduledMessages'].find({}).to_list()
+            client = get_client()
+            schedules_list = await client['ScheduledMessages'].find({}).to_list()
+            await client.client.close()
 
             for schedule in schedules_list:
                 guild = self.bot.get_guild(int(schedule['GuildID']))
                 if guild is None:
                     continue
 
-                if not get_setting(guild.id, "module_schedule_enabled", True):
+                if not await get_setting(guild.id, "module_schedule_enabled", True):
                     continue
 
-                now = get_now_for_server(guild.id)
+                now = await get_now_for_server(guild.id)
                 if now.hour != 12 or now.minute != 0:
                     continue
 

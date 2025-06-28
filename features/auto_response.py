@@ -21,7 +21,7 @@ from bson import ObjectId
 from discord.ext import commands as discord_commands_ext
 from discord.ext import pages as dc_pages
 
-from database import client
+from database import get_client
 from utils.languages import get_translation_for_key_localized as trl
 
 
@@ -40,16 +40,20 @@ class AutoResponse(discord.Cog):
     @discord.default_permissions(manage_messages=True)
     async def add_auto_response(self, ctx: discord.ApplicationContext, trigger: str, reply: str):
         try:
-            client['AutoResponse'].insert_one(
+            client = get_client()
+
+            await client['AutoResponse'].insert_one(
                 {'GuildID': str(ctx.guild.id), 'TriggerText': trigger, 'ReplyText': reply})
+
+            await client.client.close()
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "auto_response_add_success").format(trigger=trigger, reply=reply),
+                (await trl(ctx.user.id, ctx.guild.id, "auto_response_add_success")).format(trigger=trigger, reply=reply),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_response_group.command(name="list", description="List auto response settings")
     @discord_commands_ext.has_permissions(manage_messages=True)
@@ -63,16 +67,17 @@ class AutoResponse(discord.Cog):
             current_group_msg = ""
 
             # List
+            client = get_client()
 
-            all_settings = client['AutoResponse'].find({'GuildID': str(ctx.guild.id)}).to_list()
+            all_settings = await client['AutoResponse'].find({'GuildID': str(ctx.guild.id)}).to_list()
             if len(all_settings) == 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_list_empty"), ephemeral=True)
+                await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "auto_response_list_empty"), ephemeral=True)
                 return
 
             for i in all_settings:
                 # Format: **{id}**: {trigger} -> {reply}
                 # current_group_msg += f"**ID: `{i[0]}`**: Trigger: `{i[2]}` -> Will say `{i[3]}`\n"
-                current_group_msg += trl(ctx.user.id, ctx.guild.id, "auto_response_list_row").format(id=str(i['_id']),
+                current_group_msg += (await trl(ctx.user.id, ctx.guild.id, "auto_response_list_row")).format(id=str(i['_id']),
                                                                                                      trigger=i[
                                                                                                          'TriggerText'],
                                                                                                      reply=i[
@@ -94,7 +99,7 @@ class AutoResponse(discord.Cog):
             await paginator.respond(ctx.interaction, ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+            await ctx.respond(await trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_response_group.command(name="edit_trigger", description="Change trigger for a setting")
     @discord_commands_ext.has_permissions(manage_messages=True)
@@ -107,7 +112,9 @@ class AutoResponse(discord.Cog):
                                   ephemeral=True)
                 return
 
-            result = client['AutoResponse'].update_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)},
+            client = get_client()
+
+            result = await client['AutoResponse'].update_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)},
                                                        {'$set': {'TriggerText': new_trigger}})
 
             if result.matched_count == 0:
@@ -132,7 +139,9 @@ class AutoResponse(discord.Cog):
                                   ephemeral=True)
                 return
 
-            result = client['AutoResponse'].delete_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)})
+            client = get_client()
+
+            result = await client['AutoResponse'].delete_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)})
 
             if result.deleted_count == 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
@@ -156,7 +165,9 @@ class AutoResponse(discord.Cog):
                                   ephemeral=True)
                 return
 
-            result = client['AutoResponse'].update_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)},
+            client = get_client()
+
+            result = await client['AutoResponse'].update_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)},
                                                        {'$set': {'ReplyText': new_response}})
 
             if result.matched_count == 0:
@@ -177,8 +188,10 @@ class AutoResponse(discord.Cog):
             if msg.author.bot:
                 return
 
+            client = get_client()
+
             # Find all created settings
-            data = client['AutoResponse'].find({'GuildID': str(msg.guild.id)})
+            data = await client['AutoResponse'].find({'GuildID': str(msg.guild.id)})
             for i in data:
                 # If it contains the message
                 if i['TriggerText'] in msg.content:

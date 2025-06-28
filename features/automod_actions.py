@@ -23,7 +23,7 @@ import sentry_sdk
 from bson import ObjectId
 from discord.ext import commands as discord_commands_ext
 
-from database import client
+from database import get_client
 from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.config import get_key
@@ -31,20 +31,32 @@ from utils.languages import get_translation_for_key_localized as trl
 from utils.warning import add_warning
 
 
-def db_add_automod_action(guild_id: int, rule_id: int, rule_name: str, action: str, additional) -> ObjectId:
-    insert_result = client['AutomodActions'].insert_one(
+async def db_add_automod_action(guild_id: int, rule_id: int, rule_name: str, action: str, additional) -> ObjectId:
+    client = get_client()
+
+    insert_result = await client['AutomodActions'].insert_one(
         {'GuildID': str(guild_id), 'RuleID': str(rule_id), 'RuleName': rule_name, 'Action': action,
          'Additional': additional})
+
+    await client.client.close()
 
     return insert_result.inserted_id
 
 
-def db_remove_automod_action(action_id: ObjectId):
-    client['AutomodActions'].delete_one({'_id': action_id})
+async def db_remove_automod_action(action_id: ObjectId):
+    client = get_client()
+
+    await client['AutomodActions'].delete_one({'_id': action_id})
+
+    await client.client.close()
 
 
-def db_get_automod_actions(guild_id: int):
-    result = client['AutomodActions'].find({'GuildID': str(guild_id)}).to_list()
+async def db_get_automod_actions(guild_id: int):
+    client = get_client()
+
+    result = await client['AutomodActions'].find({'GuildID': str(guild_id)}).to_list()
+
+    await client.client.close()
     return [(str(i['_id']), i['RuleID'], i['RuleName'], i['Action'], i['Additional']) for i in result]
 
 
@@ -84,7 +96,7 @@ class AutomodActions(discord.Cog):
                 return
 
             self.storage_1.add_event(payload.rule_id, payload.message_id)
-            automod_actions = db_get_automod_actions(payload.guild_id)
+            automod_actions = await db_get_automod_actions(payload.guild_id)
             for automod_action in automod_actions:
                 if int(automod_action[1]) == payload.rule_id:
 
@@ -143,7 +155,7 @@ class AutomodActions(discord.Cog):
                                   message_reason: str = None):
         try:
             # verify count of rules
-            automod_db_actions = db_get_automod_actions(ctx.guild.id)
+            automod_db_actions = await db_get_automod_actions(ctx.guild.id)
             if len(automod_db_actions) >= int(get_key("AutomodActions_MaxActions", "5")):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_actions_max_reached"), ephemeral=True)
                 return
@@ -159,7 +171,7 @@ class AutomodActions(discord.Cog):
 
             if not automod_rule:
                 valid_rules = ', '.join([f"{rule.name}" for rule in automod_actions])
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_rule_doesnt_exist").format(rules=valid_rules),
+                await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "automod_rule_doesnt_exist")).format(rules=valid_rules),
                                   ephemeral=True)
                 return
 
@@ -181,10 +193,10 @@ class AutomodActions(discord.Cog):
             elif not message_reason:
                 message_reason = trl(0, ctx.guild.id, "automod_default")
 
-            action_id = db_add_automod_action(ctx.guild.id, automod_rule.id, rule_name, action,
+            action_id = await db_add_automod_action(ctx.guild.id, automod_rule.id, rule_name, action,
                                               additional=message_reason)
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "automod_added", append_tip=True).format(id=str(action_id)),
+                (await trl(ctx.user.id, ctx.guild.id, "automod_added", append_tip=True)).format(id=str(action_id)),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -204,7 +216,7 @@ class AutomodActions(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_rule_doesnt_exist_2"), ephemeral=True)
                 return
 
-            automod_actions = db_get_automod_actions(ctx.guild.id)
+            automod_actions = await db_get_automod_actions(ctx.guild.id)
             automod_rule = None
             for rule in automod_actions:
                 if rule[0] == action_id:
@@ -215,7 +227,7 @@ class AutomodActions(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_rule_doesnt_exist_2"), ephemeral=True)
                 return
 
-            db_remove_automod_action(ObjectId(action_id))
+            await db_remove_automod_action(ObjectId(action_id))
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_removed", append_tip=True), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -228,7 +240,7 @@ class AutomodActions(discord.Cog):
     @blocklist()
     async def automod_actions_list(self, ctx: discord.ApplicationContext):
         try:
-            automod_actions = db_get_automod_actions(ctx.guild.id)
+            automod_actions = await db_get_automod_actions(ctx.guild.id)
             if not automod_actions:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_actions_list_empty", append_tip=True),
                                   ephemeral=True)
@@ -236,7 +248,7 @@ class AutomodActions(discord.Cog):
 
             actions = '\n'.join([f"`{action[0]}`: {action[2]}: {action[3]}" for action in automod_actions])
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "automod_actions_list", append_tip=True).format(actions=actions),
+                (await trl(ctx.user.id, ctx.guild.id, "automod_actions_list", append_tip=True)).format(actions=actions),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)

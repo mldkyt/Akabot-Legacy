@@ -28,7 +28,7 @@ from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
-from database import client
+from database import get_client
 
 
 class VoteView(discord.ui.View):
@@ -51,12 +51,10 @@ class PrivacyPolicyView(discord.ui.View):
 
 
 class BugReportModal(discord.ui.Modal):
-    def __init__(self, user_id: int) -> None:
+    def __init__(self, user_id: int, title: str, description: str) -> None:
         super().__init__(title="Bug Report", timeout=600)
 
         self.user_id = user_id
-        title = trl(user_id, 0, "title")
-        description = trl(user_id, 0, "description")
         self.title_input = InputText(label=title, style=discord.InputTextStyle.short, max_length=100, min_length=8,
                                      required=True)
         self.description_input = InputText(label=description, style=discord.InputTextStyle.long, max_length=1000,
@@ -171,12 +169,10 @@ class BugReportModal(discord.ui.Modal):
 
 
 class FeatureModal(discord.ui.Modal):
-    def __init__(self, user_id: int) -> None:
+    def __init__(self, user_id: int, feedback_form_title: str, title: str, description: str) -> None:
         self.user_id = user_id
-        super().__init__(title=trl(user_id, 0, "feedback_feature_form_title"), timeout=600)
+        super().__init__(title=feedback_form_title, timeout=600)
 
-        title = trl(user_id, 0, "title")
-        description = trl(user_id, 0, "description")
         self.title_input = InputText(label=title, style=discord.InputTextStyle.short, max_length=100, min_length=8,
                                      required=True)
         self.description_input = InputText(label=description, style=discord.InputTextStyle.long, max_length=1000,
@@ -291,21 +287,22 @@ class FeatureModal(discord.ui.Modal):
 
 
 class ConfirmSubmitBugReport(discord.ui.View):
-    def __init__(self, user_id: int):
+    def __init__(self, user_id: int, agree: str, prefer_github: str):
         super().__init__()
         self.user_id = user_id
 
-        self.agree_button = discord.ui.Button(label=trl(user_id, 0, "feedback_agree"))
+        self.agree_button = discord.ui.Button(label=agree)
         self.agree_button.callback = self.submit
         self.add_item(self.agree_button)
 
-        self.cancel_github = discord.ui.Button(label=trl(user_id, 0, "feedback_prefer_github"),
+        self.cancel_github = discord.ui.Button(label=prefer_github,
                                                style=discord.ButtonStyle.secondary)
         self.cancel_github.callback = self.cancel_gh
         self.add_item(self.cancel_github)
 
     async def submit(self, interaction: discord.Interaction):
-        modal = BugReportModal(self.user_id)
+        modal = BugReportModal(self.user_id, title=await trl(interaction.user.id, interaction.guild.id, "title"),
+                               description=await trl(interaction.user.id, interaction.guild.id, "description"))
         await interaction.response.send_modal(modal)
 
     async def cancel_gh(self, interaction: discord.Interaction):
@@ -316,21 +313,22 @@ class ConfirmSubmitBugReport(discord.ui.View):
 
 
 class ConfirmSubmitFeatureRequest(discord.ui.View):
-    def __init__(self, user_id: int):
+    def __init__(self, user_id: int, agree: str, prefer_github: str):
         super().__init__()
         self.user_id = user_id
 
-        self.agree_button = discord.ui.Button(label=trl(user_id, 0, "feedback_agree"))
+        self.agree_button = discord.ui.Button(label=agree)
         self.agree_button.callback = self.submit
         self.add_item(self.agree_button)
 
-        self.cancel_github = discord.ui.Button(label=trl(user_id, 0, "feedback_prefer_github"),
+        self.cancel_github = discord.ui.Button(label=prefer_github,
                                                style=discord.ButtonStyle.secondary)
         self.cancel_github.callback = self.cancel_gh
         self.add_item(self.cancel_github)
 
     async def submit(self, interaction: discord.Interaction):
-        modal = FeatureModal(self.user_id)
+        modal = FeatureModal(self.user_id, feedback_form_title=await trl(interaction.user.id, 0, "feedback_feature_form_title"),
+                             title=await trl(interaction.user.id, 0, "title"), description=await trl(interaction.user.id, 0, "description"))
         await interaction.response.send_modal(modal)
 
     async def cancel_gh(self, interaction: discord.Interaction):
@@ -418,15 +416,19 @@ This is due to recent raids and attacks on the server due to the developer leavi
     @analytics("limits")
     @blocklist()
     async def cmd_limits(self, ctx: discord.ApplicationContext):
-        chat_summary_usage = client['ChatSummary'].count_documents({
+        client = get_client()
+
+        chat_summary_usage = await client['ChatSummary'].count_documents({
             'GuildID': str(ctx.guild.id), 'Enabled': True
         })
-        announcement_channel_usage = client['AnnouncementChannels'].count_documents({
+        announcement_channel_usage = await client['AnnouncementChannels'].count_documents({
             'GuildID': str(ctx.guild.id)
         })
-        roles_on_join_usage = client['RolesOnJoin'].count_documents({'GuildID': str(ctx.guild.id)})
-        giveaways_usage = client['Giveaways'].count_documents({'GuildID': str(ctx.guild.id)})
-        automod_actions_usage = client['AutomodActions'].count_documents({'GuildID': str(ctx.guild.id)})
+        roles_on_join_usage = await client['RolesOnJoin'].count_documents({'GuildID': str(ctx.guild.id)})
+        giveaways_usage = await client['Giveaways'].count_documents({'GuildID': str(ctx.guild.id)})
+        automod_actions_usage = await client['AutomodActions'].count_documents({'GuildID': str(ctx.guild.id)})
+
+        await client.client.close()
 
         chat_summary_limit = int(get_key("Max_ChatSummary_Channels", "3"))
         announcement_channel_limit = int(get_key('Max_AnnouncementChannels', '10'))
@@ -452,7 +454,9 @@ This is due to recent raids and attacks on the server due to the developer leavi
     async def report_bug(self, ctx: discord.ApplicationContext):
         await ctx.respond(content=trl(ctx.user.id, ctx.guild.id, "feedback_bug_report_disclaimer", append_tip=True),
                           ephemeral=True,
-                          view=ConfirmSubmitBugReport(ctx.user.id))
+                          view=ConfirmSubmitBugReport(ctx.user.id,
+                                                      agree=await trl(ctx.user.id, 0, "feedback_agree"),
+                                                      prefer_github=await trl(ctx.user.id, 0, "feedback_prefer_github")))
 
     @feedback_subcommand.command(name="feature", description="Suggest a feature")
     @cmds_ext.cooldown(1, 300, cmds_ext.BucketType.user)
@@ -461,7 +465,9 @@ This is due to recent raids and attacks on the server due to the developer leavi
     async def suggest_feature(self, ctx: discord.ApplicationContext):
         await ctx.respond(content=trl(ctx.user.id, ctx.guild.id, "feedback_feature_disclaimer", append_tip=True),
                           ephemeral=True,
-                          view=ConfirmSubmitFeatureRequest(ctx.user.id))
+                          view=ConfirmSubmitFeatureRequest(ctx.user.id,
+                                                           agree=await trl(ctx.user.id, 0, "feedback_agree"),
+                                                           prefer_github=await trl(ctx.user.id, 0, "feedback_prefer_github")))
 
     @discord.slash_command(name="about", description="Get information about the bot")
     @analytics("about")

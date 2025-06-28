@@ -15,11 +15,13 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-from database import client
+from database import get_client
 
 
-def get_setting(server_id: int, key: str, default):
+async def get_setting(server_id: int, key: str, default):
+    client = get_client()
     res = client['ServerSettings'].find_one({'GuildID': str(server_id)})
+    await client.client.close()
     if not res:
         return default
     if key not in res:
@@ -28,11 +30,14 @@ def get_setting(server_id: int, key: str, default):
     return res[key] if res and key in res else default
 
 
-def set_setting(server_id: int, key: str, value) -> None:
-    if client['ServerSettings'].count_documents({'GuildID': str(server_id)}) == 0:
-        client['ServerSettings'].insert_one({'GuildID': str(server_id)})
+async def set_setting(server_id: int, key: str, value) -> None:
+    client = get_client()
+    if await client['ServerSettings'].count_documents({'GuildID': str(server_id)}) == 0:
+        await client['ServerSettings'].insert_one({'GuildID': str(server_id)})
 
     if value is not None:
-        client['ServerSettings'].update_one({'GuildID': str(server_id)}, {'$set': {key: value}})
+        await client['ServerSettings'].update_one({'GuildID': str(server_id)}, {'$set': {key: value}})
     else:
-        client['ServerSettings'].update_one({'GuildID': str(server_id)}, {'$unset': {key: 1}})
+        await client['ServerSettings'].update_one({'GuildID': str(server_id)}, {'$unset': {key: 1}})
+
+    await client.client.close()

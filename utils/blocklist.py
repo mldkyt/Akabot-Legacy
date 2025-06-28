@@ -4,7 +4,7 @@ import sentry_sdk
 from discord.ext import commands as commands_ext
 from discord.ext.commands import CheckFailure
 
-from database import client
+from database import get_client
 from utils.config import get_key
 
 SFW_ONLY = get_key("SFW_ONLY", "false") == "true"
@@ -33,32 +33,44 @@ def check_blocklist(text: str) -> tuple[bool, str]:
         
     return False, ""
 
-def add_guild_to_blocklist(guild_id: str, text: str):
+async def add_guild_to_blocklist(guild_id: str, text: str):
+    client = get_client()
+
     for i in PERM_BLOCKLIST_WORDS:
         if i.lower() in text.lower():
             logging.debug("Adding guild %s to blocklist due to %s", str(guild_id), i.lower())
-            client["BlocklistedGuilds"].insert_one({"GuildID": guild_id, "Reason": f"Blocklisted: \"{text}\" had permanent blocklisted keyword \"{i}\""})
+            await client["BlocklistedGuilds"].insert_one({"GuildID": guild_id, "Reason": f"Blocklisted: \"{text}\" had permanent blocklisted keyword \"{i}\""})
 
-def add_member_to_blocklist(user_id: str, text: str):
+    await client.client.close()
+
+
+async def add_member_to_blocklist(user_id: str, text: str):
+    client = get_client()
+
     for i in PERM_BLOCKLIST_WORDS:
         if i.lower() in text.lower():
             logging.debug("Adding member %s to blocklist due to %s", str(user_id), i.lower())
-            client["BlocklistedUsers"].insert_one({"UserID": user_id, "Reason": f"Blocklisted: \"{text}\" had permanent blocklisted keyword \"{i}\""})
+            await client["BlocklistedUsers"].insert_one({"UserID": user_id, "Reason": f"Blocklisted: \"{text}\" had permanent blocklisted keyword \"{i}\""})
 
-def check_guild_blocklist(guild_id: str) -> tuple[bool, str]:
-    blocked = client["BlocklistedGuilds"].find_one({"GuildID": guild_id})
+async def check_guild_blocklist(guild_id: str) -> tuple[bool, str]:
+    client = get_client()
+    blocked = await client["BlocklistedGuilds"].find_one({"GuildID": guild_id})
+    await client.client.close()
     if blocked:
         logging.debug("Server %s is blocked with reason %s", str(guild_id), blocked["Reason"])
         return True, blocked["Reason"]
 
     return False, ""
 
-def check_user_blocklist(user_id: str) -> tuple[bool, str]:
-    blocked = client["BlocklistedUsers"].find_one({"UserID": user_id})
+async def check_user_blocklist(user_id: str) -> tuple[bool, str]:
+    client = get_client()
+
+    blocked = await client["BlocklistedUsers"].find_one({"UserID": user_id})
     if blocked:
         logging.debug("User %s is blocked with reason %s", str(user_id), blocked["Reason"])
         return True, blocked["Reason"]
 
+    await client.client.close()
     return False, ""
 
 def blocklist():

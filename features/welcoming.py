@@ -31,8 +31,8 @@ class WelcomingCache:
     def __init__(self):
         self.cache = []
 
-    def member_join(self, member: discord.Member, welcome_message: discord.Message):
-        grace_period_minutes = get_setting(member.guild.id, "welcome_grace_period_minutes", "5")
+    async def member_join(self, member: discord.Member, welcome_message: discord.Message):
+        grace_period_minutes = await get_setting(member.guild.id, "welcome_grace_period_minutes", "5")
         self.cache.append({
             "GuildID": str(member.guild.id),
             "MemberID": str(member.id),
@@ -62,12 +62,12 @@ class Welcoming(discord.Cog):
     @discord.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         try:
-            target_channel_id = get_setting(member.guild.id, 'welcome_channel', '0')
+            target_channel_id = await get_setting(member.guild.id, 'welcome_channel', '0')
             if target_channel_id == '0':
                 return  # The channel was not set and was initialised as we just ran this
-            message_type = get_setting(member.guild.id, 'welcome_type', 'embed')  # embed or text
-            message_title = get_setting(member.guild.id, 'welcome_title', 'Welcome')  # embed title (if type is embed)
-            message_text = get_setting(member.guild.id, 'welcome_text',
+            message_type = await get_setting(member.guild.id, 'welcome_type', 'embed')  # embed or text
+            message_title = await get_setting(member.guild.id, 'welcome_title', 'Welcome')  # embed title (if type is embed)
+            message_text = await get_setting(member.guild.id, 'welcome_text',
                                        'Welcome {user} to {server}!')  # text of the message or description of embed
 
             target_channel = member.guild.get_channel(int(target_channel_id))
@@ -91,10 +91,10 @@ class Welcoming(discord.Cog):
                 embed = discord.Embed(title=message_title, description=message_text,
                                       color=discord.Color.green())  # Create the embed
                 msg = await target_channel.send(embed=embed)  # Send it in the welcoming channel
-                self.cache.member_join(member, msg)
+                await self.cache.member_join(member, msg)
             if message_type == 'text':
                 msg = await target_channel.send(content=message_text)  # Send it as text only
-                self.cache.member_join(member, msg)
+                await self.cache.member_join(member, msg)
 
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -105,7 +105,7 @@ class Welcoming(discord.Cog):
             if welcome_message_id is None:
                 return
 
-            welcome_channel_id = get_setting(member.guild.id, 'welcome_channel', '0')
+            welcome_channel_id = await get_setting(member.guild.id, 'welcome_channel', '0')
             if welcome_channel_id == '0':
                 return
 
@@ -117,14 +117,14 @@ class Welcoming(discord.Cog):
             if message is None:
                 return
 
-            grace_period_minutes = get_setting(member.guild.id, 'welcome_grace_period_minutes', '5')
+            grace_period_minutes = await get_setting(member.guild.id, 'welcome_grace_period_minutes', '5')
 
             await message.delete()
             self.cache.remove_from_cache(member)
 
             emb = discord.Embed(
-                title=trl(0, member.guild.id, "welcome_grace_period_log_title").format(minutes=str(grace_period_minutes)),
-                description=trl(0, member.guild.id, "welcome_grace_period_log_description").format(minutes=str(grace_period_minutes), mention=member.mention, displayname=member.display_name, name=member.name, id=str(member.id)),
+                title=(await trl(0, member.guild.id, "welcome_grace_period_log_title")).format(minutes=str(grace_period_minutes)),
+                description=(await trl(0, member.guild.id, "welcome_grace_period_log_description")).format(minutes=str(grace_period_minutes), mention=member.mention, displayname=member.display_name, name=member.name, id=str(member.id)),
                 color=discord.Color.red()
             )
 
@@ -139,12 +139,12 @@ class Welcoming(discord.Cog):
                 await self.delete_welcome_message(member)
                 return
 
-            target_channel_id = get_setting(member.guild.id, 'goodbye_channel', '0')
+            target_channel_id = await get_setting(member.guild.id, 'goodbye_channel', '0')
             if target_channel_id == '0':
                 return  # The channel was not set and was initialised as we just ran this
-            message_type = get_setting(member.guild.id, 'goodbye_type', 'embed')  # embed or text
-            message_title = get_setting(member.guild.id, 'goodbye_title', 'Goodbye')  # embed title (if type is embed)
-            message_text = get_setting(member.guild.id, 'goodbye_text',
+            message_type = await get_setting(member.guild.id, 'goodbye_type', 'embed')  # embed or text
+            message_title = await get_setting(member.guild.id, 'goodbye_title', 'Goodbye')  # embed title (if type is embed)
+            message_text = await get_setting(member.guild.id, 'goodbye_text',
                                        'Goodbye {user}!')  # text of the message or description of embed
 
             target_channel = member.guild.get_channel(int(target_channel_id))
@@ -183,17 +183,17 @@ class Welcoming(discord.Cog):
     @blocklist()
     async def welcome_list_settings(self, ctx: discord.ApplicationContext):
         try:
-            welcome_channel = get_setting(ctx.guild.id, 'welcome_channel', '0')
-            welcome_type = get_setting(ctx.guild.id, 'welcome_type', 'embed')
-            welcome_title = get_setting(ctx.guild.id, 'welcome_title', 'Welcome')
-            welcome_text = get_setting(ctx.guild.id, 'welcome_text', 'Welcome {user} to {server}!')
+            welcome_channel = await get_setting(ctx.guild.id, 'welcome_channel', '0')
+            welcome_type = await get_setting(ctx.guild.id, 'welcome_type', 'embed')
+            welcome_title = await get_setting(ctx.guild.id, 'welcome_title', 'Welcome')
+            welcome_text = await get_setting(ctx.guild.id, 'welcome_text', 'Welcome {user} to {server}!')
 
             embed = discord.Embed(title=trl(ctx.user.id, ctx.guild.id, "welcome_settings_embed_title"),
                                   color=discord.Color.blurple())
-            embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "logging_channel"), value=welcome_channel)
-            embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "welcome_settings_type"), value=welcome_type)
-            embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "welcome_settings_title"), value=welcome_title)
-            embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "welcome_settings_text"), value=welcome_text)
+            embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "logging_channel"), value=welcome_channel)
+            embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "welcome_settings_type"), value=welcome_type)
+            embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "welcome_settings_title"), value=welcome_title)
+            embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "welcome_settings_text"), value=welcome_text)
 
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:
@@ -210,20 +210,20 @@ class Welcoming(discord.Cog):
     async def welcome_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
             # Get old channel
-            old_welcome_channel_id = get_setting(ctx.guild.id, "welcome_channel", '0')
+            old_welcome_channel_id = await get_setting(ctx.guild.id, "welcome_channel", '0')
             old_welcome_channel = ctx.guild.get_channel(int(old_welcome_channel_id))
 
             # Set new channel
-            set_setting(ctx.guild.id, 'welcome_channel', str(channel.id))
+            await set_setting(ctx.guild.id, 'welcome_channel', str(channel.id))
 
             # Logging embed
-            logging_embed = discord.Embed(title=trl(ctx.user.id, ctx.guild.id, "welcome_channel_log_title"))
-            logging_embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
+            logging_embed = discord.Embed(title=await trl(ctx.user.id, ctx.guild.id, "welcome_channel_log_title"))
+            logging_embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
             if old_welcome_channel is None:
-                logging_embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "logging_channel"),
+                logging_embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "logging_channel"),
                                         value=f"{channel.mention}")
             else:
-                logging_embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "logging_channel"),
+                logging_embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "logging_channel"),
                                         value=f"{old_welcome_channel.mention} -> {channel.mention}")
 
             # Send log
@@ -231,7 +231,7 @@ class Welcoming(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "welcome_channel_set", append_tip=True).format(channel=channel.mention),
+                (await trl(ctx.user.id, ctx.guild.id, "welcome_channel_set", append_tip=True)).format(channel=channel.mention),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -248,15 +248,15 @@ class Welcoming(discord.Cog):
     async def welcome_type(self, ctx: discord.ApplicationContext, message_type: str):
         try:
             # Get old response type
-            old_welcome_type = get_setting(ctx.guild.id, "welcome_type", '0')
+            old_welcome_type = await get_setting(ctx.guild.id, "welcome_type", '0')
 
             # Set new response type
-            set_setting(ctx.guild.id, 'welcome_type', message_type)
+            await set_setting(ctx.guild.id, 'welcome_type', message_type)
 
             # Logging embed
-            logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "welcome_type_log_title"))
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_response_type"),
+            logging_embed = discord.Embed(title=await trl(0, ctx.guild.id, "welcome_type_log_title"))
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_response_type"),
                                     value=f"{old_welcome_type} -> {message_type}")
 
             # Send log
@@ -264,7 +264,7 @@ class Welcoming(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "welcome_type_set", append_tip=True).format(type=message_type),
+                (await trl(ctx.user.id, ctx.guild.id, "welcome_type_set", append_tip=True)).format(type=message_type),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -280,21 +280,21 @@ class Welcoming(discord.Cog):
     async def welcome_title(self, ctx: discord.ApplicationContext, title: str):
         try:
             # Get old response title
-            old_welcome_title = get_setting(ctx.guild.id, "welcome_title", '0')
+            old_welcome_title = await get_setting(ctx.guild.id, "welcome_title", '0')
 
             # Set new message
-            set_setting(ctx.guild.id, 'welcome_title', title)
+            await set_setting(ctx.guild.id, 'welcome_title', title)
 
             # Logging embed
-            logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "welcome_title_log_title"))
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "title"), value=f"{old_welcome_title} -> {title}")
+            logging_embed = discord.Embed(title=await trl(0, ctx.guild.id, "welcome_title_log_title"))
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "title"), value=f"{old_welcome_title} -> {title}")
 
             # Send log
             await log_into_logs(ctx.guild, logging_embed)
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "welcome_title_set", append_tip=True).format(title=title),
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "welcome_title_set", append_tip=True)).format(title=title),
                               ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -310,21 +310,21 @@ class Welcoming(discord.Cog):
     async def welcome_text(self, ctx: discord.ApplicationContext, text: str):
         try:
             # Get old welcome text
-            old_welcome_text = get_setting(ctx.guild.id, "welcome_text", '0')
+            old_welcome_text = await get_setting(ctx.guild.id, "welcome_text", '0')
 
             # Set new welcome text
-            set_setting(ctx.guild.id, 'welcome_text', text)
+            await set_setting(ctx.guild.id, 'welcome_text', text)
 
             # Logging embed
-            logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "welcome_text_log_title"))
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_text"), value=f"{old_welcome_text} -> {text}")
+            logging_embed = discord.Embed(title=await trl(0, ctx.guild.id, "welcome_text_log_title"))
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_text"), value=f"{old_welcome_text} -> {text}")
 
             # Send log
             await log_into_logs(ctx.guild, logging_embed)
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "welcome_text_sent", append_tip=True).format(text=text),
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "welcome_text_sent", append_tip=True)).format(text=text),
                               ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -340,17 +340,17 @@ class Welcoming(discord.Cog):
     async def welcome_grace_period(self, ctx: discord.ApplicationContext, minutes: int):
         try:
             # Old grace period
-            old_grace_period = get_setting(ctx.guild.id, "welcome_grace_period_minutes", '5')
+            old_grace_period = await get_setting(ctx.guild.id, "welcome_grace_period_minutes", '5')
 
             # Set new grace period
-            set_setting(ctx.guild.id, 'welcome_grace_period_minutes', minutes)
+            await set_setting(ctx.guild.id, 'welcome_grace_period_minutes', minutes)
 
             # logging embed
             emb = discord.Embed(
                 title=trl(0, ctx.guild.id, "welcome_grace_period_log_setting_title"),
                 fields=[
                     discord.EmbedField(
-                        name=trl(0, ctx.guild.id, "welcome_grace_period_log_minutes_label"),
+                        name=await trl(0, ctx.guild.id, "welcome_grace_period_log_minutes_label"),
                         value=f"{old_grace_period} -> {minutes}"
                     )
                 ],
@@ -361,7 +361,7 @@ class Welcoming(discord.Cog):
             await log_into_logs(ctx.guild, emb)
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "welcome_grace_period_set", append_tip=True).format(minutes=minutes), ephemeral=True)
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "welcome_grace_period_set", append_tip=True)).format(minutes=minutes), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
@@ -378,17 +378,17 @@ class Welcoming(discord.Cog):
     @blocklist()
     async def goodbye_list_settings(self, ctx: discord.ApplicationContext):
         try:
-            goodbye_channel = get_setting(ctx.guild.id, 'goodbye_channel', '0')
-            goodbye_type = get_setting(ctx.guild.id, 'goodbye_type', 'embed')
-            goodbye_title = get_setting(ctx.guild.id, 'goodbye_title', 'Welcome')
-            goodbye_text = get_setting(ctx.guild.id, 'goodbye_text', 'Welcome {user} to {server}!')
+            goodbye_channel = await get_setting(ctx.guild.id, 'goodbye_channel', '0')
+            goodbye_type = await get_setting(ctx.guild.id, 'goodbye_type', 'embed')
+            goodbye_title = await get_setting(ctx.guild.id, 'goodbye_title', 'Welcome')
+            goodbye_text = await get_setting(ctx.guild.id, 'goodbye_text', 'Welcome {user} to {server}!')
 
-            embed = discord.Embed(title=trl(ctx.user.id, ctx.guild.id, "goodbye_settings_embed_title"),
+            embed = discord.Embed(title=await trl(ctx.user.id, ctx.guild.id, "goodbye_settings_embed_title"),
                                   color=discord.Color.blurple())
-            embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "logging_channel"), value=goodbye_channel)
-            embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "goodbye_settings_type"), value=goodbye_type)
-            embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "goodbye_settings_title"), value=goodbye_title)
-            embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "goodbye_settings_text"), value=goodbye_text)
+            embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "logging_channel"), value=goodbye_channel)
+            embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "goodbye_settings_type"), value=goodbye_type)
+            embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "goodbye_settings_title"), value=goodbye_title)
+            embed.add_field(name=await trl(ctx.user.id, ctx.guild.id, "goodbye_settings_text"), value=goodbye_text)
 
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:
@@ -405,15 +405,15 @@ class Welcoming(discord.Cog):
     async def goodbye_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
             # Get old goodbye channel
-            old_goodbye_channel = get_setting(ctx.guild.id, "goodbye_channel", '0')
+            old_goodbye_channel = await get_setting(ctx.guild.id, "goodbye_channel", '0')
 
             # Set new goodbye channel
-            set_setting(ctx.guild.id, 'goodbye_channel', str(channel.id))
+            await set_setting(ctx.guild.id, 'goodbye_channel', str(channel.id))
 
             # Logging embed
-            logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "goodbye_channel_log_title"))
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_channel"),
+            logging_embed = discord.Embed(title=await trl(0, ctx.guild.id, "goodbye_channel_log_title"))
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_channel"),
                                     value=f"{old_goodbye_channel} -> {channel.mention}")
 
             # Send log
@@ -421,7 +421,7 @@ class Welcoming(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "goodbye_channel_set", append_tip=True).format(channel=channel.mention),
+                (await trl(ctx.user.id, ctx.guild.id, "goodbye_channel_set", append_tip=True)).format(channel=channel.mention),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -438,15 +438,15 @@ class Welcoming(discord.Cog):
     async def goodbye_type(self, ctx: discord.ApplicationContext, message_type: str):
         try:
             # Get old goodbye type
-            old_goodbye_type = get_setting(ctx.guild.id, "goodbye_type", 'embed')
+            old_goodbye_type = await get_setting(ctx.guild.id, "goodbye_type", 'embed')
 
             # Set new goodbye type
-            set_setting(ctx.guild.id, 'goodbye_type', message_type)
+            await set_setting(ctx.guild.id, 'goodbye_type', message_type)
 
             # Logging embed
-            logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "goodbye_type_log_title"))
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_response_type"),
+            logging_embed = discord.Embed(title=await trl(0, ctx.guild.id, "goodbye_type_log_title"))
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_response_type"),
                                     value=f"{old_goodbye_type} -> {message_type}")
 
             # Send log
@@ -454,7 +454,7 @@ class Welcoming(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "goodbye_type_set", append_tip=True).format(type=message_type),
+                (await trl(ctx.user.id, ctx.guild.id, "goodbye_type_set", append_tip=True)).format(type=message_type),
                 ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -470,21 +470,21 @@ class Welcoming(discord.Cog):
     async def goodbye_title(self, ctx: discord.ApplicationContext, title: str):
         try:
             # Get old goodbye title
-            old_goodbye_title = get_setting(ctx.guild.id, "goodbye_title", 'Welcome')
+            old_goodbye_title = await get_setting(ctx.guild.id, "goodbye_title", 'Welcome')
 
             # Set new goodbye title
-            set_setting(ctx.guild.id, 'goodbye_title', title)
+            await set_setting(ctx.guild.id, 'goodbye_title', title)
 
             # Logging embed
-            logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "goodbye_title_log_title"))
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "title"), value=f"{old_goodbye_title} -> {title}")
+            logging_embed = discord.Embed(title=await trl(0, ctx.guild.id, "goodbye_title_log_title"))
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "title"), value=f"{old_goodbye_title} -> {title}")
 
             # Send log
             await log_into_logs(ctx.guild, logging_embed)
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "goodbye_title_set", append_tip=True).format(title=title),
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "goodbye_title_set", append_tip=True)).format(title=title),
                               ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -500,21 +500,21 @@ class Welcoming(discord.Cog):
     async def goodbye_text(self, ctx: discord.ApplicationContext, text: str):
         try:
             # Get old goodbye text
-            old_goodbye_text = get_setting(ctx.guild.id, "goodbye_text", 'Welcome {user} to {server}!')
+            old_goodbye_text = await get_setting(ctx.guild.id, "goodbye_text", 'Welcome {user} to {server}!')
 
             # Set new goodbye text
-            set_setting(ctx.guild.id, 'goodbye_text', text)
+            await set_setting(ctx.guild.id, 'goodbye_text', text)
 
             # Logging embed
-            logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "goodbye_text_log_title"))
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
-            logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_text"), value=f"{old_goodbye_text} -> {text}")
+            logging_embed = discord.Embed(title=await trl(0, ctx.guild.id, "goodbye_text_log_title"))
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
+            logging_embed.add_field(name=await trl(0, ctx.guild.id, "logging_text"), value=f"{old_goodbye_text} -> {text}")
 
             # Send log
             await log_into_logs(ctx.guild, logging_embed)
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "goodbye_text_set", append_tip=True).format(text=text),
+            await ctx.respond((await trl(ctx.user.id, ctx.guild.id, "goodbye_text_set", append_tip=True)).format(text=text),
                               ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
