@@ -62,19 +62,13 @@ def add_xp(guild_id: int, user_id: int, xp: int):
 
 
 def get_level_for_xp(guild_id: int, xp: int) -> int:
-    multiplier = calc_multiplier(guild_id)
     base_xp = int(get_setting(guild_id, 'leveling_xp_per_level', '500'))
-    xp_per_level = multiplier * base_xp
-    # integer division gives how many full levels you’ve earned
-    return xp // xp_per_level
+    return max(0, xp) // base_xp
 
 
 def get_xp_for_level(guild_id: int, level: int) -> int:
-    multiplier = calc_multiplier(guild_id)
     base_xp = int(get_setting(guild_id, 'leveling_xp_per_level', '500'))
-    xp_per_level = multiplier * base_xp
-    # simply level × xp_per_level
-    return level * xp_per_level
+    return max(0, level) * base_xp
 
 
 def add_mult(guild_id: int, name: str, multiplier: int, start_date_month: int, start_date_day: int,
