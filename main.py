@@ -35,7 +35,7 @@ load_dotenv()
 from features import welcoming, leveling, antiraid, chat_streaks, chat_revive, chat_summary, reaction_roles, \
     logging_mod, admin_cmds, giveaways, feedback_cmd, moderation, verification, roles_on_join, \
     heartbeat, automod_actions, power_outage_announcement, per_user_settings, server_settings, \
-    auto_react, auto_response, announcement_channels, tickets, debug_commands, birthday_announcements, \
+    auto_react, auto_response, announcement_channels, tickets, birthday_announcements, \
     send_server_count, suggestions, temporary_vc, rp, word_scrambler, statistics_channels, \
     anonymous_quefessions, analytics, economy, message_time_capsule, sticky_message, counting, denylist, \
     message_schedule, voice_channel_alerts, module_toggling_mod, private_temporary_vc
@@ -184,7 +184,6 @@ bot.add_cog(per_user_settings.PerUserSettings(bot))
 bot.add_cog(server_settings.ServerSettings())
 bot.add_cog(announcement_channels.AnnouncementChannels(bot))
 bot.add_cog(tickets.Tickets(bot))
-bot.add_cog(debug_commands.DebugCommands(bot))
 bot.add_cog(birthday_announcements.BirthdayAnnouncements(bot))
 bot.add_cog(send_server_count.SendServerCount(bot))
 bot.add_cog(suggestions.Suggestions(bot))
