@@ -14,34 +14,44 @@ class Counting(discord.Cog):
         self.bot = bot
 
     async def handle_fail(self, message: discord.Message, data: dict):
-        await message.add_reaction("❌")
-        if data['Count'] > 2:
-            await message.reply(
-                trl(0, message.guild.id, "counting_failed").format(user=message.author.mention, count=str(data["Count"] - 1)))
+        try:
+            await message.add_reaction("❌")
+            if data['Count'] > 2:
+                await message.reply(
+                    trl(0, message.guild.id, "counting_failed").format(user=message.author.mention,
+                                                                       count=str(data["Count"] - 1)))
 
-        client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id), },
-                                      {'$set': {'Count': 1, 'LastMember': '0'}})
+            client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id), },
+                                          {'$set': {'Count': 1, 'LastMember': '0'}})
+        except Exception as e:
+            sentry_sdk.capture_exception(e, scope='Akabot > Counting > handle_fail')
 
     async def fetch_counting_channel(self, guild_id: str, channel_id: str):
-        guild = await self.bot.fetch_guild(int(guild_id))
-        if guild is None:
-            return
+        try:
+            guild = await self.bot.fetch_guild(int(guild_id))
+            if guild is None:
+                return
 
-        channel = await guild.fetch_channel(int(channel_id))
-        if channel is None:
-            return
+            channel = await guild.fetch_channel(int(channel_id))
+            if channel is None:
+                return
 
-        await channel.history(limit=100).flatten()
+            await channel.history(limit=100).flatten()
+        except Exception as e:
+            sentry_sdk.capture_exception(e, scope='Akabot > Counting > fetch_counting_channel')
 
     @discord.Cog.listener()
     async def on_ready(self):
-        tasks = []
+        try:
+            tasks = []
 
-        for i in client["Counting"].find():
-            tasks.append(asyncio.create_task(self.fetch_counting_channel(i["GuildID"], i["ChannelID"])))
+            for i in client["Counting"].find():
+                tasks.append(asyncio.create_task(self.fetch_counting_channel(i["GuildID"], i["ChannelID"])))
 
-        logging.info("Gathering %s tasks", str(len(tasks)))
-        await asyncio.gather(*tasks)
+            logging.info("Gathering %s tasks", str(len(tasks)))
+            await asyncio.gather(*tasks)
+        except Exception as e:
+            sentry_sdk.capture_exception(e, scope='Akabot > Counting > on_ready')
 
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -94,19 +104,22 @@ class Counting(discord.Cog):
             client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
                                           {'$set': {'LastMember': str(message.author.id)}})
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            sentry_sdk.capture_exception(e, scope='Akabot > Counting > on_message')
 
     @discord.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
-        if after.author.bot:
-            return
+        try:
+            if after.author.bot:
+                return
 
-        data = client["Counting"].find_one({'GuildID': str(after.guild.id), 'ChannelID': str(after.channel.id)})
+            data = client["Counting"].find_one({'GuildID': str(after.guild.id), 'ChannelID': str(after.channel.id)})
 
-        if data is None:
-            return
+            if data is None:
+                return
 
-        await self.handle_fail(after, data)
+            await self.handle_fail(after, data)
+        except Exception as e:
+            sentry_sdk.capture_exception(e, scope='Akabot > Counting > on_message_edit')
 
     counting = discord.SlashCommandGroup(name="counting_channels", description="Configuration for counting channels")
 
@@ -124,7 +137,7 @@ class Counting(discord.Cog):
 
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "counting_channel_added", append_tip=True), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            sentry_sdk.capture_exception(e, scope='Akabot > Counting > /add_channel')
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @counting.command(name="remove_channel", description="Remove a channel from counting channels")
@@ -140,5 +153,5 @@ class Counting(discord.Cog):
 
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "counting_channel_removed"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            sentry_sdk.capture_exception(e, scope='Akabot > Counting > /remove_channel')
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
