@@ -34,7 +34,7 @@ load_dotenv()
 
 from features import welcoming, leveling, antiraid, chat_streaks, chat_revive, chat_summary, reaction_roles, \
     logging_mod, admin_cmds, giveaways, feedback_cmd, moderation, verification, roles_on_join, \
-    heartbeat, automod_actions, power_outage_announcement, per_user_settings, server_settings, \
+    heartbeat, automod_actions, per_user_settings, server_settings, \
     auto_react, auto_response, announcement_channels, tickets, birthday_announcements, \
     send_server_count, suggestions, temporary_vc, word_scrambler, statistics_channels, \
     anonymous_quefessions, analytics, economy, message_time_capsule, sticky_message, counting, denylist, \
@@ -179,7 +179,6 @@ bot.add_cog(verification.Verification(bot))
 bot.add_cog(roles_on_join.RolesOnJoin(bot))
 bot.add_cog(heartbeat.Heartbeat())
 bot.add_cog(automod_actions.AutomodActions(bot))
-bot.add_cog(power_outage_announcement.PowerOutageAnnouncement(bot))
 bot.add_cog(per_user_settings.PerUserSettings(bot))
 bot.add_cog(server_settings.ServerSettings())
 bot.add_cog(announcement_channels.AnnouncementChannels(bot))

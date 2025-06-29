@@ -54,27 +54,31 @@ class ChatRevive(discord.Cog):
     @tasks.loop(minutes=1)
     async def revive_channels(self):
         try:
-            for guild in self.bot.guilds:
-                data = client['ChatRevive'].find({'GuildID': str(guild.id)}).to_list()
-                for revive_channel in data:
-                    if revive_channel['Revived']:
+            data = client['ChatRevive'].find({}).to_list()
+
+            for revive_channel in data:
+                guild = self.bot.get_guild(int(revive_channel['GuildID']))
+                if guild is None:
+                    continue
+
+                if revive_channel['Revived']:
+                    continue
+
+                if time.time() - revive_channel['LastMessage'] > revive_channel['RevivalTime']:
+                    role = guild.get_role(int(revive_channel['RoleID']))
+                    if role is None:
                         continue
 
-                    if time.time() - revive_channel['LastMessage'] > revive_channel['RevivalTime']:
-                        role = guild.get_role(int(revive_channel['RoleID']))
-                        if role is None:
-                            continue
+                    channel = guild.get_channel(int(revive_channel['ChannelID']))
+                    if channel is None:
+                        continue
 
-                        channel = guild.get_channel(int(revive_channel['ChannelID']))
-                        if channel is None:
-                            continue
+                    if not channel.can_send():
+                        continue
 
-                        if not channel.can_send():
-                            continue
-
-                        await channel.send(f'{role.mention}, this channel has been inactive for a while.')
-                        client['ChatRevive'].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
-                                                        {'$set': {'Revived': True}})
+                    await channel.send(f'{role.mention}, this channel has been inactive for a while.')
+                    client['ChatRevive'].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
+                                                    {'$set': {'Revived': True}})
         except Exception as e:
             sentry_sdk.capture_exception(e)
 

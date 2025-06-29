@@ -22,7 +22,8 @@ import sentry_sdk
 from discord.ext import tasks, pages
 
 from utils.languages import get_translation_for_key_localized as _
-from utils.statistic_channels import db_get_statistic_channels, db_set_statistic_channel, db_remove_statistic_channel
+from utils.statistic_channels import db_get_statistic_channels, db_set_statistic_channel, db_remove_statistic_channel, \
+    db_get_all_statistic_channels
 
 
 def format_text(guild: discord.Guild, text: str):
@@ -144,8 +145,15 @@ class StatisticChannels(discord.Cog):
     async def update_statistic_channels(self):
         try:
             tasks = []
-            for i in self.bot.guilds:
-                tasks.append(update_statistic_channels_for_guild(i))
+
+            data = db_get_all_statistic_channels()
+
+            for i in data:
+                guild = self.bot.get_guild(int(i['GuildID']))
+                if guild is None:
+                    continue
+
+                tasks.append(update_statistic_channels_for_guild(guild))
 
             await asyncio.gather(*tasks)
         except Exception as e:

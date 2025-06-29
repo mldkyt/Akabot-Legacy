@@ -23,6 +23,12 @@ def db_get_statistic_channels(guild_id: int):
 
     return data
 
+def db_get_all_statistic_channels():
+    """Returns an array of {GuildID: str, ChannelID: str, StatisticText: str}"""
+    data = client['StatisticChannels'].find({}).to_list()
+
+    return data
+
 
 def db_set_statistic_channel(guild_id: int, channel_id: int, statistic_text: str):
     """Updates or creates a record in DB"""

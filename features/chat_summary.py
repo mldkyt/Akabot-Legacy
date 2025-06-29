@@ -37,13 +37,12 @@ from utils.settings import get_setting, set_setting
 from utils.tzutil import get_now_for_server
 
 
-def init(guild_id: str, channel_id: str):
+def enable(guild_id: str, channel_id: str):
     if client['ChatSummary'].count_documents(
             {'GuildID': guild_id, 'ChannelID': channel_id}) == 0:
         client['ChatSummary'].insert_one({
             'GuildID': guild_id,
             'ChannelID': channel_id,
-            'Enabled': False,
             'MessageCount': 0,
             'Keywords': []
         })
@@ -59,6 +58,20 @@ def init(guild_id: str, channel_id: str):
             'MessageCount': 0,
             'Keywords': []
         })
+
+def disable(guild_id: str, channel_id: str):
+    client['ChatSummary'].delete_one({
+        'GuildID': guild_id,
+        'ChannelID': channel_id
+    })
+    client['YearlyChatSummary'].delete_one({
+        'GuildID': guild_id,
+        'ChannelID': channel_id
+    })
+    client['MonthlyChatSummary'].delete_one({
+        'GuildID': guild_id,
+        'ChannelID': channel_id
+    })
 
 
 def inc(msg: discord.Message):
@@ -88,6 +101,20 @@ def inc(msg: discord.Message):
     client['ChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
     client['YearlyChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
     client['MonthlyChatSummary'].update_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)}, upd)
+
+
+def migration_1():
+    """Migrate enabled parameter to exists/not exists"""
+
+    if any(['Enabled' in i for i in client['ChatSummary'].find({}).to_list()]):
+        client['ChatSummary'].delete_many({'Enabled': False})
+        client['ChatSummary'].update_many({
+            'Enabled': True
+        }, {
+            '$unset': {
+                'Enabled': ""
+            }
+        })
 
 
 class OpenPaginatorView(View):
@@ -203,6 +230,7 @@ class ChatSummary(discord.Cog):
     def __init__(self, bot: discord.Bot) -> None:
         super().__init__()
         self.bot = bot
+        migration_1()
 
     @discord.Cog.listener()
     async def on_ready(self):
@@ -216,8 +244,6 @@ class ChatSummary(discord.Cog):
 
             if message.author.bot:
                 return
-
-            init(str(message.guild.id), str(message.channel.id))
 
             inc(message)
         except Exception as e:
@@ -236,7 +262,6 @@ class ChatSummary(discord.Cog):
             if countedits == "False":
                 return
 
-            init(str(new_message.guild.id), str(new_message.channel.id))
             inc(new_message)
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -244,7 +269,7 @@ class ChatSummary(discord.Cog):
     @tasks.loop(minutes=1)
     async def summarize(self):
         try:
-            res = client['ChatSummary'].find({'Enabled': True}).to_list()
+            res = client['ChatSummary'].find({}).to_list()
             for i in res:
                 yesterday = get_now_for_server(i['GuildID'])
 
@@ -316,21 +341,20 @@ class ChatSummary(discord.Cog):
     async def command_add(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
             res = client['ChatSummary'].count_documents({
-                'GuildID': str(ctx.guild.id), 'Enabled': True
+                'GuildID': str(ctx.guild.id)
             })
             if res > int(get_key("Max_ChatSummary_Channels", "3")):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "limits_max_chatsummary_channels"))
                 return
 
-            # Insert chat summary element if not found
-            init(str(ctx.guild.id), str(ctx.channel.id))
-
-            # Set enabled to true
-            res = client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)},
-                                                   {'$set': {'Enabled': True}})
-            if res.modified_count == 0:
+            # Enable
+            res = client['ChatSummary'].find_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})
+            if res is not None:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_summary_add_already_added"), ephemeral=True)
                 return
+
+            # Insert chat summary element if not found
+            enable(str(ctx.guild.id), str(ctx.channel.id))
 
             # Logging embed
             logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "chat_summary_add_log_title"))
@@ -354,10 +378,11 @@ class ChatSummary(discord.Cog):
     @blocklist()
     async def command_remove(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
-            res = client['ChatSummary'].update_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)},
-                                                   {'$set': {'Enabled': False}})
-            if res.modified_count == 0:
+            res = client['ChatSummary'].find_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})
+            if res is None:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'chat_summary_remove_already_removed'), ephemeral=True)
+
+            disable(str(ctx.guild.id), str(channel.id))
 
             # Logging embed
             logging_embed = discord.Embed(title=trl(ctx.user.id, ctx.guild.id, "chat_summary_remove_log_title"))
