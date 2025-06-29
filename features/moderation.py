@@ -400,7 +400,7 @@ class Moderation(discord.Cog):
                     continue
                 if exclude_user and message.author == exclude_user:
                     continue
-                if (datetime.datetime.now(datetime.UTC) - message.created_at).total_seconds() >= 1209600:
+                if (datetime.datetime.now(datetime.timezone.utc) - message.created_at).total_seconds() >= 1209600:
                     continue
                 messages.append(message)
 
