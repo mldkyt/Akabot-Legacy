@@ -15,6 +15,7 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 import asyncio
+import datetime
 import logging
 import re
 
@@ -134,12 +135,20 @@ class V2TemporaryVCMenu(View):
     def __init__(self):
         super().__init__(timeout=None)
 
+        self.last_vc_name_change = None
+
     @discord.ui.button(label='Change Name', style=discord.ButtonStyle.primary)
     async def change_name(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
             if not get_setting(interaction.guild.id, "module_temporary_vc_enabled", True):
                 await interaction.respond("The module temporary_vc is disabled", ephemeral=True)
                 return
+
+            if self.last_vc_name_change is not None and (datetime.datetime.now(datetime.timezone.utc) - self.last_vc_name_change).total_seconds() < 30:
+                await interaction.respond("Please slow down with renaming the voice channel", ephemeral=True)
+                return
+
+            self.last_vc_name_change = datetime.datetime.now(datetime.timezone.utc)
 
             data = client['PrivateTemporaryVC'].find_one(
                 {'ChannelID': str(interaction.channel.id), 'GuildID': str(interaction.guild.id)})
