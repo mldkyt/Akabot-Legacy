@@ -270,7 +270,6 @@ async def new_temporary_channel(from_ch: discord.VoiceChannel,
 
 
 async def h_leave_channel(member: discord.Member, state: discord.VoiceState):
-    logging.info('Member %s left channel %s', member.display_name, state.channel.name)
     data = client['PrivateTemporaryVC'].find_one(
         {'ChannelID': str(state.channel.id), 'GuildID': str(state.channel.guild.id)})
     if not data:
@@ -284,12 +283,10 @@ async def h_leave_channel(member: discord.Member, state: discord.VoiceState):
     if len(state.channel.voice_states) > 0:
         # Check if the creator left
         if str(member.id) == data['CreatorID']:
-            logging.info('Channel creator left')
             # Promote a new channel "creator", allowing the members still in the channel to manage it
             new_c = data['Users'][0]
             if new_c == str(member.id):
                 new_c = data['Users'][1]
-            logging.info('Promoting %s -> %s to channel creator', str(member.id), new_c)
             client['PrivateTemporaryVC'].update_one(
                 {'ChannelID': str(state.channel.id), 'GuildID': str(state.channel.guild.id)},
                 {'$set': {'CreatorID': new_c}}
@@ -303,7 +300,6 @@ async def h_leave_channel(member: discord.Member, state: discord.VoiceState):
 
 
 async def h_join_channel(member: discord.Member, state: discord.VoiceState):
-    logging.info('Member %s joined channel %s', member.display_name, state.channel.name)
     client['PrivateTemporaryVC'].update_one(
         {'ChannelID': str(state.channel.id), 'GuildID': str(state.channel.guild.id)},
         {'$push': {'Users': str(member.id)}})

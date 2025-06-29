@@ -95,8 +95,6 @@ async def update_existing_suggestions_message(msg: discord.Message):
     if not suggestions_msg:
         return
 
-    logging.info('Refreshing message %s', msg.id)
-
     author = msg.guild.get_member(int(suggestions_msg['AuthorID']))
 
     new_emb = discord.Embed(title='Suggestion', color=Color.blue(),

@@ -51,10 +51,8 @@ async def update_statistic_channels_for_guild(guild: discord.Guild):
             formatted_name = format_text(guild, formatted_name)
 
             if formatted_name == channel.name:
-                logging.info('Skipping channel %s, name is already up to date', channel.name)
                 continue
 
-            logging.info('Updating channel %s with text %s', channel.name, formatted_name)
             try:
                 await channel.edit(name=formatted_name)
             except discord.Forbidden:
@@ -145,12 +143,10 @@ class StatisticChannels(discord.Cog):
     @tasks.loop(minutes=1)
     async def update_statistic_channels(self):
         try:
-            logging.info('Running update_statistic_channels task')
             tasks = []
             for i in self.bot.guilds:
                 tasks.append(update_statistic_channels_for_guild(i))
 
             await asyncio.gather(*tasks)
-            logging.info('Finished update_statistic_channels task')
         except Exception as e:
             sentry_sdk.capture_exception(e, scope='Akabot > Statistic Channels > Update Guilds')

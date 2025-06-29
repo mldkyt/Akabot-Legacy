@@ -48,7 +48,6 @@ class Counting(discord.Cog):
             for i in client["Counting"].find():
                 tasks.append(asyncio.create_task(self.fetch_counting_channel(i["GuildID"], i["ChannelID"])))
 
-            logging.info("Gathering %s tasks", str(len(tasks)))
             await asyncio.gather(*tasks)
         except Exception as e:
             sentry_sdk.capture_exception(e, scope='Akabot > Counting > on_ready')

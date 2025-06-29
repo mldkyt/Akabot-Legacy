@@ -32,9 +32,6 @@ class Heartbeat(discord.Cog):
 
         if get_key("Heartbeat_Enabled", "false") == "true":
             self.heartbeat_task.start()
-            logging.info("Heartbeat started")
-        else:
-            logging.warning("Heartbeat is disabled")
 
     @tasks.loop(seconds=1)
     async def heartbeat_task(self):

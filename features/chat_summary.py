@@ -244,7 +244,6 @@ class ChatSummary(discord.Cog):
     @tasks.loop(minutes=1)
     async def summarize(self):
         try:
-            logging.info('Running summarize task')
             res = client['ChatSummary'].find({'Enabled': True}).to_list()
             for i in res:
                 yesterday = get_now_for_server(i['GuildID'])
@@ -261,8 +260,6 @@ class ChatSummary(discord.Cog):
                 if channel is None:
                     logging.warning('Couldn\'t find channel %s', i['ChannelID'])
                     continue
-
-                logging.info('Summarizing %s in %s', channel.name, guild.name)
 
                 if not channel.can_send():
                     continue

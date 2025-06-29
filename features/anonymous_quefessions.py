@@ -477,7 +477,6 @@ class InfoButtonView(View):
                    f"**Created by**: {author[0]} ({author[1]}; {author[2]})\n")
 
             message = await interaction.guild.get_channel(int(data['ChannelID'])).fetch_message(int(data['MessageID']))
-            logging.info(message)
             if message is None:
                 await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
                                           ephemeral=True)
