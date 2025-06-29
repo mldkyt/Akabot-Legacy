@@ -61,29 +61,20 @@ def add_xp(guild_id: int, user_id: int, xp: int):
         client['Leveling'].insert_one({'GuildID': str(guild_id), 'UserID': str(user_id), 'XP': xp * multiplier})
 
 
-def get_level_for_xp(guild_id: int, xp: int):
-    level = 0
+def get_level_for_xp(guild_id: int, xp: int) -> int:
     multiplier = calc_multiplier(guild_id)
-    xp_per_level = get_setting(guild_id, 'leveling_xp_per_level', '500')
-    xp_needed = multiplier * int(xp_per_level)
-    while xp >= xp_needed:
-        level += 1
-        xp -= xp_needed
-        xp_needed = multiplier * int(xp_per_level)
-
-    return level
+    base_xp = int(get_setting(guild_id, 'leveling_xp_per_level', '500'))
+    xp_per_level = multiplier * base_xp
+    # integer division gives how many full levels you’ve earned
+    return xp // xp_per_level
 
 
-def get_xp_for_level(guild_id: int, level: int):
-    xp = 0
+def get_xp_for_level(guild_id: int, level: int) -> int:
     multiplier = calc_multiplier(guild_id)
-    xp_per_level = get_setting(guild_id, 'leveling_xp_per_level', '500')
-    xp_needed = multiplier * int(xp_per_level)
-    for _ in range(level):
-        xp += xp_needed
-        xp_needed = multiplier * int(xp_per_level)
-
-    return xp
+    base_xp = int(get_setting(guild_id, 'leveling_xp_per_level', '500'))
+    xp_per_level = multiplier * base_xp
+    # simply level × xp_per_level
+    return level * xp_per_level
 
 
 def add_mult(guild_id: int, name: str, multiplier: int, start_date_month: int, start_date_day: int,
