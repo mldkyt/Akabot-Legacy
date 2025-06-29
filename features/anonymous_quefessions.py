@@ -199,16 +199,20 @@ class AdminView(View):
 
     @button(label='Delete', style=ButtonStyle.danger)
     async def delete_quefession(self, button: Button, interaction: Interaction):
-        await self.mod_message.delete()
-        self.disable_all_items()
-        await interaction.edit(view=self)
-        self.stop()
+        try:
+            await self.mod_message.delete()
+            self.disable_all_items()
+            await interaction.edit(view=self)
+            self.stop()
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
 
     @button(label='Quefession Ban...', style=ButtonStyle.danger)
     async def quefession_ban(self, button: Button, interaction: Interaction):
-        await interaction.edit(view=AdminBanSelectTypeView(self.mod_message))
-        pass
-
+        try:
+            await interaction.edit(view=AdminBanSelectTypeView(self.mod_message))
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
 
 class AdminBanSelectTypeView(View):
     def __init__(self, message: Message):
@@ -278,36 +282,46 @@ class AdminQuefessionBanDurationChoice(View):
         self.mod_message = message
 
     def fetch_author(self):
-        data = client['AnonymousQuefessions'].find_one({
-            'GuildID': str(self.mod_message.guild.id),
-            'ChannelID': str(self.mod_message.channel.id),
-            'MessageID': str(self.mod_message.id)
-        })
+        try:
+            data = client['AnonymousQuefessions'].find_one({
+                'GuildID': str(self.mod_message.guild.id),
+                'ChannelID': str(self.mod_message.channel.id),
+                'MessageID': str(self.mod_message.id)
+            })
 
-        if data is None:
-            return None
+            if data is None:
+                return None
 
-        return data['AuthorID']
+            return data['AuthorID']
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            raise e
 
     async def ban_temp(self, minutes: int):
-        author = self.fetch_author()
-        if author is None:
-            return
+        try:
+            author = self.fetch_author()
+            if author is None:
+                return
 
-        client['AnonymousQuefessionsBans'].insert_one({
-            'MemberID': author,
-            'BanEnd': datetime.datetime.now() + datetime.timedelta(minutes=minutes)
-        })
+            client['AnonymousQuefessionsBans'].insert_one({
+                'MemberID': author,
+                'BanEnd': datetime.datetime.now() + datetime.timedelta(minutes=minutes)
+            })
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
 
     async def ban_perm(self):
-        author = self.fetch_author()
-        if author is None:
-            return
+        try:
+            author = self.fetch_author()
+            if author is None:
+                return
 
-        client['AnonymousQuefessionsBans'].insert_one({
-            'MemberID': author,
-            'Permanent': True
-        })
+            client['AnonymousQuefessionsBans'].insert_one({
+                'MemberID': author,
+                'Permanent': True
+            })
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
 
     @button(label='10 minutes', style=ButtonStyle.danger)
     async def ban_10_minutes(self, button: Button, interaction: Interaction):
@@ -437,37 +451,42 @@ class InfoButtonView(View):
             await interaction.respond("An error occured")
 
     async def admin_view(self, button: Button, interaction: Interaction):
-        if not interaction.user.guild_permissions.manage_channels and not interaction.user.guild_permissions.manage_guild and \
-                not interaction.user.guild_permissions.administrator:
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'no_permission'), ephemeral=True)
-            return
+        try:
+            if not interaction.user.guild_permissions.manage_channels and not interaction.user.guild_permissions.manage_guild and \
+                    not interaction.user.guild_permissions.administrator:
+                await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'no_permission'),
+                                          ephemeral=True)
+                return
 
-        data = client['AnonymousQuefessions'].find_one(
-            {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
-             'MessageID': str(interaction.message.id)})
+            data = client['AnonymousQuefessions'].find_one(
+                {'GuildID': str(interaction.guild.id), 'ChannelID': str(interaction.channel.id),
+                 'MessageID': str(interaction.message.id)})
 
-        if data is None:
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
-                                      ephemeral=True)
-            return
+            if data is None:
+                await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
+                                          ephemeral=True)
+                return
 
-        author = interaction.guild.get_member(int(data['AuthorID']))
-        if author is None:
-            author = ('Unknown', 'Unknown', 'Unknown')
-        else:
-            author = (author.display_name, author.name, author.id)
+            author = interaction.guild.get_member(int(data['AuthorID']))
+            if author is None:
+                author = ('Unknown', 'Unknown', 'Unknown')
+            else:
+                author = (author.display_name, author.name, author.id)
 
-        fmt = (f"# Anonymous Quefession by {author[0]}\n\n"
-               f"**Created by**: {author[0]} ({author[1]}; {author[2]})\n")
+            fmt = (f"# Anonymous Quefession by {author[0]}\n\n"
+                   f"**Created by**: {author[0]} ({author[1]}; {author[2]})\n")
 
-        message = await interaction.guild.get_channel(int(data['ChannelID'])).fetch_message(int(data['MessageID']))
-        logging.info(message)
-        if message is None:
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
-                                      ephemeral=True)
-            return
+            message = await interaction.guild.get_channel(int(data['ChannelID'])).fetch_message(int(data['MessageID']))
+            logging.info(message)
+            if message is None:
+                await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
+                                          ephemeral=True)
+                return
 
-        await interaction.respond(fmt, ephemeral=True, view=AdminView(message=message))
+            await interaction.respond(fmt, ephemeral=True, view=AdminView(message=message))
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, "command_error_generic"), ephemeral=True)
 
     async def report_quefession(self, button: Button, interaction: Interaction):
         try:
