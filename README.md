@@ -1,5 +1,15 @@
 # Akabot
 
+[![Discord](https://img.shields.io/discord/1217145199151681656?label=support%20Discord%20server)
+](https://discord.gg/YFksXpXnn6)
+[![Gitea Issues](https://img.shields.io/gitea/issues/open/Lunya/Akabot?gitea_url=https%3A%2F%2Fgit.lunya.pet)
+](https://git.lunya.pet/Lunya/Akabot/issues)
+[![Gitea Pull Requests](https://img.shields.io/gitea/pull-requests/open/Lunya/Akabot?gitea_url=https%3A%2F%2Fgit.lunya.pet)
+](https://git.lunya.pet/Lunya/Akabot/pulls)
+[![Gitea Release](https://img.shields.io/gitea/v/release/Lunya/Akabot?gitea_url=https%3A%2F%2Fgit.lunya.pet%2F)
+](https://git.lunya.pet/Lunya/Akabot/releases)
+
+
 Akabot is a Discord bot that's made to be customizable and has a lot of features. It's made with Python and uses the
 `py-cord` library.
 
@@ -37,7 +47,6 @@ Individual modules have their documentation listed below.
   roles by reacting to messages containing specific buttons. It provides commands to create different types of reaction
   role setups, such as normal, add-only, remove-only, and single-choice reaction roles.
 - Roles on Join - Give members roles immediately on join.
-- Roleplay commands - When enabled by admins, allows you to roleplay with other members. Please ask for consent!
 - Send Server Count - Admins can configure the bot to send messages to top.gg and various other sites to update the
   server count.
 - Suggestions - Akabot accepts suggestions directly from the bot! Using the public instance `/suggest` command will
@@ -52,7 +61,6 @@ Individual modules have their documentation listed below.
 - Welcome and Goodbye messages - Welcome new members, and say goodbye to the ones who leave.
 - Word Scramble - Scrambles random English words or words from
   previous messagse in chat and lets your members unscramble them for extra rewards in the leveling system.
-- Announcement Channels
 
 ## Available Public Instances
 
