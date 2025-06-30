@@ -15,8 +15,6 @@ Akabot is a Discord bot that's made to be customizable and has a lot of features
 
 ## Features
 
-Individual modules have their documentation listed below.
-
 - Anti Raid - The Antiraid module prevents way too many joins in a
   short period of time.
 - Automod Actions - Create automod actions for specific rules
