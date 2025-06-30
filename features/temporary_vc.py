@@ -15,7 +15,6 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 import datetime
-import logging
 import re
 
 import discord
@@ -27,7 +26,7 @@ from discord.ui import View, Modal, InputText
 from database import client
 from utils.languages import get_translation_for_key_localized as trl
 from utils.module_toggling import is_module_enabled
-from utils.settings import get_setting, set_setting
+from utils.per_server_settings import get_setting, set_setting
 
 
 class V2NameChangeModal(Modal):
@@ -235,8 +234,8 @@ async def new_temporary_channel(from_ch: discord.VoiceChannel,
         {'ChannelID': str(new_ch.id), 'GuildID': str(new_ch.guild.id), 'CreatorID': str(for_user.id)})
 
     if '{id}' in new_ch_name:
-        id = str(res.inserted_id)
-        new_ch_name = new_ch_name.replace('{id}', str(id))
+        temporary_vc_id = str(res.inserted_id)
+        new_ch_name = new_ch_name.replace('{id}', str(temporary_vc_id))
         await new_ch.edit(name=new_ch_name)
 
     # V2 Menu

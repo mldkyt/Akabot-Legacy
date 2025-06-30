@@ -7,7 +7,7 @@ from database import client
 from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 from utils.module_toggling import is_module_enabled
-from utils.settings import get_setting
+from utils.per_server_settings import get_setting
 from utils.tzutil import get_now_for_server
 
 

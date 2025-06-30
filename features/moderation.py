@@ -29,7 +29,7 @@ from utils.generic import pretty_time_delta
 from utils.languages import get_translation_for_key_localized as trl, get_language
 from utils.logging_util import log_into_logs
 from utils.per_user_settings import get_per_user_setting
-from utils.settings import get_setting, set_setting
+from utils.per_server_settings import get_setting, set_setting
 from utils.tips import append_tip_to_message
 from utils.tzutil import get_now_for_server
 from utils.warning import add_warning, db_get_warning_actions, db_add_warning_action, db_get_warnings, \

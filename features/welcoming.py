@@ -24,7 +24,7 @@ from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
-from utils.settings import get_setting, set_setting
+from utils.per_server_settings import get_setting, set_setting
 
 
 class WelcomingCache:

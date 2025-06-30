@@ -24,7 +24,7 @@ from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 from utils.languages import language_name_to_code, get_language_names, get_language_name
-from utils.settings import set_setting
+from utils.per_server_settings import set_setting
 
 
 class ServerSettings(discord.Cog):

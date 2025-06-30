@@ -16,15 +16,14 @@
 #
 
 import datetime
-import os
 
 import discord
 import sentry_sdk
 
+from database import client
 from utils.config import get_key
 # Let's say that trl is the short form of get_translation_for_key_localized across the codebase
 from utils.languages import get_translation_for_key_localized as trl
-from database import client
 
 ADMIN_GUILD = int(get_key("Admin_GuildID", "0"))
 OWNER_ID = int(get_key("Admin_OwnerID", "0"))

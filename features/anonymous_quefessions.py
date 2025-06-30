@@ -29,7 +29,7 @@ from database import client
 from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
-from utils.settings import get_setting, set_setting
+from utils.per_server_settings import get_setting, set_setting
 
 
 class CreateModal(Modal):

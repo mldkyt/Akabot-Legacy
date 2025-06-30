@@ -29,7 +29,7 @@ from utils.english_words import get_random_english_word, scramble_word
 from utils.languages import get_translation_for_key_localized as trl
 from utils.leveling import get_level_for_xp, add_xp, get_xp, update_roles_for_member
 from utils.module_toggling import is_module_enabled
-from utils.settings import get_setting, set_setting
+from utils.per_server_settings import get_setting, set_setting
 
 
 def start_word_scrambler(channel_id: int, message_id: int, word: str):

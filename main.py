@@ -18,7 +18,6 @@
 import logging
 
 import discord
-from discord.ui.button import B
 import sentry_sdk
 from discord.ext import commands as discord_commands_ext
 from dotenv import load_dotenv
@@ -40,7 +39,6 @@ from features import welcoming, leveling, antiraid, chat_streaks, chat_revive, c
     anonymous_quefessions, analytics, economy, message_time_capsule, sticky_message, counting, denylist, \
     message_schedule, voice_channel_alerts, module_toggling_mod, private_temporary_vc, markov
 from utils.config import get_key
-from utils.db_converter import update
 from utils.languages import get_translation_for_key_localized as trl
 
 log_level = get_key("Log_Level", "info")
@@ -78,8 +76,6 @@ if get_key("Sentry_Enabled", "false") == "true":
 intents = discord.Intents.default()
 intents.message_content = get_key('Message_Intent', "false") == "true"
 intents.members = True
-
-update()
 
 bot = discord.Bot(intents=intents)
 

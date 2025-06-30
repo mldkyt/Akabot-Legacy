@@ -20,7 +20,7 @@ import datetime
 import discord
 
 from database import client
-from utils.settings import get_setting
+from utils.per_server_settings import get_setting
 from utils.tzutil import get_now_for_server
 
 

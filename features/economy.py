@@ -1,18 +1,14 @@
 import datetime
-import logging
 import random
-from random import choices
 
 import discord
-from discord import ApplicationContext
-
-from database import client
 from discord.ext import commands as commands_ext
 from discord.ext import pages
 
-from utils.module_toggling import is_module_enabled
-from utils.settings import set_setting, get_setting
+from database import client
 from utils.languages import get_translation_for_key_localized as trl
+from utils.module_toggling import is_module_enabled
+from utils.per_server_settings import set_setting, get_setting
 
 
 def add_akacoins(user_id: int, amount: int, location: str = 'wallet'):

@@ -118,14 +118,14 @@ class AutoReact(discord.Cog):
     @discord_commands_ext.has_permissions(manage_messages=True)
     @discord_commands_ext.bot_has_permissions(read_message_history=True, add_reactions=True)
     @discord.default_permissions(manage_messages=True)
-    async def edit_trigger_auto_react(self, ctx: discord.ApplicationContext, id: str, new_trigger: str):
+    async def edit_trigger_auto_react(self, ctx: discord.ApplicationContext, auto_react_id: str, new_trigger: str):
         try:
-            if not ObjectId.is_valid(id):
+            if not ObjectId.is_valid(auto_react_id):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
                                   ephemeral=True)
                 return
 
-            edited = client['AutoReact'].update_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)},
+            edited = client['AutoReact'].update_one({'_id': ObjectId(auto_react_id), 'GuildID': str(ctx.guild.id)},
                                                     {'$set': {'TriggerText': new_trigger}})
 
             if edited.matched_count == 0:
@@ -142,9 +142,9 @@ class AutoReact(discord.Cog):
     @discord_commands_ext.has_permissions(manage_messages=True)
     @discord_commands_ext.bot_has_permissions(read_message_history=True, add_reactions=True)
     @discord.default_permissions(manage_messages=True)
-    async def delete_auto_react(self, ctx: discord.ApplicationContext, id: int):
+    async def delete_auto_react(self, ctx: discord.ApplicationContext, auto_react_id: int):
         try:
-            delete = client['AutoReact'].delete_one({'ID': id, 'GuildID': str(ctx.guild.id)})
+            delete = client['AutoReact'].delete_one({'ID': auto_react_id, 'GuildID': str(ctx.guild.id)})
 
             if delete.deleted_count == 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
@@ -161,7 +161,7 @@ class AutoReact(discord.Cog):
     @discord_commands_ext.has_permissions(manage_messages=True)
     @discord_commands_ext.bot_has_permissions(read_message_history=True, add_reactions=True)
     @discord.default_permissions(manage_messages=True)
-    async def edit_response_auto_react(self, ctx: discord.ApplicationContext, id: str, new_emoji: str):
+    async def edit_response_auto_react(self, ctx: discord.ApplicationContext, auto_react_id: str, new_emoji: str):
         try:
             # Parse le emoji
             emoji = discord.PartialEmoji.from_str(new_emoji.strip())
@@ -182,12 +182,12 @@ class AutoReact(discord.Cog):
                     await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_invalid"), ephemeral=True)
                     return
 
-            if not ObjectId.is_valid(id):
+            if not ObjectId.is_valid(auto_react_id):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_setting_not_found"),
                                   ephemeral=True)
                 return
 
-            updated = client['AutoReact'].update_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)},
+            updated = client['AutoReact'].update_one({'_id': ObjectId(auto_react_id), 'GuildID': str(ctx.guild.id)},
                                                      {'$set': {'Emoji': str(emoji)}})
 
             if updated.matched_count == 0:

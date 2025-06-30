@@ -17,7 +17,7 @@
 
 import discord
 
-from utils.settings import get_setting
+from utils.per_server_settings import get_setting
 
 
 async def log_into_logs(server: discord.Guild, message: discord.Embed, view=None):

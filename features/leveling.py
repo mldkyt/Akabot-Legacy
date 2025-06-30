@@ -38,7 +38,7 @@ from utils.leveling import calc_multiplier, get_xp, add_xp, get_level_for_xp, ge
 from utils.logging_util import log_into_logs
 from utils.module_toggling import is_module_enabled
 from utils.per_user_settings import get_per_user_setting, set_per_user_setting
-from utils.settings import get_setting, set_setting
+from utils.per_server_settings import get_setting, set_setting
 from utils.tips import append_tip_to_message
 from utils.tzutil import get_now_for_server
 

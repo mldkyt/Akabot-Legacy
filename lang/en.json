@@ -679,5 +679,8 @@
     "message_schedule_list_title": "# Scheduled Messages in this server",
     "message_schedule_list_row": "- Channel {channel} - ID `{id}` - Type {type} - sends on {date} - Message: {brief_content}",
     "message_schedule_deleted": "The message schedule was deleted successfully.",
-    "message_schedule_max_reached": "The max amount of scheduled messages you can set per server was reached."
+    "message_schedule_max_reached": "The max amount of scheduled messages you can set per server was reached.",
+    "quefessions_reply_title": "Reply to quefession",
+    "quefessions_reply_label": "Your reply",
+    "quefessions_reply_placeholder": "cute :3"
 }

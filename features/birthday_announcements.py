@@ -27,7 +27,7 @@ from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 from utils.module_toggling import is_module_enabled
 from utils.per_user_settings import get_per_user_setting
-from utils.settings import set_setting, get_setting
+from utils.per_server_settings import set_setting, get_setting
 
 
 class BirthdayAnnouncements(discord.Cog):

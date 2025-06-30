@@ -1,7 +1,7 @@
 import discord
 import sentry_sdk
 
-from utils.settings import set_setting
+from utils.per_server_settings import set_setting
 from utils.languages import get_translation_for_key_localized as trl
 
 VALID_MODULE_NAMES = ["antiraid", "birthday_announcements", "chat_streaks", "economy", "leveling", "schedule",

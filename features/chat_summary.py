@@ -24,7 +24,6 @@ from discord.ext import commands as commands_ext
 from discord.ext import tasks
 from discord.ext.pages import Paginator
 from discord.ui import button, View
-from pyexpat.errors import messages
 from sentry_sdk import capture_exception
 
 from database import client
@@ -33,7 +32,7 @@ from utils.blocklist import blocklist
 from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
-from utils.settings import get_setting, set_setting
+from utils.per_server_settings import get_setting, set_setting
 from utils.tzutil import get_now_for_server
 
 

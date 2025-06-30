@@ -20,7 +20,7 @@ import logging
 import os.path
 
 from utils.per_user_settings import get_per_user_setting, set_per_user_setting
-from utils.settings import get_setting, set_setting
+from utils.per_server_settings import get_setting, set_setting
 from utils.tips import append_tip_to_message
 
 

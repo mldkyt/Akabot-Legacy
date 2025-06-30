@@ -100,14 +100,14 @@ class AutoResponse(discord.Cog):
     @discord_commands_ext.has_permissions(manage_messages=True)
     @discord_commands_ext.bot_has_permissions(read_message_history=True, add_reactions=True)
     @discord.default_permissions(manage_messages=True)
-    async def edit_trigger_auto_response(self, ctx: discord.ApplicationContext, id: str, new_trigger: str):
+    async def edit_trigger_auto_response(self, ctx: discord.ApplicationContext, auto_response_id: str, new_trigger: str):
         try:
-            if not ObjectId.is_valid(id):
+            if not ObjectId.is_valid(auto_response_id):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
                                   ephemeral=True)
                 return
 
-            result = client['AutoResponse'].update_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)},
+            result = client['AutoResponse'].update_one({'_id': ObjectId(auto_response_id), 'GuildID': str(ctx.guild.id)},
                                                        {'$set': {'TriggerText': new_trigger}})
 
             if result.matched_count == 0:
@@ -125,14 +125,14 @@ class AutoResponse(discord.Cog):
     @discord_commands_ext.has_permissions(manage_messages=True)
     @discord_commands_ext.bot_has_permissions(read_message_history=True, add_reactions=True)
     @discord.default_permissions(manage_messages=True)
-    async def delete_auto_response(self, ctx: discord.ApplicationContext, id: str):
+    async def delete_auto_response(self, ctx: discord.ApplicationContext, auto_response_id: str):
         try:
-            if not ObjectId.is_valid(id):
+            if not ObjectId.is_valid(auto_response_id):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
                                   ephemeral=True)
                 return
 
-            result = client['AutoResponse'].delete_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)})
+            result = client['AutoResponse'].delete_one({'_id': ObjectId(auto_response_id), 'GuildID': str(ctx.guild.id)})
 
             if result.deleted_count == 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
@@ -149,14 +149,14 @@ class AutoResponse(discord.Cog):
     @discord_commands_ext.has_permissions(manage_messages=True)
     @discord_commands_ext.bot_has_permissions(read_message_history=True, add_reactions=True)
     @discord.default_permissions(manage_messages=True)
-    async def edit_response_auto_response(self, ctx: discord.ApplicationContext, id: str, new_response: str):
+    async def edit_response_auto_response(self, ctx: discord.ApplicationContext, auto_response_id: str, new_response: str):
         try:
-            if not ObjectId.is_valid(id):
+            if not ObjectId.is_valid(auto_response_id):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
                                   ephemeral=True)
                 return
 
-            result = client['AutoResponse'].update_one({'_id': ObjectId(id), 'GuildID': str(ctx.guild.id)},
+            result = client['AutoResponse'].update_one({'_id': ObjectId(auto_response_id), 'GuildID': str(ctx.guild.id)},
                                                        {'$set': {'ReplyText': new_response}})
 
             if result.matched_count == 0:

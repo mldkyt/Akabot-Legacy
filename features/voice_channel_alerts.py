@@ -3,7 +3,7 @@ import sentry_sdk
 
 from database import client
 from utils.module_toggling import is_module_enabled
-from utils.settings import get_setting
+from utils.per_server_settings import get_setting
 
 
 class VoiceChannelAlerts(discord.Cog):

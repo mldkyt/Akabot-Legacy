@@ -193,8 +193,8 @@ class V2SuggestionAuthorExtraView(View):
         await interaction.response.send_modal(modal)
 
 
-def generate_message_content(id: str):
-    data = client['SuggestionMessagesV2'].find_one({'MessageID': id})
+def generate_message_content(message_id: str):
+    data = client['SuggestionMessagesV2'].find_one({'MessageID': message_id})
     if not data:
         raise ValueError('Message not found')
 
@@ -215,7 +215,7 @@ from discord.ext import commands
 
 from database import client
 from utils.languages import get_translation_for_key_localized as trl
-from utils.settings import get_setting, set_setting
+from utils.per_server_settings import get_setting, set_setting
 
 class Suggestions(discord.Cog):
     def __init__(self, bot: discord.Bot):

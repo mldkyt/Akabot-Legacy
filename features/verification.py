@@ -24,7 +24,8 @@ import sentry_sdk
 
 import utils.english_words
 import utils.logging_util
-import utils.settings
+import utils.per_server_settings
+from utils.per_server_settings import get_setting, set_setting
 from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
@@ -39,7 +40,7 @@ async def give_verify_role(interaction: discord.Interaction | discord.Applicatio
             ephemeral=True)
 
     # Get role from settings and check if it is set
-    role_id = utils.settings.get_setting(interaction.guild.id, "verification_role", "-1")
+    role_id = get_setting(interaction.guild.id, "verification_role", "-1")
     if role_id == "-1":
         await interaction.response.send_message(
             trl(interaction.user.id, interaction.guild.id, "verification_role_not_set"),
@@ -66,7 +67,7 @@ async def give_verify_role(interaction: discord.Interaction | discord.Applicatio
 
 async def is_verified(interaction: discord.ApplicationContext) -> bool:
     # Get role from settings and check if it is set
-    role_id = utils.settings.get_setting(interaction.guild.id, "verification_role", "-1")
+    role_id = get_setting(interaction.guild.id, "verification_role", "-1")
     if role_id == "-1":
         return False
 
@@ -273,7 +274,7 @@ class VerificationView(discord.ui.View):
                 await ctx.respond("You're already verified.", ephemeral=True)
                 return
 
-            method = utils.settings.get_setting(ctx.guild.id, "verification_method", "none")
+            method = get_setting(ctx.guild.id, "verification_method", "none")
 
             if method == "none":
                 # No verification method, give immediately role
@@ -330,7 +331,7 @@ class Verification(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "verification_set_role_no_perms"), ephemeral=True)
                 return
 
-            utils.settings.set_setting(ctx.guild.id, "verification_role", str(role.id))
+            set_setting(ctx.guild.id, "verification_role", str(role.id))
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "verification_set_success", append_tip=True),
                               ephemeral=True)
         except Exception as e:
@@ -348,21 +349,21 @@ class Verification(discord.Cog):
     async def set_difficulty(self, ctx: discord.ApplicationContext, difficulty: str):
         try:
             # Store old difficulty
-            old_difficulty = utils.settings.get_setting(ctx.guild.id, "verification_method", "none")
+            old_difficulty = get_setting(ctx.guild.id, "verification_method", "none")
 
             # Select new difficulty
             if difficulty == "none":
-                utils.settings.set_setting(ctx.guild.id, "verification_method", "none")
+                set_setting(ctx.guild.id, "verification_method", "none")
             elif difficulty == "easy math":
-                utils.settings.set_setting(ctx.guild.id, "verification_method", "easy_math")
+                set_setting(ctx.guild.id, "verification_method", "easy_math")
             elif difficulty == "medium math":
-                utils.settings.set_setting(ctx.guild.id, "verification_method", "medium_math")
+                set_setting(ctx.guild.id, "verification_method", "medium_math")
             elif difficulty == "hard math":
-                utils.settings.set_setting(ctx.guild.id, "verification_method", "hard_math")
+                set_setting(ctx.guild.id, "verification_method", "hard_math")
             elif difficulty == "random english word":
-                utils.settings.set_setting(ctx.guild.id, "verification_method", "english_word")
+                set_setting(ctx.guild.id, "verification_method", "english_word")
             elif difficulty == "reverse text":
-                utils.settings.set_setting(ctx.guild.id, "verification_method", "reverse_string")
+                set_setting(ctx.guild.id, "verification_method", "reverse_string")
 
             # Generate logging embed
             logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "verification_set_difficulty_log_title"))
@@ -392,7 +393,7 @@ class Verification(discord.Cog):
                            custom_verify_label: str = "Verify"):
         try:
             # Get the role and verify it was set
-            ver_role_id = utils.settings.get_setting(ctx.guild.id, "verification_role", "-1")
+            ver_role_id = get_setting(ctx.guild.id, "verification_role", "-1")
             if ver_role_id == "-1":
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "verification_send_message_verification_role_not_set"),
                                   ephemeral=True)

@@ -23,13 +23,13 @@ import re
 def get_files(path: str) -> list[str]:
     # Get list of .py files, recursively in directories
 
-    files = []
+    file_names = []
     for root, _, filenames in os.walk(path):
         for filename in filenames:
             if filename.endswith('.py'):
-                files.append(os.path.join(root, filename))
+                file_names.append(os.path.join(root, filename))
 
-    return files
+    return file_names
 
 
 if __name__ == '__main__':

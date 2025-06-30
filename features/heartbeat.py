@@ -15,8 +15,6 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-import logging
-
 import discord
 import requests
 import sentry_sdk

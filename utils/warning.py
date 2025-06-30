@@ -24,11 +24,11 @@ from bson import ObjectId
 from database import client
 from utils.generic import get_date_time_str, pretty_time_delta
 from utils.languages import get_translation_for_key_localized as trl
-from utils.settings import get_setting
+from utils.per_server_settings import get_setting
 
 
 async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -> ObjectId:
-    id = db_add_warning(guild.id, user.id, reason)
+    warning_id = db_add_warning(guild.id, user.id, reason)
 
     warning_should_dm = get_setting(guild.id, 'send_warning_message', 'true')
     if warning_should_dm == 'true':
@@ -50,7 +50,7 @@ async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -
     actions = db_get_warning_actions(guild.id)
 
     if not actions:
-        return id
+        return warning_id
 
     for action in actions:
         if len(warnings) == action['Warnings']:  # only apply if the number of warnings matches, not if below
@@ -106,7 +106,7 @@ async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -
                                        reason=trl(user.id, guild.id, "warn_actions_auto_timeout_reason").format(
                                            warnings=action['Warnings']))
 
-    return id
+    return warning_id
 
 
 def db_add_warning(guild_id: int, user_id: int, reason: str) -> ObjectId:
@@ -136,7 +136,7 @@ def db_get_warning_actions(guild_id: int) -> list[dict]:
     return res
 
 
-def db_remove_warning_action(id: str):
-    if not ObjectId.is_valid(id):
+def db_remove_warning_action(warning_action_id: str):
+    if not ObjectId.is_valid(warning_action_id):
         return
-    client['WarningActions'].delete_one({'_id': id})
+    client['WarningActions'].delete_one({'_id': warning_action_id})

@@ -24,7 +24,7 @@ from discord.ext import commands, tasks
 from database import client
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
-from utils.settings import set_setting, get_setting
+from utils.per_server_settings import set_setting, get_setting
 from utils.tzutil import get_now_for_server
 
 

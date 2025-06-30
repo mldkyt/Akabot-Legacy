@@ -144,7 +144,7 @@ class StatisticChannels(discord.Cog):
     @tasks.loop(minutes=1)
     async def update_statistic_channels(self):
         try:
-            tasks = []
+            tasks_to_run = []
 
             data = db_get_all_statistic_channels()
 
@@ -153,8 +153,8 @@ class StatisticChannels(discord.Cog):
                 if guild is None:
                     continue
 
-                tasks.append(update_statistic_channels_for_guild(guild))
+                tasks_to_run.append(update_statistic_channels_for_guild(guild))
 
-            await asyncio.gather(*tasks)
+            await asyncio.gather(*tasks_to_run)
         except Exception as e:
             sentry_sdk.capture_exception(e, scope='Akabot > Statistic Channels > Update Guilds')

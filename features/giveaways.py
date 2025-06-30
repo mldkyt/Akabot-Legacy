@@ -130,14 +130,14 @@ class Giveaways(discord.Cog):
             message = trl(ctx.user.id, ctx.guild.id, "giveaways_list_title")
 
             for i in res:
-                id = str(i['_id'])
+                giveaway_id = str(i['_id'])
                 item = i['Item']
                 winners = i['Winners']
                 time_remaining = datetime.datetime.fromisoformat(i['EndDate']) - get_now_for_server(ctx.guild.id)
                 time_remaining = time_remaining.total_seconds()
                 time_remaining = pretty_time_delta(time_remaining, user_id=ctx.user.id, server_id=ctx.guild.id)
 
-                message += trl(ctx.user.id, ctx.guild.id, "giveaways_list_line").format(id=id, item=item,
+                message += trl(ctx.user.id, ctx.guild.id, "giveaways_list_line").format(id=giveaway_id, item=item,
                                                                                         winners=winners,
                                                                                         time=time_remaining)
 

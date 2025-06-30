@@ -1,7 +1,7 @@
 
 from discord.ext import commands as commands_ext
 
-from utils.settings import get_setting
+from utils.per_server_settings import get_setting
 
 
 class ModuleNotEnabled(commands_ext.CheckFailure):
