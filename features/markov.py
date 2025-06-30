@@ -72,14 +72,14 @@ class MarkovBot(discord.Cog):
 
             await channel.send(a)
 
-            # client['MarkovChannel'].update_one({
-            #     'ChannelID': str(channel.id)
-            # }, {
-            #     '$set': {
-            #         'MessageCount': 0,
-            #         'LastSend': datetime.datetime.now()
-            #     }
-            # })
+            client['MarkovChannel'].update_one({
+                'ChannelID': str(channel.id)
+            }, {
+                '$set': {
+                    'MessageCount': 0,
+                    'LastSend': datetime.datetime.now()
+                }
+            })
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
