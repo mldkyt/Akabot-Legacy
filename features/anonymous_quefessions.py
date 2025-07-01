@@ -129,7 +129,7 @@ class ReplyModal(discord.ui.Modal):
             if isinstance(self.message.channel, discord.Thread):
                 data = await self.message.reply(
                     embed=discord.Embed(
-                        title="Anonymous Quefession Reply",
+                        title=trl(0, interaction.guild_id, "anonymous_quefessions_reply_title"),
                         description=self.message_field.value
                     ),
                     view=InfoButtonView(self.message.guild.id, self.message.channel.id)
@@ -139,7 +139,7 @@ class ReplyModal(discord.ui.Modal):
 
                 data = await thread.send(
                     embed=discord.Embed(
-                        title="Anonymous Quefession Reply",
+                        title=trl(0, interaction.guild_id, "anonymous_quefessions_reply_title"),
                         description=self.message_field.value
                     ),
                     view=InfoButtonView(self.message.guild.id, self.message.channel.id)
@@ -152,7 +152,7 @@ class ReplyModal(discord.ui.Modal):
                 'AuthorID': str(data.author.id)
             })
 
-            await interaction.respond("Reply sent!", ephemeral=True)
+            await interaction.respond(trl(self.message.author.id, self.message.guild.id, "anonymous_quefessions_reply_sent"), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
             await interaction.respond(trl(self.message.author.id, self.message.guild.id, "command_error_generic"), ephemeral=True)

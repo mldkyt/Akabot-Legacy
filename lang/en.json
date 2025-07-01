@@ -686,5 +686,7 @@
     "per_user_chat_streak_replies_response_on": "Enabled reply to chat streak messages.",
     "per_user_chat_streak_replies_response_off": "Disabled reply to chat streak messages.",
     "module_enabled": "Module `{module_name}` was enabled.",
-    "module_disabled": "Module `{module_name}` was disabled."
+    "module_disabled": "Module `{module_name}` was disabled.",
+    "anonymous_quefessions_reply_title": "Anonymous Quefession Reply",
+    "anonymous_quefessions_reply_sent": "Reply sent!"
 }
