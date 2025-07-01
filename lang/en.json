@@ -682,5 +682,7 @@
     "message_schedule_max_reached": "The max amount of scheduled messages you can set per server was reached.",
     "quefessions_reply_title": "Reply to quefession",
     "quefessions_reply_label": "Your reply",
-    "quefessions_reply_placeholder": "cute :3"
+    "quefessions_reply_placeholder": "cute :3",
+    "per_user_chat_streak_replies_response_on": "Enabled reply to chat streak messages.",
+    "per_user_chat_streak_replies_response_off": "Disabled reply to chat streak messages."
 }

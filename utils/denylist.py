@@ -20,21 +20,26 @@ def is_denylisted(channel_id: int):
 
 # Sending queue
 
-async def queue_send_message(message: discord.Message, content: str | None = None, embeds: list[discord.Embed] | None = None, delete_after: int = 0):
+async def queue_send_message(message: discord.Message, content: str | None = None, embeds: list[discord.Embed] | None = None, delete_after: int = 0, reply_to_message: bool = True):
     try:
         # Check if the channel is NOT in the denylist
         if not is_denylisted(message.channel.id):
-            sent_msg = await message.reply(content=content, embeds=embeds)
+            if reply_to_message:
+                sent_msg = await message.reply(content=content, embeds=embeds)
+            else:
+                sent_msg = await message.channel.send(content=content, embeds=embeds)
+
             if delete_after != 0:
                 await sent_msg.delete(delay=delete_after)
             return
 
         # Add the content to the queue
-        add_to_queue(message.author, message.guild, content, embeds, delete_after)
+        add_to_queue(message.author, message.guild, content, embeds, delete_after, reply_to_message)
     except Exception as e:
         sentry_sdk.capture_exception(e)
 
-def add_to_queue(user: discord.User | discord.Member, guild: discord.Guild, content: str | None = None, embeds: list[discord.Embed] | None = None, delete_after: int = 0):
+def add_to_queue(user: discord.User | discord.Member, guild: discord.Guild, content: str | None = None, embeds: list[discord.Embed] | None = None, delete_after: int = 0,
+                 reply_to_message: bool = True):
     try:
         # Add the content to the queue
         client['DenylistMessageQueue'].insert_one({
@@ -59,7 +64,8 @@ def add_to_queue(user: discord.User | discord.Member, guild: discord.Guild, cont
                     'IconURL': embed.footer.icon_url
                 } if embed.footer else None
             } for embed in (embeds or [])],
-            'DeleteAfter': delete_after
+            'DeleteAfter': delete_after,
+            'ReplyToMessage': reply_to_message
         })
     except Exception as e:
         sentry_sdk.capture_exception(e)

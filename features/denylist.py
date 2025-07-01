@@ -92,7 +92,10 @@ class ChannelDenylist(discord.Cog):
                     ))
 
                 # Reply to the user in the different channel
-                sent_message = await msg.reply(content=data_msg['Message'], embeds=embeds)
+                if data_msg['ReplyToMessage']:
+                    sent_message = await msg.reply(content=data_msg['Message'], embeds=embeds)
+                else:
+                    sent_message = await msg.channel.send(content=data_msg['Message'], embeds=embeds)
 
                 # Remove from database
                 client['DenylistMessageQueue'].delete_one({

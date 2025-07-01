@@ -206,11 +206,14 @@ class ChatStreaks(discord.Cog):
                 # This will either send the message immediately (no blocklist)
                 # or it will send it when the member goes to a non-blocklisted
                 # channel
+
+                reply_to_user = get_per_user_setting(message.author.id, "chat_streaks_reply_to_user", True) == True
+
                 await queue_send_message(message, content=trl(message.author.id, message.guild.id,
                                                               "chat_streaks_expired").format(streak=old_streak),
                                          delete_after=int(
                                              get_setting(message.guild.id, 'chat_streaks_delete_sent_message_expired',
-                                                         '60')))
+                                                         '60')), reply_to_message=reply_to_user)
             if state == "updated":
                 await self.check_chat_streak_rewards(message.guild.id, message.author.id, new_streak)
 
@@ -224,11 +227,14 @@ class ChatStreaks(discord.Cog):
                 # This will either send the message immediately (no blocklist)
                 # or it will send it when the member goes to a non-blocklisted
                 # channel
+
+                reply_to_user = get_per_user_setting(message.author.id, "chat_streaks_reply_to_user", True) == True
+
                 await queue_send_message(message, content=trl(message.author.id, message.guild.id,
                                                               "chat_streaks_updated").format(streak=new_streak),
                                          delete_after=int(
                                              get_setting(message.guild.id, 'chat_streaks_delete_sent_message_updated',
-                                                         '10')))
+                                                         '10')), reply_to_message=reply_to_user)
         except Exception as e:
             sentry_sdk.capture_exception(e)
 
@@ -297,9 +303,6 @@ class ChatStreaks(discord.Cog):
     async def configure_messages(self, ctx: discord.ApplicationContext, delete_sent_message_expired: int = -1,
                                  delete_sent_message_updated: int = -1):
         try:
-            prev_expired = get_setting(ctx.guild.id, 'chat_streaks_delete_sent_message_expired', '60')
-            prev_updated = get_setting(ctx.guild.id, 'chat_streaks_delete_sent_message_updated', '10')
-
             set_setting(ctx.guild.id, 'chat_streaks_delete_sent_message_expired', str(delete_sent_message_expired))
             set_setting(ctx.guild.id, 'chat_streaks_delete_sent_message_updated', str(delete_sent_message_updated))
 

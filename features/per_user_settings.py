@@ -86,6 +86,20 @@ class PerUserSettings(discord.Cog):
             sentry_sdk.capture_exception(e)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
+    @user_settings_group.command(name='chat_streaks_ping_reply', description='Enable or disable ping when chat streaks reply to you')
+    @discord.option(name='state', description='Enable or disable')
+    @analytics("user_settings chat_streaks_alerts")
+    @blocklist()
+    async def chat_streaks_alerts(self, ctx: discord.ApplicationContext, state: bool):
+        try:
+            set_per_user_setting(ctx.user.id, 'chat_streaks_reply_to_user', state)
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, "per_user_chat_streak_replies_response_on" if state else "per_user_chat_streak_replies_response_off", append_tip=True).format(state=state),
+                ephemeral=True)
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+
     @user_settings_group.command(name='langauge',
                                  description='Set your personal language, applies across servers for you')
     @discord.option(name='lang', description='Your language', choices=get_language_names())
