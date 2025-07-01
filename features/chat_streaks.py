@@ -196,7 +196,7 @@ class ChatStreaks(discord.Cog):
 
                 if old_streak == 0:
                     return
-                if get_per_user_setting(message.author.id, 'chat_streaks_alerts', 'on') == 'off':
+                if get_per_user_setting(message.author.id, 'chat_streaks_alerts', 'enabled') == 'off':
                     return
                 if not message.channel.can_send():
                     return  # Only send if we have permissions
@@ -214,7 +214,7 @@ class ChatStreaks(discord.Cog):
             if state == "updated":
                 await self.check_chat_streak_rewards(message.guild.id, message.author.id, new_streak)
 
-                if get_per_user_setting(message.author.id, 'chat_streaks_alerts', 'on') != 'on':
+                if get_per_user_setting(message.author.id, 'chat_streaks_alerts', 'enabled') != 'enabled':
                     return  # Only trigger if the user has the setting on
                 if not message.channel.can_send():
                     return  # Only send if we have permissions
