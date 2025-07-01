@@ -20,10 +20,10 @@ class ModuleToggling(discord.Cog):
         try:
             set_setting(ctx.guild.id,f"module_{module_name}_enabled", True)
 
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "module_enabled").format(module_name=module_name))
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "module_enabled").format(module_name=module_name), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"))
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @module_toggling.command(name="disable", description="Disable a module")
     @discord.option(name="module_name", choices=VALID_MODULE_NAMES)
@@ -31,7 +31,7 @@ class ModuleToggling(discord.Cog):
         try:
             set_setting(ctx.guild.id,f"module_{module_name}_enabled", False)
 
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "module_disabled").format(module_name=module_name))
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "module_disabled").format(module_name=module_name), ephemeral=True)
         except Exception as e:
             sentry_sdk.capture_exception(e)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"))
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
