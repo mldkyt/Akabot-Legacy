@@ -684,5 +684,7 @@
     "quefessions_reply_label": "Your reply",
     "quefessions_reply_placeholder": "cute :3",
     "per_user_chat_streak_replies_response_on": "Enabled reply to chat streak messages.",
-    "per_user_chat_streak_replies_response_off": "Disabled reply to chat streak messages."
+    "per_user_chat_streak_replies_response_off": "Disabled reply to chat streak messages.",
+    "module_enabled": "Module `{module_name}` was enabled.",
+    "module_disabled": "Module `{module_name}` was disabled."
 }
