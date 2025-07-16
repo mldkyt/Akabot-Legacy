@@ -41,6 +41,8 @@ class AdminCommands(discord.Cog):
     @admin_subcommand.command(name="server_count", description="How many servers is the bot in?")
     async def admin_servercount(self, ctx: discord.ApplicationContext):
         try:
+            akabot_logger.warning(f"User {ctx.user=} executed command /admin server_count!")
+
             servers = len(self.bot.guilds)
             channels = len([channel for channel in self.bot.get_all_channels()])
             members = len(set([member for member in self.bot.get_all_members()]))

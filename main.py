@@ -16,11 +16,17 @@
 #
 
 import logging
+import os.path
 
 akabot_logger = logging.getLogger("akabot")
 akabot_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-file_handler = logging.FileHandler(filename="akabot.log", mode="a", encoding="utf-8")
+akabot_logger.setLevel(logging.DEBUG)
+
+if not os.path.exists("logs"):
+    os.mkdir("logs")
+
+file_handler = logging.FileHandler(filename="logs/akabot.log", mode="a", encoding="utf-8")
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(akabot_formatter)
 
@@ -62,9 +68,9 @@ elif log_level == "error":
 else:
     log_level = logging.INFO
 
-console_handler.setLevel(log_level)
+akabot_logger.setLevel(log_level)
 
-BOT_VERSION = get_key("Bot_Version", "3.5")
+BOT_VERSION = get_key("Bot_Version", "1.4")
 
 intents = discord.Intents.default()
 intents.message_content = get_key('Message_Intent', "false") == "true"
@@ -75,6 +81,9 @@ bot = discord.Bot(intents=intents)
 
 @bot.event
 async def on_ready():
+    akabot_logger.info(f"Akabot v{BOT_VERSION} started")
+    akabot_logger.info(f"Logged in as {bot.user.display_name} :3")
+
     bot.add_view(verification.VerificationView())
     bot.add_view(tickets.TicketCreateView(""))
     bot.add_view(tickets.TicketMessageView())
