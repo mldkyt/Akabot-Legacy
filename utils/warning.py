@@ -16,9 +16,9 @@
 #
 
 import datetime
+import logging
 
 import discord
-import sentry_sdk
 from bson import ObjectId
 
 from database import client
@@ -26,6 +26,7 @@ from utils.generic import get_date_time_str, pretty_time_delta
 from utils.languages import get_translation_for_key_localized as trl
 from utils.per_server_settings import get_setting
 
+akabot_logger = logging.getLogger("akabot")
 
 async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -> ObjectId:
     warning_id = db_add_warning(guild.id, user.id, reason)
@@ -43,7 +44,7 @@ async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -
         try:
             await user.send(warning_message)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             pass
 
     warnings = db_get_warnings(guild.id, user.id)
@@ -61,7 +62,7 @@ async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -
                         trl(user.id, guild.id, "warn_actions_auto_kick_dm").format(name=guild.name,
                                                                                    warnings=action['Warnings']))
                 except Exception as e:
-                    sentry_sdk.capture_exception(e)
+                    akabot_logger.exception("An error occured:")
                     pass
                 await user.kick(
                     reason=trl(user.id, guild.id, "warn_actions_auto_kick_reason").format(warnings=action['Warnings']))
@@ -72,7 +73,7 @@ async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -
                         trl(user.id, guild.id, "warn_actions_auto_ban_dm").format(name=guild.name,
                                                                                   warnings=action['Warnings']))
                 except Exception as e:
-                    sentry_sdk.capture_exception(e)
+                    akabot_logger.exception("An error occured:")
                     pass
                 await user.ban(
                     reason=trl(user.id, guild.id, "warn_actions_auto_ban_reason").format(warnings=action['Warnings']),
@@ -99,7 +100,7 @@ async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -
                                                                                           user_id=user.id,
                                                                                           server_id=guild.id)))
                 except Exception as e:
-                    sentry_sdk.capture_exception(e)
+                    akabot_logger.exception("An error occured:")
                     pass
 
                 await user.timeout_for(datetime.timedelta(seconds=total_seconds),

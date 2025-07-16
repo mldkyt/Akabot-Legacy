@@ -14,10 +14,10 @@
 #      You should have received a copy of the GNU Affero General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+import logging
 
 import discord
 import emoji as emoji_package
-import sentry_sdk
 from bson import ObjectId
 from discord.ext import commands as discord_commands_ext
 from discord.ext import pages as dc_pages
@@ -25,6 +25,7 @@ from discord.ext import pages as dc_pages
 from database import client
 from utils.languages import get_translation_for_key_localized as trl
 
+akabot_logger = logging.getLogger("akabot")
 
 class AutoReact(discord.Cog):
     def __init__(self, bot: discord.Bot) -> None:
@@ -67,7 +68,7 @@ class AutoReact(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "auto_react_add_success").format(trigger=trigger, emoji=str(emoji)),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_react_group.command(name="list", description="List auto react settings")
@@ -111,7 +112,7 @@ class AutoReact(discord.Cog):
             paginator = dc_pages.Paginator(message_groups)
             await paginator.respond(ctx.interaction, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_react_group.command(name="edit_trigger", description="Change trigger for a setting")
@@ -135,7 +136,7 @@ class AutoReact(discord.Cog):
 
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_keyword_updated_success"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_react_group.command(name="delete", description="Delete an auto react setting")
@@ -154,7 +155,7 @@ class AutoReact(discord.Cog):
             # Respond
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_delete_success"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_react_group.command(name="edit_react_emoji", description="Change react for a setting")
@@ -198,7 +199,7 @@ class AutoReact(discord.Cog):
             # Respond
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_react_emoji_set_success"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @discord.Cog.listener()
@@ -218,4 +219,4 @@ class AutoReact(discord.Cog):
                     # Add le reaction to it
                     await msg.add_reaction(emoji)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")

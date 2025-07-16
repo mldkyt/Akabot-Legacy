@@ -1,5 +1,6 @@
+import logging
+
 import discord
-import sentry_sdk
 from bson import ObjectId
 from discord.ext import tasks
 
@@ -10,6 +11,7 @@ from utils.module_toggling import is_module_enabled
 from utils.per_server_settings import get_setting
 from utils.tzutil import get_now_for_server
 
+akabot_logger = logging.getLogger("akabot")
 
 def number_to_day_of_week(number: int):
     number = number - 1
@@ -45,7 +47,7 @@ class MessageSchedule(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_daily_added", append_tip=True).format(
                 id=str(inserted.inserted_id)), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="weekly")
@@ -68,7 +70,7 @@ class MessageSchedule(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_weekly_added", append_tip=True).format(
                 day_of_week=day_of_week_word, id=str(inserted.inserted_id)), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="monthly")
@@ -92,7 +94,7 @@ class MessageSchedule(discord.Cog):
                                                                                                              inserted.inserted_id)),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="yearly")
@@ -116,7 +118,7 @@ class MessageSchedule(discord.Cog):
                                                                                                         day=day, id=str(
                         inserted.inserted_id)), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="update_content")
@@ -138,7 +140,7 @@ class MessageSchedule(discord.Cog):
             else:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_not_found"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="delete")
@@ -159,7 +161,7 @@ class MessageSchedule(discord.Cog):
             else:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_not_found"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @grp.command(name="list", description="List scheduled messages")
@@ -200,7 +202,7 @@ class MessageSchedule(discord.Cog):
 
             await ctx.respond(message_content, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @tasks.loop(minutes=1)
@@ -249,4 +251,4 @@ class MessageSchedule(discord.Cog):
                     # Send it
                     await channel.send(content=schedule['Content'])
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")

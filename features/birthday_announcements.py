@@ -16,9 +16,9 @@
 #
 
 import datetime
+import logging
 
 import discord
-import sentry_sdk
 from discord.ext import tasks, commands
 
 from database import client
@@ -29,6 +29,7 @@ from utils.module_toggling import is_module_enabled
 from utils.per_user_settings import get_per_user_setting
 from utils.per_server_settings import set_setting, get_setting
 
+akabot_logger = logging.getLogger("akabot")
 
 class BirthdayAnnouncements(discord.Cog):
     def __init__(self, bot: discord.Bot):
@@ -102,7 +103,7 @@ class BirthdayAnnouncements(discord.Cog):
 
                     await channel.send(bd_msg)
             except Exception as e:
-                sentry_sdk.capture_exception(e)
+                akabot_logger.exception("An error occured:")
 
     @birthday_announcements_group.command(name="channel", description="Set the channel for birthday announcements")
     @is_module_enabled("birthday_announcements")

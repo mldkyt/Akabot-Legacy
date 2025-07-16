@@ -18,7 +18,6 @@
 
 import logging
 import discord
-import sentry_sdk
 from discord.ext import commands, tasks
 
 from database import client
@@ -27,6 +26,7 @@ from utils.logging_util import log_into_logs
 from utils.per_server_settings import set_setting, get_setting
 from utils.tzutil import get_now_for_server
 
+akabot_logger = logging.getLogger("akabot")
 
 def db_add_ticket_channel(guild_id: int, ticket_category: int, user_id: int):
     client['TicketChannels'].insert_one(
@@ -235,7 +235,7 @@ class Tickets(discord.Cog):
 
             db_update_mtime(message.guild.id, message.channel.id)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @discord.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
@@ -248,7 +248,7 @@ class Tickets(discord.Cog):
 
             db_update_mtime(after.guild.id, after.channel.id)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @discord.Cog.listener()
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
@@ -264,7 +264,7 @@ class Tickets(discord.Cog):
 
             db_update_mtime(reaction.message.guild.id, reaction.message.channel.id)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @tickets_commands.command(name="send_message", description="Send a message that allows users to create a ticket")
     @discord.default_permissions(manage_guild=True)
@@ -298,7 +298,7 @@ class Tickets(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @tickets_commands.command(name="set_category",
@@ -319,7 +319,7 @@ class Tickets(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @tickets_commands.command(name="set_hide_time",
@@ -339,7 +339,7 @@ class Tickets(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @tickets_commands.command(name="set_archive_time",
@@ -358,7 +358,7 @@ class Tickets(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @tasks.loop(seconds=60)
@@ -383,7 +383,7 @@ class Tickets(discord.Cog):
 
                     await log_into_logs(guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @tasks.loop(seconds=60)
     async def handle_auto_archive(self):
@@ -423,4 +423,4 @@ class Tickets(discord.Cog):
 
                     await log_into_logs(guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")

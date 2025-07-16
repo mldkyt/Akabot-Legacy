@@ -19,12 +19,10 @@ import datetime
 import logging
 
 import discord
-import sentry_sdk
 from discord.ext import commands as commands_ext
 from discord.ext import tasks
 from discord.ext.pages import Paginator
 from discord.ui import button, View
-from sentry_sdk import capture_exception
 
 from database import client
 from utils.analytics import analytics
@@ -35,6 +33,7 @@ from utils.logging_util import log_into_logs
 from utils.per_server_settings import get_setting, set_setting
 from utils.tzutil import get_now_for_server
 
+akabot_logger = logging.getLogger("akabot")
 
 def enable(guild_id: str, channel_id: str):
     if client['ChatSummary'].count_documents(
@@ -133,7 +132,7 @@ class OpenPaginatorView(View):
             pagination = Paginator(pages=data['Pages'])
             await pagination.respond(interaction, ephemeral=True)
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, "command_error_generic"),
                                       ephemeral=True)
 
@@ -220,7 +219,7 @@ async def normal_chat_summary(channel, date, guild, i, summary_title: str = ""):
             'Pages': pages
         })
     except Exception as e:
-        sentry_sdk.capture_exception(e)
+        akabot_logger.exception("An error occured:")
     client[db].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
                           {'$set': {'Messages': {}, 'MessageCount': 0, 'KeywordsCounting': {}}})
 
@@ -246,7 +245,7 @@ class ChatSummary(discord.Cog):
 
             inc(message)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @discord.Cog.listener()
     async def on_message_edit(self, old_message: discord.Message, new_message: discord.Message):
@@ -263,7 +262,7 @@ class ChatSummary(discord.Cog):
 
             inc(new_message)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @tasks.loop(minutes=1)
     async def summarize(self):
@@ -325,7 +324,7 @@ class ChatSummary(discord.Cog):
                     await special_chat_summary(channel, date, guild, i)
 
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     chat_summary_subcommand = discord.SlashCommandGroup(
         name='chatsummary', description='Chat summary')
@@ -366,7 +365,7 @@ class ChatSummary(discord.Cog):
             # Send response
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_summary_add_added", append_tip=True), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_summary_subcommand.command(name="remove", description="Remove a channel from being counted to chat summary")
@@ -397,7 +396,7 @@ class ChatSummary(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_summary_remove_removed", append_tip=True),
                               ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_summary_subcommand.command(name="dateformat", description="Set the date format of Chat Streak messages.")
@@ -432,7 +431,7 @@ class ChatSummary(discord.Cog):
                     format=date_format),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_summary_subcommand.command(name="top_count",
@@ -477,7 +476,7 @@ class ChatSummary(discord.Cog):
                 ), ephemeral=True)
 
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_summary_subcommand.command(name="countedits",
@@ -512,7 +511,7 @@ class ChatSummary(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "chat_summary_count_edits_off", append_tip=True),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_summary_subcommand.command(name="countconsencutive",
@@ -547,7 +546,7 @@ class ChatSummary(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "chat_summary_count_consencutive_off", append_tip=True),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_summary_subcommand.command(name='add_keyword', description='Add a keyword to be counted')

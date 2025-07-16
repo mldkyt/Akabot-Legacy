@@ -19,7 +19,6 @@ import datetime
 import logging
 
 import discord
-import sentry_sdk
 from discord.ext import commands as commands_ext, pages
 
 from database import client
@@ -34,6 +33,7 @@ from utils.per_server_settings import get_setting, set_setting
 from utils.tips import append_tip_to_message
 from utils.tzutil import get_server_midnight_time
 
+akabot_logger = logging.getLogger("akabot")
 
 class ChatStreakStorage:
     """Chat Streaks Storage.
@@ -145,7 +145,7 @@ class ChatStreaks(discord.Cog):
 
             await log_into_logs(guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     async def reset_rewards(self, guild: discord.Guild, member: discord.Member):
         try:
@@ -170,7 +170,7 @@ class ChatStreaks(discord.Cog):
 
             await log_into_logs(guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -236,7 +236,7 @@ class ChatStreaks(discord.Cog):
                                              get_setting(message.guild.id, 'chat_streaks_delete_sent_message_updated',
                                                          '10')), reply_to_message=reply_to_user)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     streaks_subcommand = discord.SlashCommandGroup(name='streaks', description='Manage the chat streaks')
 
@@ -267,7 +267,7 @@ class ChatStreaks(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "chat_streaks_reset_success", append_tip=True).format(user=user.mention),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @streaks_subcommand.command(name="streak", description="Get someone's streak, to get yours, /streak.")
@@ -286,7 +286,7 @@ class ChatStreaks(discord.Cog):
                                                                                                     streak=str(streak)),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @streaks_subcommand.command(name="configure_messages", description="Configure Chat Streaks messages")
@@ -308,7 +308,7 @@ class ChatStreaks(discord.Cog):
 
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_streaks_configure_messages_success"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @discord.slash_command(name='streak', description='Get your current streak')
     @is_module_enabled("chat_streaks")
@@ -321,7 +321,7 @@ class ChatStreaks(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "chat_streaks_streak", append_tip=True).format(streak=streak),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     # Leaderboard
@@ -375,7 +375,7 @@ class ChatStreaks(discord.Cog):
             resp = pages.Paginator(pages=lb_pages)
             await resp.respond(ctx.interaction, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @streaks_subcommand.command(name="add_reward", description="Add a chat streak reward")
@@ -395,7 +395,7 @@ class ChatStreaks(discord.Cog):
                  'RemoveOnLoss': remove_on_loss})
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_streaks_add_reward_success"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @streaks_subcommand.command(name="remove_reward", description="Remove a chat streak reward")
@@ -411,5 +411,5 @@ class ChatStreaks(discord.Cog):
             client['ChatStreaksRewards'].delete_one({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)})
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "chat_streaks_remove_reward_success"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

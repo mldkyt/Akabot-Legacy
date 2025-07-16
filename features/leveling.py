@@ -21,7 +21,6 @@ import re
 
 import discord
 import emoji
-import sentry_sdk
 from discord.ext import commands as commands_ext, pages
 
 from database import client
@@ -42,6 +41,7 @@ from utils.per_server_settings import get_setting, set_setting
 from utils.tips import append_tip_to_message
 from utils.tzutil import get_now_for_server
 
+akabot_logger = logging.getLogger("akabot")
 
 class Leveling(discord.Cog):
     def __init__(self, bot: discord.Bot) -> None:
@@ -97,7 +97,7 @@ class Leveling(discord.Cog):
                     content=trl(msg.author.id, msg.guild.id, "leveling_level_up").format(mention=msg.author.mention,
                                                                                  level=str(after_level)), delete_after=5)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @discord.slash_command(name='level', description='Get the level of a user')
     @is_module_enabled("leveling")
@@ -168,7 +168,7 @@ class Leveling(discord.Cog):
                 await ctx.respond(response, ephemeral=True)
 
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     leveling_subcommand = discord.SlashCommandGroup(name='leveling', description='Leveling settings')
@@ -204,7 +204,7 @@ class Leveling(discord.Cog):
 
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='set_per_message',
@@ -272,7 +272,7 @@ class Leveling(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_set_multiplier_success", append_tip=True).format(
                 multiplier=multiplier), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='add_multiplier', description='Add to the leveling multiplier')
@@ -335,7 +335,7 @@ class Leveling(discord.Cog):
                                                                                                           multiplier=multiplier),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='change_multiplier_name', description='Change the name of a multiplier')
@@ -380,7 +380,7 @@ class Leveling(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "leveling_rename_multiplier_success", append_tip=True).format(
                     old_name=old_name, new_name=new_name), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='change_multiplier_multiplier',
@@ -423,7 +423,7 @@ class Leveling(discord.Cog):
                                                                                                       multiplier=multiplier),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='change_multiplier_start_date',
@@ -479,7 +479,7 @@ class Leveling(discord.Cog):
                 ephemeral=True)
 
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='change_multiplier_end_date', description='Change the end date of a multiplier')
@@ -532,7 +532,7 @@ class Leveling(discord.Cog):
                                                                                                     end_date=end_date),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='remove_multiplier', description='Remove a multiplier')
@@ -571,7 +571,7 @@ class Leveling(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "leveling_remove_multiplier_success", append_tip=True).format(name=name),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='get_multiplier', description='Get the leveling multiplier')
@@ -588,7 +588,7 @@ class Leveling(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "leveling_get_multiplier_response", append_tip=True).format(
                     multiplier=multiplier), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='set_xp_per_level', description='Set the XP per level')
@@ -617,7 +617,7 @@ class Leveling(discord.Cog):
             # Send into logs
             await log_into_logs(ctx.guild, logging_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='set_reward', description='Set a role for a level')
@@ -660,7 +660,7 @@ class Leveling(discord.Cog):
                                                                                                       reward=role.mention),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='remove_reward', description='Remove a role for a level')
@@ -698,7 +698,7 @@ class Leveling(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "leveling_remove_reward_success", append_tip=True).format(level=level),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name="set_icon", description="Set leveling icon")
@@ -725,7 +725,7 @@ class Leveling(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_set_icon_error"), ephemeral=True)
 
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @leveling_subcommand.command(name='leaderboard', description='Get the leaderboard for the server')
@@ -785,5 +785,5 @@ class Leveling(discord.Cog):
             pages_resp = pages.Paginator(pages=lb_pages)
             await pages_resp.respond(ctx.interaction, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

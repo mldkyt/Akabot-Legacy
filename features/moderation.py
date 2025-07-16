@@ -16,9 +16,9 @@
 #
 
 import datetime
+import logging
 
 import discord
-import sentry_sdk
 from discord.ext import commands as commands_ext
 
 from database import client
@@ -35,6 +35,7 @@ from utils.tzutil import get_now_for_server
 from utils.warning import add_warning, db_get_warning_actions, db_add_warning_action, db_get_warnings, \
     db_remove_warning_action, db_remove_warning
 
+akabot_logger = logging.getLogger("akabot")
 
 def is_a_moderator(ctx: discord.ApplicationContext):
     roles = client['ModeratorRoles'].find({'GuildID': str(ctx.guild.id)})
@@ -106,7 +107,7 @@ class Moderation(discord.Cog):
                     trl(0, ctx.guild.id, "moderation_kick_dm").format(guild=ctx.guild.name, reason=reason,
                                                                       moderator=ctx.user.display_name))
             except Exception as e:
-                sentry_sdk.capture_exception(e, scope="kick_user_dm")  # TO HANDLE LATER
+                akabot_logger.exception("An error occured:")  # TO HANDLE LATER
                 pass
 
             await user.kick(reason=reason)
@@ -124,7 +125,7 @@ class Moderation(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @discord.slash_command(name='ban', description='Ban a user from the server')
@@ -165,7 +166,7 @@ class Moderation(discord.Cog):
                     trl(ctx.user.id, ctx.guild.id, "moderation_ban_dm").format(guild=ctx.guild.name, reason=reason,
                                                                                moderator=ctx.user.display_name))
             except Exception as e:
-                sentry_sdk.capture_exception(e, scope="ban_user_dm")
+                akabot_logger.exception("An error occured:")
                 pass
 
             await ctx.guild.ban(user, reason=reason, delete_message_seconds=604800)
@@ -183,7 +184,7 @@ class Moderation(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @discord.slash_command(name='unban', description='Unban a user from the server')
@@ -219,7 +220,7 @@ class Moderation(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_unban_fail", append_tip=True),
                                   ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @discord.slash_command(name='timeout',
@@ -283,7 +284,7 @@ class Moderation(discord.Cog):
                                                                                          server_id=ctx.guild.id),
                                             moderator=ctx.user.display_name, reason=reason))
                 except Exception as e:
-                    sentry_sdk.capture_exception(e, scope="timeout_user_dm")
+                    akabot_logger.exception("An error occured:")
                     pass
             else:
                 try:
@@ -291,7 +292,7 @@ class Moderation(discord.Cog):
                         trl(0, ctx.guild.id, "moderation_timeout_dm").format(guild=ctx.guild.name, reason=reason,
                                                                              moderator=ctx.user.display_name))
                 except Exception as e:
-                    sentry_sdk.capture_exception(e, scope="timeout_user_dm")
+                    akabot_logger.exception("An error occured:")
                     pass
 
             await user.timeout_for(datetime.timedelta(seconds=total_seconds), reason=reason)
@@ -309,7 +310,7 @@ class Moderation(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @discord.slash_command(name='remove_timeout', description='Remove a timeout from a user on the server')
@@ -368,7 +369,7 @@ class Moderation(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @discord.slash_command(name='purge', description='Purge messages from a channel')
@@ -422,7 +423,7 @@ class Moderation(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     warning_group = discord.SlashCommandGroup(name='warn', description='Warning commands')
@@ -457,7 +458,7 @@ class Moderation(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @warning_group.command(name='remove', description='Remove a warning from a user')
@@ -501,7 +502,7 @@ class Moderation(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @warning_group.command(name='list', description='List all warnings for a user')
@@ -532,7 +533,7 @@ class Moderation(discord.Cog):
                 warning_str = append_tip_to_message(ctx.guild.id, ctx.user.id, warning_str, language)
             await ctx.respond(warning_str, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @warning_group.command(name='message', description='Set the message to be sent to a user when they are warned')
@@ -583,7 +584,7 @@ class Moderation(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     warning_actions_group = discord.SlashCommandGroup(name='warn_actions', description='Warning action commands')
@@ -614,7 +615,7 @@ class Moderation(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @warning_actions_group.command(name='list',
@@ -645,7 +646,7 @@ class Moderation(discord.Cog):
                 action_str = append_tip_to_message(ctx.guild.id, ctx.user.id, action_str, language)
             await ctx.respond(action_str, ephemeral=ephemerality == "true")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @warning_actions_group.command(name='remove',
@@ -683,7 +684,7 @@ class Moderation(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @moderation_subcommand.command(name="ephemeral", description="Toggle the ephemeral status of a message")
@@ -705,7 +706,7 @@ class Moderation(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @moderation_subcommand.command(name='add_moderator_role', description='Add a moderator role to the server')
@@ -731,7 +732,7 @@ class Moderation(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @moderation_subcommand.command(name='remove_moderator_role', description='Remove a moderator role from the server')
@@ -755,7 +756,7 @@ class Moderation(discord.Cog):
 
             await log_into_logs(ctx.guild, log_embed)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @moderation_subcommand.command(name='list_moderator_roles', description='List all moderator roles on the server')
@@ -777,5 +778,5 @@ class Moderation(discord.Cog):
             message += "\n".join(role_mentions)
             await ctx.respond(message, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

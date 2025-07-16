@@ -14,11 +14,10 @@
 #      You should have received a copy of the GNU Affero General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-
+import logging
 import time
 
 import discord
-import sentry_sdk
 from discord.ext import commands as commands_ext
 from discord.ext import tasks
 
@@ -28,6 +27,7 @@ from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
 
+akabot_logger = logging.getLogger("akabot")
 
 class ChatRevive(discord.Cog):
     def __init__(self, bot: discord.Bot):
@@ -49,7 +49,7 @@ class ChatRevive(discord.Cog):
             client['ChatRevive'].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
                                             {'$set': {'LastMessage': time.time(), 'Revived': False}})
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @tasks.loop(minutes=1)
     async def revive_channels(self):
@@ -80,7 +80,7 @@ class ChatRevive(discord.Cog):
                     client['ChatRevive'].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
                                                     {'$set': {'Revived': True}})
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     chat_revive_subcommand = discord.SlashCommandGroup(name='chatrevive', description='Revive channels')
 
@@ -134,7 +134,7 @@ class ChatRevive(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "chat_revive_set_response_success").format(channel=channel.mention),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_revive_subcommand.command(name="remove", description="List the revive settings")
@@ -162,7 +162,7 @@ class ChatRevive(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "chat_revive_remove_success").format(channel=channel.mention),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @chat_revive_subcommand.command(name="list", description="List the revive settings")
@@ -192,5 +192,5 @@ class ChatRevive(discord.Cog):
 
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

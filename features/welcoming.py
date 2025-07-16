@@ -15,9 +15,9 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 import datetime
+import logging
 
 import discord
-import sentry_sdk
 from discord.ext import commands as commands_ext
 
 from utils.analytics import analytics
@@ -26,6 +26,7 @@ from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
 from utils.per_server_settings import get_setting, set_setting
 
+akabot_logger = logging.getLogger("akabot")
 
 class WelcomingCache:
     def __init__(self):
@@ -97,7 +98,7 @@ class Welcoming(discord.Cog):
                 self.cache.member_join(member, msg)
 
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     async def delete_welcome_message(self, member: discord.Member):
         try:
@@ -130,7 +131,7 @@ class Welcoming(discord.Cog):
 
             await log_into_logs(member.guild, emb)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @discord.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
@@ -171,7 +172,7 @@ class Welcoming(discord.Cog):
             if message_type == 'text':
                 await target_channel.send(content=message_text)  # Send it as text only
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     welcome_subcommands = discord.SlashCommandGroup(name="welcome", description="Change the welcoming message")
 
@@ -197,7 +198,7 @@ class Welcoming(discord.Cog):
 
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @welcome_subcommands.command(name='channel', description="Set the welcoming channel")
@@ -234,7 +235,7 @@ class Welcoming(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "welcome_channel_set", append_tip=True).format(channel=channel.mention),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @welcome_subcommands.command(name='type', description="Set whether you want to use message content or embed")
@@ -267,7 +268,7 @@ class Welcoming(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "welcome_type_set", append_tip=True).format(type=message_type),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @welcome_subcommands.command(name='title', description="Set the title of the welcoming message")
@@ -297,7 +298,7 @@ class Welcoming(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "welcome_title_set", append_tip=True).format(title=title),
                               ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @welcome_subcommands.command(name='text', description="Set the text of the welcoming message")
@@ -327,7 +328,7 @@ class Welcoming(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "welcome_text_sent", append_tip=True).format(text=text),
                               ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @welcome_subcommands.command(name="grace_period", description="Set up a grace period. If a member leaves within this time, the welcome message is deleted")
@@ -363,7 +364,7 @@ class Welcoming(discord.Cog):
             # Respond
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "welcome_grace_period_set", append_tip=True).format(minutes=minutes), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
 
@@ -392,7 +393,7 @@ class Welcoming(discord.Cog):
 
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @goodbye_subcommands.command(name='channel', description="Set the goodbye channel")
@@ -424,7 +425,7 @@ class Welcoming(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "goodbye_channel_set", append_tip=True).format(channel=channel.mention),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @goodbye_subcommands.command(name='type', description="Set whether you want to use message content or embed")
@@ -457,7 +458,7 @@ class Welcoming(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "goodbye_type_set", append_tip=True).format(type=message_type),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @goodbye_subcommands.command(name='title', description="Set the title of the goodbye message")
@@ -487,7 +488,7 @@ class Welcoming(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "goodbye_title_set", append_tip=True).format(title=title),
                               ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @goodbye_subcommands.command(name='text', description="Set the text of the goodbye message")
@@ -517,5 +518,5 @@ class Welcoming(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "goodbye_text_set", append_tip=True).format(text=text),
                               ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

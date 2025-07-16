@@ -14,9 +14,9 @@
 #      You should have received a copy of the GNU Affero General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+import logging
 
 import discord
-import sentry_sdk
 
 from database import client
 from utils.analytics import analytics
@@ -24,6 +24,7 @@ from utils.blocklist import blocklist
 from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 
+akabot_logger = logging.getLogger("akabot")
 
 class RolesOnJoin(discord.Cog):
     def __init__(self, bot: discord.Bot):
@@ -47,7 +48,7 @@ class RolesOnJoin(discord.Cog):
                     # remove
                     client['RolesOnJoin'].delete_one({'GuildID': str(member.guild.id)})
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     roles_on_join_commands = discord.SlashCommandGroup(name="roles_on_join", description="Add roles on join")
 
@@ -74,7 +75,7 @@ class RolesOnJoin(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "roles_on_join_role_already_in_join_roles"),
                                   ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @roles_on_join_commands.command(name="remove", description="Remove a role on join")
@@ -90,7 +91,7 @@ class RolesOnJoin(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "roles_on_join_role_removed", append_tip=True),
                                   ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @roles_on_join_commands.command(name="list", description="List roles on join")
@@ -117,5 +118,5 @@ class RolesOnJoin(discord.Cog):
             embed = discord.Embed(title="Roles on Join", description=msg, color=discord.Color.blurple())
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

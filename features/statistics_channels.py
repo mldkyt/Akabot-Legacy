@@ -18,9 +18,9 @@ import asyncio
 import logging
 
 import discord
-import sentry_sdk
 from discord.ext import tasks, pages
 
+from utils.denylist import akabot_logger
 from utils.languages import get_translation_for_key_localized as _
 from utils.statistic_channels import db_get_statistic_channels, db_set_statistic_channel, db_remove_statistic_channel, \
     db_get_all_statistic_channels
@@ -59,10 +59,10 @@ async def update_statistic_channels_for_guild(guild: discord.Guild):
             except discord.Forbidden:
                 pass
             except Exception as e:
-                sentry_sdk.capture_exception(e, scope='Akabot > Statistic Channels > Update Guilds > Update Channel')
+                akabot_logger.exception("An error occured:")
 
     except Exception as e:
-        sentry_sdk.capture_exception(e, scope='Akabot > Statistic Channels > Update Guilds > Update Guild')
+        akabot_logger.exception("An error occured:")
 
 
 class StatisticChannels(discord.Cog):
@@ -83,7 +83,7 @@ class StatisticChannels(discord.Cog):
             db_set_statistic_channel(ctx.guild.id, channel.id, statistic_text)
             await ctx.respond("Settings updated.", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e, scope='Akabot > Statistic Channels > Set Command')
+            akabot_logger.exception("An error occured:")
             await ctx.respond(_(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @statistic_channels_grp.command(name="help", description="Formatting help")
@@ -100,7 +100,7 @@ class StatisticChannels(discord.Cog):
             ),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e, scope='Akabot > Statistic Channels > Help Command')
+            akabot_logger.exception("An error occured:")
             await ctx.respond(_(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @statistic_channels_grp.command(name="list", description="List statistic channels")
@@ -129,7 +129,7 @@ class StatisticChannels(discord.Cog):
             paginator = pages.Paginator(pages=pg)
             await paginator.respond(ctx.interaction, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e, scope='Akabot > Statistic Channels > List Command')
+            akabot_logger.exception("An error occured:")
             await ctx.respond(_(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @statistic_channels_grp.command(name="remove", description="Remove statistic channel")
@@ -138,7 +138,7 @@ class StatisticChannels(discord.Cog):
             db_remove_statistic_channel(ctx.guild.id, ctx.channel.id)
             await ctx.respond(_(ctx.user.id, ctx.guild.id, 'statistic_channel_remove'), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e, scope='Akabot > Statistic Channels > Remove Channel Command')
+            akabot_logger.exception("An error occured:")
             await ctx.respond(_(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @tasks.loop(minutes=1)
@@ -157,4 +157,4 @@ class StatisticChannels(discord.Cog):
 
             await asyncio.gather(*tasks_to_run)
         except Exception as e:
-            sentry_sdk.capture_exception(e, scope='Akabot > Statistic Channels > Update Guilds')
+            akabot_logger.exception("An error occured:")

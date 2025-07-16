@@ -14,14 +14,15 @@
 #      You should have received a copy of the GNU Affero General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+import logging
 
 import discord
 import requests
-import sentry_sdk
 from discord.ext import tasks
 
 from utils.config import get_key
 
+akabot_logger = logging.getLogger("akabot")
 
 class Heartbeat(discord.Cog):
     def __init__(self) -> None:
@@ -49,4 +50,4 @@ class Heartbeat(discord.Cog):
                 elif method == "delete":
                     requests.delete(url)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")

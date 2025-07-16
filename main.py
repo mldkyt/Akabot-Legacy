@@ -17,14 +17,23 @@
 
 import logging
 
+akabot_logger = logging.getLogger("akabot")
+akabot_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+file_handler = logging.FileHandler(filename="akabot.log", mode="a", encoding="utf-8")
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(akabot_formatter)
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+console_handler.setFormatter(akabot_formatter)
+
+akabot_logger.addHandler(file_handler)
+akabot_logger.addHandler(console_handler)
+
 import discord
-import sentry_sdk
 from discord.ext import commands as discord_commands_ext
 from dotenv import load_dotenv
-from sentry_sdk.integrations.aiohttp import AioHttpIntegration
-from sentry_sdk.integrations.asyncio import AsyncioIntegration
-from sentry_sdk.integrations.logging import LoggingIntegration
-from sentry_sdk.integrations.pymongo import PyMongoIntegration
 
 import utils.blocklist
 from utils import module_toggling
@@ -52,26 +61,10 @@ elif log_level == "error":
     log_level = logging.ERROR
 else:
     log_level = logging.INFO
-    print('Invalid log mode, defaulting to info')
 
-print("Setting log level", log_level, flush=True)
-
-logging.basicConfig(
-    level=log_level,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logging.getLogger().setLevel(log_level)
+console_handler.setLevel(log_level)
 
 BOT_VERSION = get_key("Bot_Version", "3.5")
-
-if get_key("Sentry_Enabled", "false") == "true":
-    sentry_sdk.init(get_key("Sentry_DSN"),
-                    integrations=[LoggingIntegration(level=logging.INFO, event_level=logging.ERROR),
-                                  AioHttpIntegration(),
-                                  AsyncioIntegration(),
-                                  PyMongoIntegration()],
-                    traces_sample_rate=1.0,
-                    profiles_sample_rate=1.0)
 
 intents = discord.Intents.default()
 intents.message_content = get_key('Message_Intent', "false") == "true"
@@ -149,13 +142,12 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
         await ctx.respond(embed=emb, ephemeral=True)
         return
 
-    sentry_sdk.capture_exception(error)
+    logging.exception("An error occurred:")
     try:
         # respond
         await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
     except Exception as e:
         logging.error("Failed to respond to message")
-        sentry_sdk.capture_exception(e)
     raise error
 
 

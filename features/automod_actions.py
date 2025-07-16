@@ -19,7 +19,6 @@ import datetime
 import logging
 
 import discord
-import sentry_sdk
 from bson import ObjectId
 from discord.ext import commands as discord_commands_ext
 
@@ -30,6 +29,7 @@ from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 from utils.warning import add_warning
 
+akabot_logger = logging.getLogger("akabot")
 
 def db_add_automod_action(guild_id: int, rule_id: int, rule_name: str, action: str, additional) -> ObjectId:
     insert_result = client['AutomodActions'].insert_one(
@@ -124,7 +124,7 @@ class AutomodActions(discord.Cog):
                         await add_warning(payload.member, payload.guild, extra)
 
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     automod_actions_subcommands = discord.SlashCommandGroup(name='automod_actions',
                                                             description='Automod actions management.')
@@ -187,7 +187,7 @@ class AutomodActions(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "automod_added", append_tip=True).format(id=str(action_id)),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @automod_actions_subcommands.command(name='remove', description='Remove an automod action.')
@@ -218,7 +218,7 @@ class AutomodActions(discord.Cog):
             db_remove_automod_action(ObjectId(action_id))
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_removed", append_tip=True), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @automod_actions_subcommands.command(name='list', description='List automod actions.')
@@ -239,5 +239,5 @@ class AutomodActions(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "automod_actions_list", append_tip=True).format(actions=actions),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

@@ -15,10 +15,10 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 import datetime
+import logging
 import re
 
 import discord
-import sentry_sdk
 from discord import Interaction, Embed, Color
 from discord.ext import commands
 from discord.ui import View, Modal, InputText
@@ -28,6 +28,7 @@ from utils.languages import get_translation_for_key_localized as trl
 from utils.module_toggling import is_module_enabled
 from utils.per_server_settings import get_setting, set_setting
 
+akabot_logger = logging.getLogger("akabot")
 
 class V2NameChangeModal(Modal):
     def __init__(self, ch_id: int):
@@ -54,7 +55,7 @@ class V2NameChangeModal(Modal):
             await interaction.response.send_message('Name updated', ephemeral=True)
         except Exception as e:
             await interaction.response.send_message('An error occurred', ephemeral=True)
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
 
 class V2MaxUsersChangeModal(Modal):
@@ -90,7 +91,7 @@ class V2MaxUsersChangeModal(Modal):
             await interaction.response.send_message('Max users updated', ephemeral=True)
         except Exception as e:
             await interaction.response.send_message('An error occurred', ephemeral=True)
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
 
 class V2BitrateChangeModal(Modal):
@@ -126,7 +127,7 @@ class V2BitrateChangeModal(Modal):
             await interaction.response.send_message('Bitrate updated', ephemeral=True)
         except Exception as e:
             await interaction.response.send_message('An error occurred', ephemeral=True)
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
 
 class V2TemporaryVCMenu(View):
@@ -162,7 +163,7 @@ class V2TemporaryVCMenu(View):
             await interaction.response.send_modal(mod)
         except Exception as e:
             await interaction.response.send_message('An error occurred', ephemeral=True)
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @discord.ui.button(label='Change Max Users', style=discord.ButtonStyle.primary)
     async def change_max_users(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -185,7 +186,7 @@ class V2TemporaryVCMenu(View):
             await interaction.response.send_modal(mod)
         except Exception as e:
             await interaction.response.send_message('An error occurred', ephemeral=True)
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @discord.ui.button(label='Change Bitrate', style=discord.ButtonStyle.primary)
     async def change_bitrate(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -208,7 +209,7 @@ class V2TemporaryVCMenu(View):
             await interaction.response.send_modal(mod)
         except Exception as e:
             await interaction.response.send_message('An error occurred', ephemeral=True)
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
 
 async def new_temporary_channel(from_ch: discord.VoiceChannel,
@@ -248,7 +249,7 @@ async def new_temporary_channel(from_ch: discord.VoiceChannel,
         msg_2 = await new_ch.send(content=for_user.mention, embed=emb, view=V2TemporaryVCMenu())
         client['TemporaryVC'].update_one({'_id': res.inserted_id}, {'$set': {'ManagementMenuMsgID': str(msg_2.id)}})
     except Exception as e:
-        sentry_sdk.capture_exception(e)
+        akabot_logger.exception("An error occured:")
 
     return new_ch
 
@@ -322,7 +323,7 @@ class TemporaryVC(discord.Cog):
                 await h_leave_channel(member, before)
                 await h_join_channel(member, after)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @temporary_vc_commands.command(name='add_creator_channel',
                                    description='Add a channel to create temporary voice channels')
@@ -336,7 +337,7 @@ class TemporaryVC(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, 'temporary_vc_creator_channel_add').format(channel=channel.mention),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @temporary_vc_commands.command(name='remove_creator_channel',
@@ -356,7 +357,7 @@ class TemporaryVC(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'temporary_vc_error_channel_not_in_creator').format(
                     channel=channel.mention), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @temporary_vc_commands.command(name='change_default_name',
@@ -368,5 +369,5 @@ class TemporaryVC(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'temporary_vc_name_format_change').format(name=name),
                               ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

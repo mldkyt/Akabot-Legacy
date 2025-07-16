@@ -2,10 +2,10 @@
 import datetime
 import logging
 import discord
-import sentry_sdk
 from database import client
 from discord.ext import tasks
 
+akabot_logger = logging.getLogger("akabot")
 
 class StickyMessage(discord.Cog):
     def __init__(self, bot: discord.Bot):
@@ -32,7 +32,7 @@ class StickyMessage(discord.Cog):
 
             await self.move_message_down(message.channel)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
         finally:
             logging.debug("Finishing processing of channel %s", str(message.channel.id))
             self.processing_channels.remove(message.channel.id)
@@ -54,7 +54,7 @@ class StickyMessage(discord.Cog):
 
             await ctx.respond(f"Sticky message set", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond("Failed to set sticky message", ephemeral=True)
 
     @sticky_message_group.command(name="remove", description="Remove sticky message")
@@ -77,7 +77,7 @@ class StickyMessage(discord.Cog):
             })
             await ctx.respond(f"Sticky message removed", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond("Failed to remove sticky message", ephemeral=True)
 
     async def move_message_down(self, channel: discord.TextChannel):
@@ -118,7 +118,7 @@ class StickyMessage(discord.Cog):
             }, upsert=True)
 
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @tasks.loop(seconds=5)
     async def check_sticky_message(self):
@@ -139,4 +139,4 @@ class StickyMessage(discord.Cog):
                 await self.move_message_down(channel)
                 logging.debug("Message moved down")
             except Exception as e:
-                sentry_sdk.capture_exception(e)
+                akabot_logger.exception("An error occured:")

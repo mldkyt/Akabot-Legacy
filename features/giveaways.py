@@ -16,10 +16,10 @@
 #
 
 import datetime
+import logging
 import random
 
 import discord
-import sentry_sdk
 from bson import ObjectId
 from discord.ext import commands as commands_ext
 from discord.ext import tasks
@@ -34,6 +34,7 @@ from utils.per_user_settings import get_per_user_setting
 from utils.tips import append_tip_to_message
 from utils.tzutil import get_now_for_server
 
+akabot_logger = logging.getLogger("akabot")
 
 class Giveaways(discord.Cog):
     giveaways_group = discord.SlashCommandGroup(name="giveaways")
@@ -87,7 +88,7 @@ class Giveaways(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "giveaways_new_success", append_tip=True).format(
                 id=str(res.inserted_id)), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @giveaways_group.command(name="end", description="End a giveaway IRREVERSIBLY")
@@ -114,7 +115,7 @@ class Giveaways(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "giveaways_giveaway_end_success", append_tip=True),
                               ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @giveaways_group.command(name='list', description='List all giveaways')
@@ -149,7 +150,7 @@ class Giveaways(discord.Cog):
                 message = append_tip_to_message(ctx.guild.id, ctx.user.id, message, language)
             await ctx.respond(message, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic").format(e), ephemeral=True)
 
     @discord.Cog.listener()
@@ -161,7 +162,7 @@ class Giveaways(discord.Cog):
             client['Giveaways'].update_one({'MessageID': str(reaction.message.id)},
                                            {'$push': {'Participants': str(user.id)}})
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @discord.Cog.listener()
     async def on_reaction_remove(self, reaction: discord.Reaction, user: discord.User):
@@ -172,7 +173,7 @@ class Giveaways(discord.Cog):
             client['Giveaways'].update_one({'MessageID': str(reaction.message.id)},
                                            {'$pull': {'Participants': str(user.id)}})
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     async def process_send_giveaway(self, giveaway_id: str):
         try:
@@ -208,7 +209,7 @@ class Giveaways(discord.Cog):
 
             client['Giveaways'].delete_one({'_id': ObjectId(giveaway_id)})
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @tasks.loop(minutes=1)
     async def giveaway_mng(self):
@@ -226,4 +227,4 @@ class Giveaways(discord.Cog):
                 if time > end_date:
                     await self.process_send_giveaway(str(i['_id']))
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")

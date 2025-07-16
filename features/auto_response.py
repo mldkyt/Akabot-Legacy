@@ -14,9 +14,9 @@
 #      You should have received a copy of the GNU Affero General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+import logging
 
 import discord
-import sentry_sdk
 from bson import ObjectId
 from discord.ext import commands as discord_commands_ext
 from discord.ext import pages as dc_pages
@@ -24,6 +24,7 @@ from discord.ext import pages as dc_pages
 from database import client
 from utils.languages import get_translation_for_key_localized as trl
 
+akabot_logger = logging.getLogger("akabot")
 
 class AutoResponse(discord.Cog):
     def __init__(self, bot: discord.Bot) -> None:
@@ -48,7 +49,7 @@ class AutoResponse(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "auto_response_add_success").format(trigger=trigger, reply=reply),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_response_group.command(name="list", description="List auto response settings")
@@ -93,7 +94,7 @@ class AutoResponse(discord.Cog):
             paginator = dc_pages.Paginator(message_groups)
             await paginator.respond(ctx.interaction, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_response_group.command(name="edit_trigger", description="Change trigger for a setting")
@@ -118,7 +119,7 @@ class AutoResponse(discord.Cog):
             # Respond
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_keyword_updated"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_response_group.command(name="delete", description="Delete an auto response setting")
@@ -142,7 +143,7 @@ class AutoResponse(discord.Cog):
             # Respond
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_delete_success"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @auto_response_group.command(name="edit_response", description="Change response for a setting")
@@ -167,7 +168,7 @@ class AutoResponse(discord.Cog):
             # Respond
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_text_updated"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @discord.Cog.listener()
@@ -185,4 +186,4 @@ class AutoResponse(discord.Cog):
                     # Reply to it
                     await msg.reply(i['ReplyText'])
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")

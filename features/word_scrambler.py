@@ -21,7 +21,6 @@ import random
 import re
 
 import discord
-import sentry_sdk
 from discord.ext import commands, tasks
 
 from database import client
@@ -31,6 +30,7 @@ from utils.leveling import get_level_for_xp, add_xp, get_xp, update_roles_for_me
 from utils.module_toggling import is_module_enabled
 from utils.per_server_settings import get_setting, set_setting
 
+akabot_logger = logging.getLogger("akabot")
 
 def start_word_scrambler(channel_id: int, message_id: int, word: str):
     """Starts a word scramble game in a channel"""
@@ -180,7 +180,7 @@ class WordScrambler(discord.Cog):
         except Exception as e:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_start_failed", append_tip=True),
                               ephemeral=True)
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @word_scramble_commands.command(name="end", description="Force end a word scramble game in this channel")
     @is_module_enabled("word_scramble")
@@ -204,7 +204,7 @@ class WordScrambler(discord.Cog):
         except Exception as e:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_stop_failed", append_tip=True),
                               ephemeral=True)
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @word_scramble_commands.command(name="set_channel", description="Add a channel or set settings for word scramble")
     @is_module_enabled("word_scramble")
@@ -259,7 +259,7 @@ class WordScrambler(discord.Cog):
         except Exception as e:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_set_failed", append_tip=True),
                               ephemeral=True)
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @word_scramble_commands.command(name="set_xp_per_game", description="Set XP to add per game won in word scramble")
     @is_module_enabled("word_scramble")
@@ -304,7 +304,7 @@ class WordScrambler(discord.Cog):
         except Exception as e:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_remove_failed", append_tip=True),
                               ephemeral=True)
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @word_scramble_commands.command(name="set_role", description="Set a ping role for word scramble")
     @is_module_enabled("word_scramble")
@@ -402,7 +402,7 @@ class WordScrambler(discord.Cog):
 
                 end_word_scrambler(msg.channel.id)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @tasks.loop(minutes=1)
     async def random_word_scramble_task(self):

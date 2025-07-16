@@ -1,9 +1,9 @@
 
 import datetime
 import io
+import logging
 
 import discord
-import sentry_sdk
 from discord.ext import tasks
 from discord.ext.commands import dm_only, guild_only
 from discord.ext.pages import Paginator
@@ -14,6 +14,7 @@ from utils.leveling import add_xp
 from utils.module_toggling import is_module_enabled
 from utils.per_server_settings import get_setting
 
+akabot_logger = logging.getLogger("akabot")
 
 class AddYoursModal(discord.ui.Modal):
     def __init__(self, message_id: str):
@@ -111,7 +112,7 @@ class MessageTimeCapsule(discord.Cog):
 
             await ctx.respond(f"Message scheduled on `{target_time_str}`.", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond("An error occurred while scheduling the message.", ephemeral=True)
 
     @schedule_group.command(name="messages", description="List all messages")
@@ -173,7 +174,7 @@ class MessageTimeCapsule(discord.Cog):
             await ctx.respond(f"Reminder scheduled on `{str(target_time)}`.", ephemeral=True)
             await sent_msg.delete(delay=10)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond("An error occurred while scheduling the reminder.", ephemeral=True)
 
     @schedule_group.command(name="reminders", description="List all reminders")
@@ -206,7 +207,7 @@ class MessageTimeCapsule(discord.Cog):
             paginator = Paginator(pages)
             await paginator.respond(ctx.interaction, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond("An error occurred while listing reminders.", ephemeral=True)
 
     @schedule_group.command(name="collection", description="Schedule a collection message")
@@ -245,7 +246,7 @@ class MessageTimeCapsule(discord.Cog):
 
             await ctx.respond(f"Collection message scheduled on `{target_time_str}`.", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond("An error occurred while scheduling the collection message.", ephemeral=True)
 
     @tasks.loop(minutes=1)
@@ -260,7 +261,7 @@ class MessageTimeCapsule(discord.Cog):
                 await user.send(f'Reminder: {i["Message"]}')
                 client['DMMessageCapsule'].delete_one({"_id": i["_id"]})
             except Exception as e:
-                sentry_sdk.capture_exception(e)
+                akabot_logger.exception("An error occured:")
 
     @tasks.loop(minutes=1)
     async def check_guild_messages(self):
@@ -305,7 +306,7 @@ class MessageTimeCapsule(discord.Cog):
                 await channel.send(embed=embed)
                 client['MessageCapsule'].delete_one({"_id": i["_id"]})
             except Exception as e:
-                sentry_sdk.capture_exception(e)
+                akabot_logger.exception("An error occured:")
 
     @tasks.loop(minutes=1)
     async def check_collection_messages(self):
@@ -354,4 +355,4 @@ class MessageTimeCapsule(discord.Cog):
 
                 client['CollectionMessageCapsule'].delete_one({"_id": i["_id"]})
             except Exception as e:
-                sentry_sdk.capture_exception(e)
+                akabot_logger.exception("An error occured:")

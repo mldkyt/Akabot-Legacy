@@ -16,9 +16,9 @@
 #
 
 import datetime
+import logging
 
 import discord
-import sentry_sdk
 
 from database import client
 from utils.analytics import analytics
@@ -28,6 +28,7 @@ from utils.languages import get_language_names, language_name_to_code, get_langu
 from utils.languages import get_translation_for_key_localized as trl
 from utils.per_user_settings import set_per_user_setting, get_per_user_setting
 
+akabot_logger = logging.getLogger("akabot")
 
 def days_in_month(month: int, year: int):
     if month == 2:
@@ -83,7 +84,7 @@ class PerUserSettings(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "per_user_chat_streak_response", append_tip=True).format(state=state),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @user_settings_group.command(name='chat_streaks_ping_reply', description='Enable or disable ping when chat streaks reply to you')
@@ -97,7 +98,7 @@ class PerUserSettings(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "per_user_chat_streak_replies_response_on" if state else "per_user_chat_streak_replies_response_off", append_tip=True).format(state=state),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @user_settings_group.command(name='langauge',
@@ -113,7 +114,7 @@ class PerUserSettings(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "per_user_language_set", append_tip=True).format(
                 lang=get_language_name(lang_code, completeness=False)), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @user_settings_group.command(name='birthday', description='Set your birthday for Birthday Announcements.')
@@ -141,7 +142,7 @@ class PerUserSettings(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'birthday_set', append_tip=True).format(
                 birthday=f'{year}/{month}/{day}'), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @user_settings_group.command(name="birthday_settings", description="Personalize your birthday settings")
@@ -160,7 +161,7 @@ class PerUserSettings(discord.Cog):
 
             await ctx.respond(f"{send_dm}", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @user_settings_group.command(name="birthday_announcements",
@@ -178,7 +179,7 @@ class PerUserSettings(discord.Cog):
                 state_str = trl(ctx.user.id, ctx.guild.id, "per_user_birthday_announcements_disabled", append_tip=True)
             await ctx.respond(state_str, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @user_settings_group.command(name='clear_birthday', description='Clear all data about your birthday from the bot')
@@ -191,7 +192,7 @@ class PerUserSettings(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "per_user_birthday_question", append_tip=True),
                               view=view, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @user_settings_group.command(name='tips', description='Enable or disable tips')
@@ -205,5 +206,5 @@ class PerUserSettings(discord.Cog):
                 state_str = trl(ctx.user.id, ctx.guild.id, "per_user_tips_disabled", append_tip=True)
             await ctx.respond(state_str, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

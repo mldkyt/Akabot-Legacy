@@ -14,13 +14,12 @@
 #      You should have received a copy of the GNU Affero General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-
+import logging
 import random
 
 import discord
 import discord.ext
 import discord.ext.commands
-import sentry_sdk
 
 import utils.english_words
 import utils.logging_util
@@ -31,6 +30,7 @@ from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
 
+akabot_logger = logging.getLogger("akabot")
 
 async def give_verify_role(interaction: discord.Interaction | discord.ApplicationContext):
     # Bot permission check
@@ -103,7 +103,7 @@ class VerificationTextReverse(discord.ui.View):
             modal = VerificationTextReverseModal(word=self.english_word, user_id=self.user_id)
             await ctx.response.send_modal(modal)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
 
 
@@ -130,7 +130,7 @@ class VerificationTextReverseModal(discord.ui.Modal):
             await give_verify_role(interaction)
             await interaction.response.send_message(trl(self.user_id, 0, "verification_success"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.response.send_message(trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
 
 
@@ -156,7 +156,7 @@ class VerificationEnglishWord(discord.ui.View):
             modal = VerificationEnglishWordModal(length=self.length, user_id=self.user_id)
             await ctx.response.send_modal(modal)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
 
 
@@ -183,7 +183,7 @@ class VerificationEnglishWordModal(discord.ui.Modal):
             await give_verify_role(interaction)
             await interaction.response.send_message(trl(self.user_id, 0, "verification_success"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.response.send_message(trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
 
 
@@ -254,7 +254,7 @@ class VerificationMathModal(discord.ui.Modal):
                 await interaction.response.send_message(trl(self.user_id, 0, "verification_math_incorrect"),
                                                         ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.response.send_message(trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
 
 
@@ -301,7 +301,7 @@ class VerificationView(discord.ui.View):
                 word_reverse = VerificationTextReverse(user_id=ctx.user.id)
                 await ctx.respond(word_reverse.message_content(), view=word_reverse, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
 
@@ -335,7 +335,7 @@ class Verification(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "verification_set_success", append_tip=True),
                               ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @verification_subcommand.command(name="set_difficulty", description="Set the verification difficulty")
@@ -380,7 +380,7 @@ class Verification(discord.Cog):
                     difficulty=difficulty),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @verification_subcommand.command(name="send_message", description="Send the verification message")
@@ -425,5 +425,5 @@ class Verification(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "verification_send_success", append_tip=True),
                               ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

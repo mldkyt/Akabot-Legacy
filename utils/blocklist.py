@@ -1,6 +1,5 @@
 import logging
 
-import sentry_sdk
 from discord.ext import commands as commands_ext
 from discord.ext.commands import CheckFailure
 
@@ -15,20 +14,22 @@ BLOCKLIST_USERS = [i.strip() for i in get_key("BLOCKLIST_USERS", "", required=Fa
 
 PERM_BLOCKLIST_WORDS = [i.strip() for i in get_key("PERMANENT_BLOCKLIST_WORDS", "", required=False).split(";") if len(i.strip()) > 0]
 
-logging.debug("BLOCKLIST_WORDS: %s %d", str(BLOCKLIST_WORDS), len(BLOCKLIST_WORDS))
-logging.debug("BLOCKLIST_SERVERS: %s %d", str(BLOCKLIST_SERVERS), len(BLOCKLIST_SERVERS))
-logging.debug("BLOCKLIST_USERS: %s %d", str(BLOCKLIST_USERS), len(BLOCKLIST_USERS))
-logging.debug("PERM_BLOCKLIST_WORDS: %s %d", str(PERM_BLOCKLIST_WORDS), len(PERM_BLOCKLIST_WORDS))
+akabot_logger = logging.getLogger("akabot")
+
+akabot_logger.debug("BLOCKLIST_WORDS: %s %d", str(BLOCKLIST_WORDS), len(BLOCKLIST_WORDS))
+akabot_logger.debug("BLOCKLIST_SERVERS: %s %d", str(BLOCKLIST_SERVERS), len(BLOCKLIST_SERVERS))
+akabot_logger.debug("BLOCKLIST_USERS: %s %d", str(BLOCKLIST_USERS), len(BLOCKLIST_USERS))
+akabot_logger.debug("PERM_BLOCKLIST_WORDS: %s %d", str(PERM_BLOCKLIST_WORDS), len(PERM_BLOCKLIST_WORDS))
 
 def check_blocklist(text: str) -> tuple[bool, str]:
     for i in BLOCKLIST_WORDS:
         if i.lower() in text.lower():
-            logging.debug("Text %s contains keyword %i", text, i.lower())
+            akabot_logger.debug("Text %s contains keyword %i", text, i.lower())
             return True, i
         
     for i in PERM_BLOCKLIST_WORDS:
         if i.lower() in text.lower():
-            logging.debug("Text %s contains perm keyword %i", text, i.lower())
+            akabot_logger.debug("Text %s contains perm keyword %i", text, i.lower())
             return True, i
         
     return False, ""
@@ -36,19 +37,19 @@ def check_blocklist(text: str) -> tuple[bool, str]:
 def add_guild_to_blocklist(guild_id: str, text: str):
     for i in PERM_BLOCKLIST_WORDS:
         if i.lower() in text.lower():
-            logging.debug("Adding guild %s to blocklist due to %s", str(guild_id), i.lower())
+            akabot_logger.debug("Adding guild %s to blocklist due to %s", str(guild_id), i.lower())
             client["BlocklistedGuilds"].insert_one({"GuildID": guild_id, "Reason": f"Blocklisted: \"{text}\" had permanent blocklisted keyword \"{i}\""})
 
 def add_member_to_blocklist(user_id: str, text: str):
     for i in PERM_BLOCKLIST_WORDS:
         if i.lower() in text.lower():
-            logging.debug("Adding member %s to blocklist due to %s", str(user_id), i.lower())
+            akabot_logger.debug("Adding member %s to blocklist due to %s", str(user_id), i.lower())
             client["BlocklistedUsers"].insert_one({"UserID": user_id, "Reason": f"Blocklisted: \"{text}\" had permanent blocklisted keyword \"{i}\""})
 
 def check_guild_blocklist(guild_id: str) -> tuple[bool, str]:
     blocked = client["BlocklistedGuilds"].find_one({"GuildID": guild_id})
     if blocked:
-        logging.debug("Server %s is blocked with reason %s", str(guild_id), blocked["Reason"])
+        akabot_logger.debug("Server %s is blocked with reason %s", str(guild_id), blocked["Reason"])
         return True, blocked["Reason"]
 
     return False, ""
@@ -56,7 +57,7 @@ def check_guild_blocklist(guild_id: str) -> tuple[bool, str]:
 def check_user_blocklist(user_id: str) -> tuple[bool, str]:
     blocked = client["BlocklistedUsers"].find_one({"UserID": user_id})
     if blocked:
-        logging.debug("User %s is blocked with reason %s", str(user_id), blocked["Reason"])
+        akabot_logger.debug("User %s is blocked with reason %s", str(user_id), blocked["Reason"])
         return True, blocked["Reason"]
 
     return False, ""
@@ -107,7 +108,6 @@ def blocklist():
         except BlocklistError as e:
             raise e
         except Exception as e:
-            sentry_sdk.capture_exception(e)
             return True
     
     return commands_ext.check(predicate)

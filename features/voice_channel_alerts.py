@@ -1,10 +1,12 @@
+import logging
+
 import discord
-import sentry_sdk
 
 from database import client
 from utils.module_toggling import is_module_enabled
 from utils.per_server_settings import get_setting
 
+akabot_logger = logging.getLogger("akabot")
 
 class VoiceChannelAlerts(discord.Cog):
     def __init__(self, bot):
@@ -40,7 +42,7 @@ class VoiceChannelAlerts(discord.Cog):
             else:
                 await ctx.respond("You aren't subscribed to any notifications! :3", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond("Something went wrong! :3", ephemeral=True)
 
     @command_grp.command(name="sub_user", description="Subscribe to notifications from a specific user")
@@ -61,7 +63,7 @@ class VoiceChannelAlerts(discord.Cog):
 
             await ctx.respond(f"Subscribed to notifications from {user.mention}! :3", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond("Something went wrong! :3", ephemeral=True)
 
     @command_grp.command(name="unsub_user", description="Unsubscribe from notifications from a specific user")
@@ -82,7 +84,7 @@ class VoiceChannelAlerts(discord.Cog):
 
             await ctx.respond(f"Unsubscribed from {user.mention} notifications! :3", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond("Something went wrong! :3", ephemeral=True)
 
     @command_grp.command(name="sub_channel", description="Subscribe to notifications from a specific channel")
@@ -103,7 +105,7 @@ class VoiceChannelAlerts(discord.Cog):
 
             await ctx.respond(f"Subscribed to notifications from {channel.mention}! :3", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond("Something went wrong! :3", ephemeral=True)
 
     @command_grp.command(name="unsub_channel", description="Unsubscribe from notifications from a specific channel")
@@ -124,7 +126,7 @@ class VoiceChannelAlerts(discord.Cog):
 
             await ctx.respond(f"Unsubscribed from {channel.mention} notifications! :3", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond("Something went wrong! :3", ephemeral=True)
 
     @discord.Cog.listener()
@@ -182,4 +184,4 @@ class VoiceChannelAlerts(discord.Cog):
 
 
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")

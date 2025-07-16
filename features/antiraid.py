@@ -14,11 +14,10 @@
 #      You should have received a copy of the GNU Affero General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-
+import logging
 import time
 
 import discord
-import sentry_sdk
 from discord.ext import commands as commands_ext
 
 from utils.analytics import analytics
@@ -28,6 +27,7 @@ from utils.logging_util import log_into_logs
 from utils.module_toggling import is_module_enabled
 from utils.per_server_settings import get_setting, set_setting
 
+akabot_logger = logging.getLogger("akabot")
 
 class ViolationCounters:
     past_actions = []
@@ -82,7 +82,7 @@ class AntiRaid(discord.Cog):
 
             self.join_violation_counters.add_action('join', member, int(antiraid_join_threshold_per))
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     antiraid_subcommand = discord.SlashCommandGroup(name='antiraid', description='Manage the antiraid settings')
 
@@ -128,7 +128,7 @@ class AntiRaid(discord.Cog):
 
             self.message_violation_counters.add_action('message', message.author, int(antiraid_message_threshold_per))
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @antiraid_subcommand.command(name="join_threshold", description="Set the join threshold for the antiraid system")
     @is_module_enabled("antiraid")
@@ -167,7 +167,7 @@ class AntiRaid(discord.Cog):
                     people=str(people), per=str(per)),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @antiraid_subcommand.command(name="message_threshold",
                                  description="Set the message threshold for the antiraid system")
@@ -207,7 +207,7 @@ class AntiRaid(discord.Cog):
                     per=str(per)),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @antiraid_subcommand.command(name="list", description="List the antiraid settings")
     @is_module_enabled("antiraid")
@@ -229,4 +229,4 @@ class AntiRaid(discord.Cog):
 
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")

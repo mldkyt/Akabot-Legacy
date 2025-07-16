@@ -1,7 +1,10 @@
+import logging
+
 import discord
-import sentry_sdk
 
 from database import client
+
+akabot_logger = logging.getLogger("akabot")
 
 def add_channel_to_denylist(channel_id: int):
     if client['Denylisted'].count_documents({'ChannelID': str(channel_id)}) > 0:
@@ -36,7 +39,7 @@ async def queue_send_message(message: discord.Message, content: str | None = Non
         # Add the content to the queue
         add_to_queue(message.author, message.guild, content, embeds, delete_after, reply_to_message)
     except Exception as e:
-        sentry_sdk.capture_exception(e)
+        akabot_logger.exception("An error occured:")
 
 def add_to_queue(user: discord.User | discord.Member, guild: discord.Guild, content: str | None = None, embeds: list[discord.Embed] | None = None, delete_after: int = 0,
                  reply_to_message: bool = True):
@@ -68,4 +71,4 @@ def add_to_queue(user: discord.User | discord.Member, guild: discord.Guild, cont
             'ReplyToMessage': reply_to_message
         })
     except Exception as e:
-        sentry_sdk.capture_exception(e)
+        akabot_logger.exception("An error occured:")

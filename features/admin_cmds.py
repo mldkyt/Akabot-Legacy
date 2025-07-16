@@ -16,19 +16,19 @@
 #
 
 import datetime
+import logging
 
 import discord
-import sentry_sdk
 
 from database import client
 from utils.config import get_key
-# Let's say that trl is the short form of get_translation_for_key_localized across the codebase
 from utils.languages import get_translation_for_key_localized as trl
 
 ADMIN_GUILD = int(get_key("Admin_GuildID", "0"))
 OWNER_ID = int(get_key("Admin_OwnerID", "0"))
 ANNOUNCEMENT_CHANNEL = int(get_key("Admin_AnnouncementChannel", "0"))
 
+akabot_logger = logging.getLogger("akabot")
 
 class AdminCommands(discord.Cog):
 
@@ -57,5 +57,5 @@ class AdminCommands(discord.Cog):
                                                                             akabotuser=str(active_akabot_users),
                                                                             users=str(members)), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured in /server_count:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic").format(e), ephemeral=True)

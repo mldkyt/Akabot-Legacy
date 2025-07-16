@@ -18,14 +18,13 @@ import datetime
 import logging
 
 import discord
-import sentry_sdk
 from discord import Cog, Bot, TextChannel, Interaction, Embed, EmbedAuthor, SlashCommandGroup, \
     ApplicationContext, Message, ButtonStyle
 from discord.ext.commands import has_guild_permissions, guild_only
 from discord.ui import Modal, InputText, View, button, Button
-from sentry_sdk import capture_exception
 
 from database import client
+from features.admin_cmds import akabot_logger
 from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
@@ -71,7 +70,7 @@ class CreateModal(Modal):
             await interaction.respond(
                 trl(interaction.user.id, interaction.guild.id, 'quefessions_created', append_tip=True), ephemeral=True)
         except Exception as e:
-            capture_exception(e)
+            logging.exception("An error occurred:")
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -110,7 +109,7 @@ class ReportTextModal(Modal):
                 trl(interaction.user.id, interaction.guild.id, 'quefessions_report_sent', append_tip=True),
                 ephemeral=True)
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occurred:")
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -154,7 +153,7 @@ class ReplyModal(discord.ui.Modal):
 
             await interaction.respond(trl(self.message.author.id, self.message.guild.id, "anonymous_quefessions_reply_sent"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occurred in ReplyModal callback:")
             await interaction.respond(trl(self.message.author.id, self.message.guild.id, "command_error_generic"), ephemeral=True)
 
 class CreateButtonView(View):
@@ -187,7 +186,7 @@ class CreateButtonView(View):
 
             await interaction.response.send_modal(CreateModal(interaction.channel))
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occurred:")
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -205,14 +204,14 @@ class AdminView(View):
             await interaction.edit(view=self)
             self.stop()
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @button(label='Quefession Ban...', style=ButtonStyle.danger)
     async def quefession_ban(self, button: Button, interaction: Interaction):
         try:
             await interaction.edit(view=AdminBanSelectTypeView(self.mod_message))
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
 class AdminBanSelectTypeView(View):
     def __init__(self, message: Message):
@@ -224,7 +223,7 @@ class AdminBanSelectTypeView(View):
         try:
             await interaction.edit(view=AdminQuefessionBanDurationChoice(self.mod_message))
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -233,7 +232,7 @@ class AdminBanSelectTypeView(View):
         try:
             await interaction.edit(view=AdminBanSelectTypeView(self.mod_message))
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -262,7 +261,7 @@ class AdminGuildBanConfirm(View):
             self.disable_all_items()
             await interaction.edit(view=self)
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -271,7 +270,7 @@ class AdminGuildBanConfirm(View):
         try:
             await interaction.edit(view=AdminView(message=self.mod_message))
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -294,7 +293,7 @@ class AdminQuefessionBanDurationChoice(View):
 
             return data['AuthorID']
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             raise e
 
     async def ban_temp(self, minutes: int):
@@ -308,7 +307,7 @@ class AdminQuefessionBanDurationChoice(View):
                 'BanEnd': datetime.datetime.now() + datetime.timedelta(minutes=minutes)
             })
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     async def ban_perm(self):
         try:
@@ -321,7 +320,7 @@ class AdminQuefessionBanDurationChoice(View):
                 'Permanent': True
             })
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @button(label='10 minutes', style=ButtonStyle.danger)
     async def ban_10_minutes(self, button: Button, interaction: Interaction):
@@ -333,7 +332,7 @@ class AdminQuefessionBanDurationChoice(View):
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_10_minutes'),
                                       ephemeral=True)
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -347,7 +346,7 @@ class AdminQuefessionBanDurationChoice(View):
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_hour'),
                                       ephemeral=True)
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -361,7 +360,7 @@ class AdminQuefessionBanDurationChoice(View):
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_12_hours'),
                                       ephemeral=True)
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -375,7 +374,7 @@ class AdminQuefessionBanDurationChoice(View):
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_day'),
                                       ephemeral=True)
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -389,7 +388,7 @@ class AdminQuefessionBanDurationChoice(View):
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_week'),
                                       ephemeral=True)
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -403,7 +402,7 @@ class AdminQuefessionBanDurationChoice(View):
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_1_month'),
                                       ephemeral=True)
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -417,7 +416,7 @@ class AdminQuefessionBanDurationChoice(View):
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_ban_permanent'),
                                       ephemeral=True)
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.guild.id, interaction.user.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -447,7 +446,7 @@ class InfoButtonView(View):
             reply_modal = ReplyModal(interaction.message)
             await interaction.response.send_modal(reply_modal)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond("An error occured")
 
     async def admin_view(self, button: Button, interaction: Interaction):
@@ -484,7 +483,7 @@ class InfoButtonView(View):
 
             await interaction.respond(fmt, ephemeral=True, view=AdminView(message=message))
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, "command_error_generic"), ephemeral=True)
 
     async def report_quefession(self, button: Button, interaction: Interaction):
@@ -519,7 +518,7 @@ class InfoButtonView(View):
             else: 
                 await interaction.response.send_modal(modal=ReportTextModal(author, interaction.message, data['Text']))
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -538,7 +537,7 @@ class LogsView(View):
             await interaction.edit(view=self)
             self.stop()
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -548,7 +547,7 @@ class LogsView(View):
             await interaction.respond('Report actions', ephemeral=True,
                                       view=AdminBanSelectTypeView(message=self.mod_message))
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
@@ -575,7 +574,7 @@ class AnonymousQuefessions(Cog):
                 trl(ctx.user.id, ctx.guild.id, 'quefessions_channel_disabled'),
                 ephemeral=True)
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @anonymous_quefessions_cmd.command()
@@ -589,7 +588,7 @@ class AnonymousQuefessions(Cog):
                 trl(ctx.user.id, ctx.guild.id, 'quefessions_replies_disabled'),
                 ephemeral=True)
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @anonymous_quefessions_cmd.command()
@@ -612,7 +611,7 @@ class AnonymousQuefessions(Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'quefessions_sent_successfully'), ephemeral=True)
 
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @Cog.listener()
@@ -666,7 +665,7 @@ class AnonymousQuefessions(Cog):
 
             await message.delete()
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @Cog.listener()
     async def on_message_delete(self, message: Message):
@@ -677,4 +676,4 @@ class AnonymousQuefessions(Cog):
                 'MessageID': str(message.id)
             })
         except Exception as e:
-            capture_exception(e)
+            akabot_logger.exception("An error occured:")

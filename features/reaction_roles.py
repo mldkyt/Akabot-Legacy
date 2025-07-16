@@ -14,15 +14,16 @@
 #      You should have received a copy of the GNU Affero General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+import logging
 
 import discord
-import sentry_sdk
 from discord.ext import commands as commands_ext
 
 from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 
+akabot_logger = logging.getLogger("akabot")
 
 def get_roles(msg: discord.Message):
     roles = []
@@ -109,7 +110,7 @@ class ReactionRoles(discord.Cog):
                 trl(interaction.user.id, interaction.guild.id, "reaction_roles_created_response", append_tip=True),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.response.send_message(
                 trl(interaction.user.id, interaction.guild.id, "command_error_generic"), ephemeral=True)
 
@@ -162,7 +163,7 @@ class ReactionRoles(discord.Cog):
                 trl(interaction.user.id, interaction.guild.id, "reaction_roles_edited_response", append_tip=True),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.response.send_message(
                 trl(interaction.user.id, interaction.guild.id, "command_error_generic"), ephemeral=True)
 
@@ -252,4 +253,4 @@ class ReactionRoles(discord.Cog):
                 await interaction.user.remove_roles(*roles, reason="Reaction role")
                 await interaction.user.add_roles(role, reason="Reaction role")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")

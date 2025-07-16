@@ -210,12 +210,13 @@ def generate_message_content(message_id: str):
 **{percent:.0f}% approval**"""
 
 import discord
-import sentry_sdk
 from discord.ext import commands
 
 from database import client
 from utils.languages import get_translation_for_key_localized as trl
 from utils.per_server_settings import get_setting, set_setting
+
+akabot_logger = logging.getLogger("akabot")
 
 class Suggestions(discord.Cog):
     def __init__(self, bot: discord.Bot):
@@ -223,7 +224,7 @@ class Suggestions(discord.Cog):
         try:
             migration_1()
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -284,7 +285,7 @@ class Suggestions(discord.Cog):
                         sent = await message.reply(to_send)
                         await sent.delete(delay=5)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     suggestions_group = discord.SlashCommandGroup(name='suggestions', description='Suggestion commands')
 
@@ -301,7 +302,7 @@ class Suggestions(discord.Cog):
             else:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'suggestions_channel_already_exists'), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @suggestions_group.command(name='remove_channel', description='Remove a suggestion channel')
@@ -317,7 +318,7 @@ class Suggestions(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "suggestions_channel_removed", append_tip=True).format(
                     channel=channel.mention), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @suggestions_group.command(name='set_thread_creating', description='Enable/disable creating of thread when suggesting (default: true)')
@@ -329,7 +330,7 @@ class Suggestions(discord.Cog):
             set_setting(ctx.guild.id, "suggestions_thread_creating", 'true' if thread_creating else 'false')
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "suggestions_thread_creating_enabled" if thread_creating else "suggestions_thread_creating_disabled", append_tip=True), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @suggestions_group.command(name='emoji', description='Choose emoji')
@@ -343,7 +344,7 @@ class Suggestions(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "suggestions_emoji_set").format(emoji=emoji),
                               ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @suggestions_group.command(name='message_reminder', description="Message reminder for people posting suggestions")
@@ -361,7 +362,7 @@ class Suggestions(discord.Cog):
                     enabled=enabled, message=message),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @suggestions_group.command(name='update_message', description='Refresh all suggestions messages in this channel')

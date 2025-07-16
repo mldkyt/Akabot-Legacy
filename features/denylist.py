@@ -1,10 +1,12 @@
+import logging
+
 import discord
-import sentry_sdk
 
 from database import client
 from utils.denylist import is_denylisted, add_channel_to_denylist, remove_channel_from_denylist
 from utils.languages import get_translation_for_key_localized as trl
 
+akabot_logger = logging.getLogger("akabot")
 
 class ChannelDenylist(discord.Cog):
     def __init__(self, bot: discord.Bot):
@@ -22,7 +24,7 @@ class ChannelDenylist(discord.Cog):
             add_channel_to_denylist(channel.id)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "denylist_added").format(mention=channel.mention), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @denylist_subcommand.command(name="remove", description="Remove a channel from the denylist.")
     async def remove_to_denylist(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
@@ -34,7 +36,7 @@ class ChannelDenylist(discord.Cog):
             remove_channel_from_denylist(channel.id)
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "denylist_removed").format(mention=channel.mention), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @discord.Cog.listener()
     async def on_message(self, msg: discord.Message):
@@ -106,4 +108,4 @@ class ChannelDenylist(discord.Cog):
                 if data_msg['DeleteAfter'] > 0:
                     await sent_message.delete(delay=data_msg['DeleteAfter'])
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")

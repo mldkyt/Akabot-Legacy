@@ -2,9 +2,9 @@ import asyncio
 import re
 
 import discord
-import sentry_sdk
 
 from database import client
+from utils.denylist import akabot_logger
 from utils.languages import get_translation_for_key_localized as trl
 
 
@@ -23,7 +23,7 @@ class Counting(discord.Cog):
             client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id), },
                                           {'$set': {'Count': 1, 'LastMember': '0'}})
         except Exception as e:
-            sentry_sdk.capture_exception(e, scope='Akabot > Counting > handle_fail')
+            akabot_logger.exception("An error occured:")
 
     async def fetch_counting_channel(self, guild_id: str, channel_id: str):
         try:
@@ -37,7 +37,7 @@ class Counting(discord.Cog):
 
             await channel.history(limit=100).flatten()
         except Exception as e:
-            sentry_sdk.capture_exception(e, scope='Akabot > Counting > fetch_counting_channel')
+            akabot_logger.exception("An error occured:")
 
     @discord.Cog.listener()
     async def on_ready(self):
@@ -49,7 +49,7 @@ class Counting(discord.Cog):
 
             await asyncio.gather(*tasks)
         except Exception as e:
-            sentry_sdk.capture_exception(e, scope='Akabot > Counting > on_ready')
+            akabot_logger.exception("An error occured:")
 
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -102,7 +102,7 @@ class Counting(discord.Cog):
             client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
                                           {'$set': {'LastMember': str(message.author.id)}})
         except Exception as e:
-            sentry_sdk.capture_exception(e, scope='Akabot > Counting > on_message')
+            akabot_logger.exception("An error occured:")
 
     @discord.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
@@ -117,7 +117,7 @@ class Counting(discord.Cog):
 
             await self.handle_fail(after, data)
         except Exception as e:
-            sentry_sdk.capture_exception(e, scope='Akabot > Counting > on_message_edit')
+            akabot_logger.exception("An error occured:")
 
     counting = discord.SlashCommandGroup(name="counting_channels", description="Configuration for counting channels")
 
@@ -135,7 +135,7 @@ class Counting(discord.Cog):
 
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "counting_channel_added", append_tip=True), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e, scope='Akabot > Counting > /add_channel')
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @counting.command(name="remove_channel", description="Remove a channel from counting channels")
@@ -151,5 +151,5 @@ class Counting(discord.Cog):
 
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "counting_channel_removed"), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e, scope='Akabot > Counting > /remove_channel')
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

@@ -23,6 +23,7 @@ from utils.per_user_settings import get_per_user_setting, set_per_user_setting
 from utils.per_server_settings import get_setting, set_setting
 from utils.tips import append_tip_to_message
 
+akabot_logger = logging.getLogger("akabot")
 
 def get_translation_for_key_localized(user_id: int, guild_id: int, key: str, append_tip=False) -> str:
     """Get translation for a key in the user's language, server language, or English
@@ -48,11 +49,11 @@ def get_translation_for_key_localized(user_id: int, guild_id: int, key: str, app
     translation = translations.get(key, translation) or en_translations.get(key, translation) or f"lang.en.{key}"
 
     if translation == f"lang.en.{key}":
-        logging.warning(f"Missing translation for key {key} in language {language}")
+        akabot_logger.warning(f"Missing translation for key {key} in language {language}")
     elif translation == "":
-        logging.warning(f"Translation for key {key} is empty in language {language}")
+        akabot_logger.warning(f"Translation for key {key} is empty in language {language}")
     elif key in en_translations and en_translations[key] == translation and language != "en":
-        logging.warning(f"Translation for key {key} in language {language} is the same as English")
+        akabot_logger.warning(f"Translation for key {key} in language {language} is the same as English")
 
     if append_tip and get_per_user_setting(user_id, "tips_enabled", "true") == "true":
         return append_tip_to_message(guild_id, user_id, translation, language)
@@ -76,7 +77,7 @@ def get_language(guild_id: int, user_id: int) -> str:
         user_lang = get_per_user_setting(user_id, "language", "en")
         if not os.path.exists(f"lang/{user_lang}.json"):
             set_per_user_setting(user_id, "language", "en")
-            logging.error(
+            akabot_logger.error(
                 "WARNING: User {id} has somehow set the user language to {lang}, which is not a valid language. "
                 "Reset to EN".format(id=user_id, lang=user_lang))
         return user_lang
@@ -86,7 +87,7 @@ def get_language(guild_id: int, user_id: int) -> str:
         server_lang = get_setting(guild_id, "language", "en")
         if not os.path.exists(f"lang/{server_lang}.json"):
             set_setting(guild_id, "language", "en")
-            logging.error(
+            akabot_logger.error(
                 "WARNING: Server {id} has somehow set the server language to {lang}, which is not a valid language. "
                 "Reset to EN".format(id=guild_id, lang=server_lang))
         return server_lang

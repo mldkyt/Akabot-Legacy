@@ -14,11 +14,10 @@
 #      You should have received a copy of the GNU Affero General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-
+import logging
 import re
 
 import discord
-import sentry_sdk
 
 from utils.analytics import analytics
 from utils.blocklist import blocklist
@@ -26,6 +25,7 @@ from utils.languages import get_translation_for_key_localized as trl
 from utils.languages import language_name_to_code, get_language_names, get_language_name
 from utils.per_server_settings import set_setting
 
+akabot_logger = logging.getLogger("akabot")
 
 class ServerSettings(discord.Cog):
     server_settings_group = discord.SlashCommandGroup(name='server_settings', description='Server settings')
@@ -41,7 +41,7 @@ class ServerSettings(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "server_language_response", append_tip=True).format(
                 lang=get_language_name(lang_code, completeness=False)), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @server_settings_group.command(name='tz', description='Timezone setting')
@@ -68,5 +68,5 @@ class ServerSettings(discord.Cog):
                 trl(ctx.user.id, ctx.guild.id, "server_tz_response", append_tip=True).format(tz=tz_formatted),
                 ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

@@ -14,14 +14,15 @@
 #      You should have received a copy of the GNU Affero General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-
+import logging
 
 import aiohttp
 import discord
-import sentry_sdk
 from discord.ext import tasks
 
 from utils.config import get_key
+
+akabot_logger = logging.getLogger("akabot")
 
 SEND_SECONDS = int(get_key("Send_Server_Count_Seconds", "0"))
 SEND_MINUTES = int(get_key("Send_Server_Count_Minutes", "0"))
@@ -69,7 +70,7 @@ class SendServerCount(discord.Cog):
                 else:
                     raise ValueError("Invalid method")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @tasks.loop(seconds=SEND_SECONDS, minutes=SEND_MINUTES, hours=SEND_HOURS)
     async def send_topgg_server_count(self):
@@ -82,4 +83,4 @@ class SendServerCount(discord.Cog):
                 await session.post(f"https://top.gg/api/bots/{TOPGG_BOT_ID}/stats", headers=headers,
                                    json={"server_count": len(self.bot.guilds)})
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")

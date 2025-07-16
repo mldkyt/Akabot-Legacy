@@ -1,5 +1,6 @@
+import logging
+
 import discord
-import sentry_sdk
 
 from utils.per_server_settings import set_setting
 from utils.languages import get_translation_for_key_localized as trl
@@ -7,6 +8,7 @@ from utils.languages import get_translation_for_key_localized as trl
 VALID_MODULE_NAMES = ["antiraid", "birthday_announcements", "chat_streaks", "economy", "leveling", "schedule",
                       "time_capsule", "temporary_vc", "voice_channel_alerts", "word_scramble"]
 
+akabot_logger = logging.getLogger("akabot")
 
 class ModuleToggling(discord.Cog):
     def __init__(self, bot: discord.Bot):
@@ -22,7 +24,7 @@ class ModuleToggling(discord.Cog):
 
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "module_enabled").format(module_name=module_name), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @module_toggling.command(name="disable", description="Disable a module")
@@ -33,5 +35,5 @@ class ModuleToggling(discord.Cog):
 
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "module_disabled").format(module_name=module_name), ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

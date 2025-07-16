@@ -14,11 +14,11 @@
 #      You should have received a copy of the GNU Affero General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+import logging
 
 import aiohttp
 import discord
 import gitlab
-import sentry_sdk
 from discord import ButtonStyle
 from discord.ext import commands as cmds_ext
 from discord.ui import View, Button
@@ -30,6 +30,7 @@ from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 from database import client
 
+akabot_logger = logging.getLogger("akabot")
 
 class VoteView(discord.ui.View):
     def __init__(self):
@@ -166,7 +167,7 @@ class BugReportModal(discord.ui.Modal):
                     ephemeral=True)
 
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.response.send_message(trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
 
 
@@ -286,7 +287,7 @@ class FeatureModal(discord.ui.Modal):
                     ephemeral=True)
 
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await interaction.response.send_message(trl(self.user_id, 0, "command_error_generic"), ephemeral=True)
 
 

@@ -1,13 +1,14 @@
 import datetime
+import logging
 
 import discord
 from markovify import NewlineText
-import sentry_sdk
 
 from discord.ext import commands
 
 from database import client
 
+akabot_logger = logging.getLogger("akabot")
 
 class MarkovBot(discord.Cog):
     def __init__(self, bot: discord.Bot):
@@ -81,7 +82,7 @@ class MarkovBot(discord.Cog):
                 }
             })
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -91,7 +92,7 @@ class MarkovBot(discord.Cog):
 
             await self.generate_markov_post(message.channel)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
 
     markov_commands = discord.SlashCommandGroup(name="markov")
 
@@ -118,7 +119,7 @@ class MarkovBot(discord.Cog):
 
             await ctx.respond("Enabled generation of Markov posts, send 10 messages for the first one to generate", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond("An error occurred", ephemeral=True)
 
     @markov_commands.command()
@@ -141,6 +142,6 @@ class MarkovBot(discord.Cog):
 
             await ctx.respond("Disabled generation of Markov posts", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            akabot_logger.exception("An error occured:")
             await ctx.respond("An error occurred", ephemeral=True)
 
