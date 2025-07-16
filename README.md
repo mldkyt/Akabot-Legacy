@@ -62,43 +62,22 @@ Akabot is a Discord bot that's made to be customizable and has a lot of features
 
 ## Available Public Instances
 
-There are 2 public available instances of Akabot you can invite.
-
-### 1. The recommended one
+There is a public instance of Akabot you can invite.
 
 The recommended instance is the last stable version of Akabot. This instance is more stable and receives bug fixes added
 in the next stable version. This version is always made sure to be stable and
 secure.
 
 This bot instance can be invited using [this link](https://discord.com/oauth2/authorize?client_id=1172922944033411243).
-A [terms of service](https://mldchan.dev/project/akabot/tos)
-and [privacy policy](https://mldchan.dev/project/akabot/privacy) apply.
-
-### 2. Less recommended version (Beta)
-
-The beta instance is the latest version of Akabot. This instance is less stable and may contain bugs. This version is
-not recommended for production servers.
-
-This bot instance can be invited using [this link](https://discord.com/oauth2/authorize?client_id=1256907946261090354).
-A [terms of service](https://mldchan.dev/project/akabot/tos)
-and [privacy policy](https://mldchan.dev/project/akabot/privacy) apply.
+A [terms of service](https://lunya.pet/project/akabot/tos)
+and [privacy policy](https://lunya.pet/project/akabot/privacy) apply.
 
 ## Self-Hosting an instance of your own
 
-### Docker
-
-Setting up an instance with Docker is the easiest way to set Akabot up. It's platform independent so you can start it on
-anything running Docker.
-
-You can start configuring using this method [here](https://github.com/mldchan/Akabot/wiki/Self-Host-Using-Docker).
-
-### Virtualenv
-
-Setting up an instance with Virtualenv can be a bit more tricky, especially if the Python version is not compatible.
-
-This method was only tested on Python 3.11 and 3.12. These versions are confirmed to be working on Windows and Linux.
-
-You can start configuring using this method [here](https://github.com/mldchan/Akabot/wiki/Self-Host-Using-Virtualenv)
+1. Clone this repository
+2. Build the Docker image from the Dockerfile located in the root of the project, using `docker build -t akabot:latest`
+3. Set the environment variables `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, `BOT_VERSION` and `BOT_TOKEN` for the bare functionality of the bot. The bot uses a MongoDB database.
+4. Start the Docker container.
 
 ## Contributing to Akabot
 
@@ -106,11 +85,11 @@ You can check the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information o
 
 ## Developer Contact
 
-- Mastodon: [@Akabot@floss.social](https://floss.social/@akabot) - You can follow this account to receive updated about
+- Mastodon: [@Akabot@fedi.lunya.pet](https://fedi.lunya.pet/@akabot) - You can follow this account to receive updated about
   Akabot. Additionally, you can ask here for help!
-- Developer's account: [@mld@social.mldchan.dev](https://social.mldchan.dev/) - You can ask here for help. I check fedi
+- Developer's account: [@Lunya@fedi.lunya.pet](https://fedi.lunya.pet/) - You can ask here for help. I check fedi
   as one of the few social media and I'll respond.
-- E-mail: [mldkyt@proton.me](mailto:mldkyt@proton.me) - I respond quickly here. Please make sure your e-mail has a
+- E-mail: [lunya.pet@proton.me](mailto:lunya.pet@proton.me) - I respond quickly here. Please make sure your e-mail has a
   subject.
 
 ## Setting up a development environment

@@ -64,7 +64,7 @@
   "feedback_feature_direct": "format@@0(https://github.com/mldchan/Akabot/issues/new) で直接機能リクエストを開くことができます。",
   "feedback_bug_report_disclaimer": "## バグレポートを提出する前の注意事項\nバグレポートを提出する場合、以下の情報が GitHub issues に送信されます：\n- あなたの Discord 表示名、ユーザー名、ID\n- フォームのタイトルと説明に記入した情報\n\nこれに同意できない場合は、GitHub リポジトリに直接バグレポートを投稿してください。\n*これはスパムやバグ報告システムの悪用を防ぐためです。\n*もし提出したくないのであれば、このメッセージは完全に無視してかまいません。",
   "feedback_bug_report_direct": "format@@0(https://github.com/mldchan/Akabot/issues/new) でバグレポートを直接開くことができます。",
-  "feedback_visit_website": "You can visit the website [here](<https://mldchan.dev/project/akabot>)",
+  "feedback_visit_website": "You can visit the website [here](<https://lunya.pet/project/akabot>)",
   "title": "Title",
   "description": "Description",
   "feedback_bug_report_submitted": "バグレポートを送信しました。",

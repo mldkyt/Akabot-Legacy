@@ -64,7 +64,7 @@
   "feedback_feature_direct": "Puedes abrir una solicitud de características en el [repositorio de GitHub](https://github.com/mldchan/Akabot/issues/new) directamente.",
   "feedback_bug_report_disclaimer": "## Notice before submitting a bug report\nIf you do submit a bug report, the following information will be sent to GitHub issues:\n- Your Discord display name, username and ID\n- Any information you provide in the title and description in the form\n\nIf you don't agree with this, you can open a bug report on the GitHub repository directly.\n*This was done to prevent spam and abuse of the bug report system.*\n*If you don't want to submit at all, you can completely ignore this message.*",
   "feedback_bug_report_direct": "Puedes abrir un informe de error en el [repositorio de GitHub](https://github.com/mldchan/Akabot/issues/new) directamente.",
-  "feedback_visit_website": "You can visit the website [here](<https://mldchan.dev/project/akabot>)",
+  "feedback_visit_website": "You can visit the website [here](<https://lunya.pet/project/akabot>)",
   "title": "Title",
   "description": "Description",
   "feedback_bug_report_submitted": "Informe de error enviado.",
