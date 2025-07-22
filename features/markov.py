@@ -2,6 +2,7 @@ import datetime
 import logging
 
 import discord
+import markovify
 from markovify import NewlineText
 
 from discord.ext import commands
@@ -38,37 +39,38 @@ class MarkovBot(discord.Cog):
             if (datetime.datetime.now() - data['LastSend']).total_seconds() < 60:
                 return
 
-            chain_data = []
+            chain_data = ""
 
             async for i in channel.history(limit=data['Messages']):
                 if i.author.bot:
                     continue
 
                 if len(i.content.strip()) > 0:
-                    chain_data.append(i.content)
+                    chain_data += i.content
 
                 if len(i.embeds) > 0:
                     for embed in i.embeds:
                         if embed.title is not None and len(embed.title.strip()) > 0:
-                            chain_data.append(embed.title)
+                            chain_data += embed.title
                         if embed.description is not None and len(embed.description.strip()) > 0:
-                            chain_data.append(embed.description)
+                            chain_data += embed.description
 
                         for field in embed.fields:
                             if field.name is not None and len(field.name.strip()) > 0:
-                                chain_data.append(field.name)
+                                chain_data += field.name
                             if field.value is not None and len(field.value.strip()) > 0:
-                                chain_data.append(field.value)
+                                chain_data += field.value
 
                 for attachment in i.attachments:
                     if attachment.description is not None and len(attachment.description.strip()) > 0:
-                        chain_data.append(attachment.description)
+                        chain_data += attachment.description
 
-            model = NewlineText('\n'.join(chain_data))
+            model = markovify.Text(chain_data)
 
-            a = model.make_sentence(test_output=False, tries=500)
+            a = model.make_sentence(test_output=False, tries=500, max_overlap_ratio=0.7)
 
             if a is None:
+                logging.info(f"Failed to generate markov chain from {len(chain_data)} messages")
                 return
 
             await channel.send(a)
