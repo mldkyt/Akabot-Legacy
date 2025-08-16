@@ -353,8 +353,8 @@ class MastodonLinkView(View):
     def __init__(self):
         super().__init__(timeout=180)
 
-        mastodon_btn = Button(label='Open in Mastodon @ floss.social', style=ButtonStyle.link,
-                              url='https://floss.social/@Akabot')
+        mastodon_btn = Button(label='Open in Mastodon @ fedi.lunya.pet', style=ButtonStyle.link,
+                              url='https://fedi.lunya.pet/@Akabot')
 
         self.add_item(mastodon_btn)
 
@@ -407,12 +407,12 @@ This is due to recent raids and attacks on the server due to the developer leavi
 ### With this noted, click the button below to join the server:
         """, view=DiscordJoinView(), ephemeral=True)
 
-    @discord.slash_command(name='mastodon', description='Link to the Akabot\'s Mastodon profile!')
-    @analytics("mastodon")
+    @discord.slash_command(name='fedi', description='Link to the Akabot\'s fedi profile!')
+    @analytics("fedi")
     @blocklist()
     async def mastodon(self, ctx: discord.ApplicationContext):
         await ctx.respond(
-            "The official Mastodon account of Akabot is @akabot@floss.social\nIt's used for:\n- Akabot updates\n- Akabot service annoncements\n- More!",
+            "The official fedi account of Akabot is @Akabot@fedi.lunya.pet\nIt's used for:\n- Akabot updates\n- Akabot service annoncements\n- More!",
             ephemeral=True, view=MastodonLinkView())
 
     @discord.slash_command(name='limits', description='Get server limits, along with usage')

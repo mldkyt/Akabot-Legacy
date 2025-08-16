@@ -3,11 +3,11 @@
 [![Discord](https://img.shields.io/discord/1217145199151681656?label=support%20Discord%20server)
 ](https://discord.gg/YFksXpXnn6)
 [![Gitea Issues](https://img.shields.io/gitea/issues/open/Lunya/Akabot?gitea_url=https%3A%2F%2Fgit.lunya.pet)
-](https://git.lunya.pet/Lunya/Akabot/issues)
+](https://codeberg.org/Akabot/Akabot/issues)
 [![Gitea Pull Requests](https://img.shields.io/gitea/pull-requests/open/Lunya/Akabot?gitea_url=https%3A%2F%2Fgit.lunya.pet)
-](https://git.lunya.pet/Lunya/Akabot/pulls)
+](https://codeberg.org/Akabot/Akabot/pulls)
 [![Gitea Release](https://img.shields.io/gitea/v/release/Lunya/Akabot?gitea_url=https%3A%2F%2Fgit.lunya.pet%2F)
-](https://git.lunya.pet/Lunya/Akabot/releases)
+](https://codeberg.org/Akabot/Akabot/releases)
 
 
 Akabot is a Discord bot that's made to be customizable and has a lot of features. It's made with Python and uses the
