@@ -341,15 +341,6 @@ class ConfirmSubmitFeatureRequest(discord.ui.View):
             ephemeral=True)
 
 
-class DiscordJoinView(View):
-    def __init__(self):
-        super().__init__(timeout=180)
-
-        join_btn = discord.ui.Button(label="Join the server", style=discord.ButtonStyle.link,
-                                     url="https://discord.gg/YFksXpXnn6")
-        self.add_item(join_btn)
-
-
 class MastodonLinkView(View):
     def __init__(self):
         super().__init__(timeout=180)
@@ -398,15 +389,7 @@ class SupportCmd(discord.Cog):
 
     @discord.slash_command(name='support_discord', description='Support Discord server link')
     async def support_discord(self, ctx: discord.ApplicationContext):
-        await ctx.respond("""
-# Support Discord Server
-
-__You'll need to verify yourself on the server to post an introduction and get access to the rest of the server.__
-This is due to recent raids and attacks on the server due to the developer leaving another modding community because of constant harassment.
-**It takes maximum 10 minutes to write an introduction about yourself, and you'll get access to the rest of the server.**
-
-### With this noted, click the button below to join the server:
-        """, view=DiscordJoinView(), ephemeral=True)
+        await ctx.respond("Join the support Discord server! https://dcd.gg/akabot", ephemeral=True)
 
     @discord.slash_command(name='fedi', description='Link to the Akabot\'s fedi profile!')
     @analytics("fedi")
