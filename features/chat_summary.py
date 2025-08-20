@@ -557,7 +557,7 @@ class ChatSummary(discord.Cog):
     @blocklist()
     async def chatsummary_add_kwd(self, ctx: discord.ApplicationContext, kwd: str):
         if get_key('Message_Intent', "false") == "false":
-            await ctx.respond("This instance doesn\'t support message intent. Keywords aren\'t available.",
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "keywords_not_available"),
                               ephemeral=True)
             return
 
@@ -594,7 +594,7 @@ class ChatSummary(discord.Cog):
     @blocklist()
     async def chatsummary_remove_kwd(self, ctx: discord.ApplicationContext, kwd: str):
         if get_key('Message_Intent', "false") == "false":
-            await ctx.respond("This instance doesn\'t support message intent. Keywords aren\'t available.",
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "keywords_not_available"),
                               ephemeral=True)
             return
 

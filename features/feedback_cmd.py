@@ -24,13 +24,14 @@ from discord.ext import commands as cmds_ext
 from discord.ui import View, Button
 from discord.ui.input_text import InputText
 
+from database import client
 from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
-from database import client
 
 akabot_logger = logging.getLogger("akabot")
+
 
 class VoteView(discord.ui.View):
     def __init__(self):
@@ -435,14 +436,23 @@ This is due to recent raids and attacks on the server due to the developer leavi
         giveaways_limit = int(get_key('Max_Giveaways', '3'))
         automod_actions_limit = int(get_key("AutomodActions_MaxActions", "5"))
 
-        await ctx.respond(f'''
-# Understanding the limits of this Akabot instance
-- **Announcement Channels**: {announcement_channel_usage} out of {announcement_channel_limit} ({round((announcement_channel_usage / announcement_channel_limit) * 100)}%)
-- **Chat Summary Channels**: {chat_summary_usage} out of {chat_summary_limit} channels ({round((chat_summary_usage / chat_summary_limit) * 100)}%)
-- **Roles on Join**: {roles_on_join_usage} out of {roles_on_join_limit} roles ({round((roles_on_join_usage / roles_on_join_limit) * 100)}%)
-- **Giveaways**: {giveaways_usage} out of {giveaways_limit} running giveaways ({round((giveaways_usage / giveaways_limit) * 100)}%)
-- **Automod Actions**: {automod_actions_usage} out of {automod_actions_limit} Automod rules ({round((automod_actions_usage / automod_actions_limit) * 100)}%)''', ephemeral=True)
+        announcement_channel_percentage = round((announcement_channel_usage / announcement_channel_limit) * 100)
+        chat_summary_percentage = round((chat_summary_usage / chat_summary_limit) * 100)
+        roles_on_join_percentage = round((roles_on_join_usage / roles_on_join_limit) * 100)
+        giveaways_percentage = round((giveaways_usage / giveaways_limit) * 100)
+        automod_actions_percentage = round((automod_actions_usage / automod_actions_limit) * 100)
 
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "akabot_instance_limits",
+                              announcement_channel_usage=announcement_channel_usage,
+                              announcement_channel_limit=announcement_channel_limit,
+                              announcement_channel_percentage=announcement_channel_percentage,
+                              chat_summary_usage=chat_summary_usage,
+                              chat_summary_limit=chat_summary_limit, chat_summary_percentage=chat_summary_percentage,
+                              roles_on_join_usage=roles_on_join_usage, roles_on_join_limit=roles_on_join_limit,
+                              roles_on_join_percentage=roles_on_join_percentage, giveaways_usage=giveaways_usage,
+                              giveaways_limit=giveaways_limit, giveaways_percentage=giveaways_percentage,
+                              automod_actions_usage=automod_actions_usage, automod_actions_limit=automod_actions_limit,
+                              automod_actions_percentage=automod_actions_percentage), ephemeral=True)
 
     feedback_subcommand = discord.SlashCommandGroup(name="feedback", description="Give feedback for the bot")
 

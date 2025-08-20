@@ -522,7 +522,7 @@ class Moderation(discord.Cog):
 
             warnings = db_get_warnings(ctx.guild.id, user.id)
             if not warnings:
-                await ctx.respond(f'{user.mention} has no warnings.', ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "no_warnings", user=user.mention), ephemeral=True)
                 return
 
             warning_str = trl(ctx.user.id, ctx.guild.id, "warn_list_title", user=user.mention)

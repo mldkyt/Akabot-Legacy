@@ -828,7 +828,7 @@ class Economy(discord.Cog):
             set_setting(ctx.guild.id, "economy_gambling_amount_increase_max_percentage",
                         str(amount_increase_max_percentage))
 
-        await ctx.respond("Settings were saved.", ephemeral=True)
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "settings_saved"), ephemeral=True)
 
     @economics_admin_subcommands.command(name='set_daily_weekly', description="Set various daily/weekly settings")
     @is_module_enabled("economy")
@@ -848,7 +848,7 @@ class Economy(discord.Cog):
         if weekly_max != -1:
             set_setting(ctx.guild.id, "economy_weekly_max", str(weekly_max))
 
-        await ctx.respond("Settings were saved.", ephemeral=True)
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "settings_saved"), ephemeral=True)
 
     @economics_admin_subcommands.command(name='set_work', description="Set various work settings")
     @is_module_enabled("economy")
@@ -875,7 +875,7 @@ class Economy(discord.Cog):
         if bonus_chance_lose != -1:
             set_setting(ctx.guild.id, "economy_work_bonus_chance_lose", str(bonus_chance_lose))
 
-        await ctx.respond("Settings were saved.", ephemeral=True)
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "settings_saved"), ephemeral=True)
 
     @economics_admin_subcommands.command(name='set_rob', description="Set various rob settings")
     @is_module_enabled("economy")
@@ -902,4 +902,4 @@ class Economy(discord.Cog):
         if fine_percentage_max != -1:
             set_setting(ctx.guild.id, "economy_rob_fine_percentage_max", str(fine_percentage_max))
 
-        await ctx.respond("Settings were saved.", ephemeral=True)
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "settings_saved"), ephemeral=True)

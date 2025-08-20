@@ -162,7 +162,7 @@ class PerUserSettings(discord.Cog):
             send_dm = trl(ctx.user.id, ctx.guild.id, "per_user_birthday_send_dm_enabled", append_tip=True) \
                 if send_dm else trl(ctx.user.id, ctx.guild.id, "per_user_birthday_send_dm_disabled", append_tip=True)
 
-            await ctx.respond(f"{send_dm}", ephemeral=True)
+            await ctx.respond(send_dm, ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

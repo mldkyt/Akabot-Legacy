@@ -128,4 +128,4 @@ class BirthdayAnnouncements(discord.Cog):
     @blocklist()
     async def birthday_announcements_message(self, ctx: discord.ApplicationContext, message: str):
         set_setting(ctx.guild.id, "birthday_announcements_message", message)
-        await ctx.respond("Birthday announcement message set", ephemeral=True)
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "birthday_message_set"), ephemeral=True)

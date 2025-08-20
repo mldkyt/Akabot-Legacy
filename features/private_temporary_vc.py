@@ -387,12 +387,12 @@ class PrivateTemporaryVC(discord.Cog):
     async def invite_user_to_private_vc(self, ctx: discord.ApplicationContext, user: discord.Member):
         try:
             if not ctx.user.voice:
-                await ctx.respond("Not in voice", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "not_in_voice"), ephemeral=True)
                 return
 
             temporary_vc_channel = ctx.user.voice.channel
             if temporary_vc_channel is None:
-                await ctx.respond("Not in voice", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "not_in_voice"), ephemeral=True)
                 return
 
             temporary_vc = client['PrivateTemporaryVC'].find_one({
@@ -400,12 +400,12 @@ class PrivateTemporaryVC(discord.Cog):
             })
 
             if temporary_vc is None:
-                await ctx.respond("You're not in a private temporary VC", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "not_in_private_temporary_vc"), ephemeral=True)
                 return
 
             # Check if the user is the owner of the channel
             if temporary_vc['CreatorID'] != str(ctx.user.id):
-                await ctx.respond("You're not the creator of this VC", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "not_creator_of_temporary_vc"), ephemeral=True)
                 return
 
             # Check overwrites
@@ -421,11 +421,12 @@ class PrivateTemporaryVC(discord.Cog):
                 raise ValueError(f"temporary_vc_type is not a valid type, received {temporary_vc_type}")
 
             if is_invited:
-                await ctx.respond("This user is already invited! Tell them to join :3", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "user_already_invited_to_vc"), ephemeral=True)
                 return
 
             await temporary_vc_channel.set_permissions(user, overwrite=overwrite)
-            await ctx.respond(f"User {user.display_name} was invited, tell them to join :3", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "user_invited_to_vc", name=user.display_name),
+                              ephemeral=True)
         except Exception as e:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
             akabot_logger.exception("An error occured:")
@@ -435,12 +436,12 @@ class PrivateTemporaryVC(discord.Cog):
     async def kick_user_from_private_vc(self, ctx: discord.ApplicationContext, user: discord.Member):
         try:
             if not ctx.user.voice:
-                await ctx.respond("Not in voice", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "not_in_voice"), ephemeral=True)
                 return
 
             temporary_vc_channel = ctx.user.voice.channel
             if temporary_vc_channel is None:
-                await ctx.respond("Not in voice", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "not_in_voice"), ephemeral=True)
                 return
 
             temporary_vc = client['PrivateTemporaryVC'].find_one({
@@ -448,12 +449,12 @@ class PrivateTemporaryVC(discord.Cog):
             })
 
             if temporary_vc is None:
-                await ctx.respond("You're not in a private temporary VC", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "not_in_private_temporary_vc"), ephemeral=True)
                 return
 
             # Check if the user is the owner of the channel
             if temporary_vc['CreatorID'] != str(ctx.user.id):
-                await ctx.respond("You're not the creator of this VC", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "not_creator_of_temporary_vc"), ephemeral=True)
                 return
 
             # Check overwrites
@@ -467,14 +468,15 @@ class PrivateTemporaryVC(discord.Cog):
                 raise ValueError(f"temporary_vc_type is not a valid type, received {temporary_vc_type}")
 
             if not is_invited:
-                await ctx.respond("This user wasn't invited and there's no need to kick them :3", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "not_invited_to_private_temporary_vc"), ephemeral=True)
                 return
 
             if user.voice is not None:
                 await user.move_to(None)
 
             await temporary_vc_channel.set_permissions(user, overwrite=None)
-            await ctx.respond(f"User {user.display_name} was disconnected and removed from vc :3", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "user_kicked_from_temporary_vc", user=user.display_name),
+                              ephemeral=True)
         except Exception as e:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
             akabot_logger.exception("An error occured:")
@@ -504,7 +506,7 @@ class PrivateTemporaryVC(discord.Cog):
                                   typ: discord.Option(str, name="type", description="Type (connect or view)", choices=["connect", "view"])):
         try:
             set_setting(ctx.guild.id, 'private_temporary_vc_view_type', typ)
-            await ctx.respond(f"Type changed to `{typ}`.", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "private_channel_type_changed", type=typ), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

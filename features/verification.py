@@ -271,7 +271,7 @@ class VerificationView(discord.ui.View):
     async def button_callback(self, ctx: discord.ApplicationContext):
         try:
             if await is_verified(ctx):
-                await ctx.respond("You're already verified.", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "already_verified"), ephemeral=True)
                 return
 
             method = get_setting(ctx.guild.id, "verification_method", "none")
@@ -279,7 +279,7 @@ class VerificationView(discord.ui.View):
             if method == "none":
                 # No verification method, give immediately role
                 await give_verify_role(ctx)
-                await ctx.respond("You have been verified successfully.", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "verified_successfully"), ephemeral=True)
             elif method == "easy_math":
                 # Verify using a simple math problem
                 simple_view = VerificationMath("easy", user_id=ctx.user.id)

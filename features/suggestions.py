@@ -354,7 +354,7 @@ class Suggestions(discord.Cog):
     async def cmd_message_reminder(self, ctx: discord.ApplicationContext, enabled: bool, message: str):
         try:
             if len(message) < 1:
-                await ctx.respond("Invalid message input.", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "invalid_message_input"), ephemeral=True)
             set_setting(ctx.guild.id, 'suggestion_reminder_enabled', str(enabled).lower())
             set_setting(ctx.guild.id, 'suggestion_reminder_message', message)
             await ctx.respond(
@@ -371,7 +371,7 @@ class Suggestions(discord.Cog):
     @commands.cooldown(1, 300, commands.BucketType.guild)  # Cooldown to prevent abuse
     async def cmd_update_message(self, ctx: discord.ApplicationContext):
         if get_key('Message_Intent', "false") == "false":
-            await ctx.respond("This instance of Akabot doesn\'t support the message intent.", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "no_message_intent"), ephemeral=True)
             return
 
         await ctx.defer(ephemeral=True)

@@ -609,7 +609,7 @@ class AnonymousQuefessions(Cog):
     @guild_only()
     async def create_quefessions_sending_msg(self, ctx: ApplicationContext):
         if get_key("Message_Intent", "false") == "true":
-            await ctx.respond("This instance has message intent. Please use the `/set_quefessions` command instead.",
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "this_instance_has_message_intent"),
                               ephemeral=True)
             return
 

@@ -10,6 +10,7 @@ from discord.ext.pages import Paginator
 from pytimeparse import parse
 
 from database import client
+from utils.languages import get_translation_for_key_localized as trl
 from utils.leveling import add_xp
 from utils.module_toggling import is_module_enabled
 from utils.per_server_settings import get_setting
@@ -26,19 +27,22 @@ class AddYoursModal(discord.ui.Modal):
 
     async def callback(self, interaction: discord.Interaction):
         if interaction.channel is None:
-            await interaction.respond("Invalid bot state. Please try again.", ephemeral=True)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, "command_error_generic"),
+                                      ephemeral=True)
             return
 
         if self.message.value is None or interaction.user is None:
-            await interaction.respond("Message cannot be empty.", ephemeral=True)
+            await interaction.respond(trl(0, interaction.guild.id, "message_cannot_be_empty"), ephemeral=True)
             return
 
         if len(self.message.value) == 0:
-            await interaction.respond("Message cannot be empty.", ephemeral=True)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, "message_cannot_be_empty"),
+                                      ephemeral=True)
             return
 
         if len(self.message.value) > 280:
-            await interaction.respond("Message cannot be longer than 280 characters.", ephemeral=True)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, "message_cannot_be_long"),
+                                      ephemeral=True)
             return
 
         client['CollectionMessageCapsule'].update_many({"MessageID": {"$eq": self.message_id}}, {"$push": {"Replies": {
@@ -46,7 +50,8 @@ class AddYoursModal(discord.ui.Modal):
             "Message": self.message.value
         }}})
 
-        await interaction.respond("Added message to collection.", ephemeral=True)
+        await interaction.respond(trl(interaction.user.id, interaction.guild.id, "message_added_to_collection"),
+                                  ephemeral=True)
 
 
 class AddYoursView(discord.ui.View):
@@ -56,20 +61,24 @@ class AddYoursView(discord.ui.View):
     @discord.ui.button(label="Add Yours", style=discord.ButtonStyle.green, custom_id="add_yours")
     async def add_yours(self, button: discord.ui.Button, interaction: discord.Interaction):
         if interaction.message is None or interaction.user is None:
-            await interaction.respond("Invalid bot state. Please try again.", ephemeral=True)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, "command_error_generic"),
+                                      ephemeral=True)
             return
 
         data = client['CollectionMessageCapsule'].find_one({"MessageID": str(interaction.message.id)})
         if data is None:
-            await interaction.respond("The message wasn't found.", ephemeral=True)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, "message_not_found"),
+                                      ephemeral=True)
             return
 
         if any(i["UserID"] == str(interaction.user.id) for i in data["Replies"]):
-            await interaction.respond("You already added your message.", ephemeral=True)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, "you_already_added_your_message"),
+                                      ephemeral=True)
             return
 
         if data['Time'] < datetime.datetime.now():
-            await interaction.respond("You can't add your message in the past.", ephemeral=True)
+            await interaction.respond(
+                trl(interaction.user.id, interaction.guild.id, "you_cant_add_your_message_in_the_past"), ephemeral=True)
             return
 
         await interaction.response.send_modal(AddYoursModal(str(interaction.message.id)))
@@ -95,7 +104,7 @@ class MessageTimeCapsule(discord.Cog):
         try:
             time_parsed = parse(time)
             if time_parsed is None:
-                await ctx.respond("Invalid time format.", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "invalid_time_format"), ephemeral=True)
                 return
 
             target_time = datetime.datetime.now() + datetime.timedelta(seconds=time_parsed)
@@ -110,10 +119,11 @@ class MessageTimeCapsule(discord.Cog):
 
             target_time_str = target_time.strftime("%Y-%m-%d %H:%M:%S")
 
-            await ctx.respond(f"Message scheduled on `{target_time_str}`.", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_scheduled_on", time=target_time_str),
+                              ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond("An error occurred while scheduling the message.", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @schedule_group.command(name="messages", description="List all messages")
     @is_module_enabled("time_capsule")
@@ -123,7 +133,7 @@ class MessageTimeCapsule(discord.Cog):
         messages = client['MessageCapsule'].find({"GuildID": str(ctx.guild.id)}).to_list()
 
         if len(messages) == 0:
-            await ctx.respond("You have no messages.", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "no_messages"), ephemeral=True)
             return
 
         pages = []
@@ -139,7 +149,7 @@ class MessageTimeCapsule(discord.Cog):
             pages.append(current_page)
 
         if len(pages) == 0:
-            await ctx.respond("You have no messages.", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "no_messages"), ephemeral=True)
             return
 
         paginator = Paginator(pages)
@@ -152,14 +162,15 @@ class MessageTimeCapsule(discord.Cog):
         try:
             # Check DM ability
             try:
-                sent_msg = await ctx.author.send("This message serves as a check if I can DM you.")
+                sent_msg = await ctx.author.send(trl(ctx.user.id, ctx.guild.id, "dm_test_message"))
             except discord.Forbidden:
-                await ctx.respond("I don't have permission to send messages in DMs.", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "I don't have permission to send messages in DM's"),
+                                  ephemeral=True)
                 return
 
             time_parsed = parse(time)
             if time_parsed is None:
-                await ctx.respond("Invalid time format.", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "invalid_time_format"), ephemeral=True)
                 return
 
             target_time = datetime.datetime.now() + datetime.timedelta(seconds=time_parsed)
@@ -171,11 +182,14 @@ class MessageTimeCapsule(discord.Cog):
                 "Time": datetime.datetime.now() + datetime.timedelta(seconds=time_parsed)
             })
 
-            await ctx.respond(f"Reminder scheduled on `{str(target_time)}`.", ephemeral=True)
+            target_time_str = target_time.strftime("%Y-%m-%d %H:%M:%S")
+
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "reminder_scheduled", time=target_time_str),
+                              ephemeral=True)
             await sent_msg.delete(delay=10)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond("An error occurred while scheduling the reminder.", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @schedule_group.command(name="reminders", description="List all reminders")
     @dm_only()
@@ -185,7 +199,7 @@ class MessageTimeCapsule(discord.Cog):
             reminders = client['DMMessageCapsule'].find({"UserID": str(ctx.author.id)}).to_list()
 
             if len(reminders) == 0:
-                await ctx.respond("You have no reminders.", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "no_reminders"), ephemeral=True)
                 return
 
             pages = []
@@ -201,14 +215,14 @@ class MessageTimeCapsule(discord.Cog):
                 pages.append(current_page)
 
             if len(pages) == 0:
-                await ctx.respond("You have no reminders.", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "no_reminders"), ephemeral=True)
                 return
 
             paginator = Paginator(pages)
             await paginator.respond(ctx.interaction, ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond("An error occurred while listing reminders.", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @schedule_group.command(name="collection", description="Schedule a collection message")
     @is_module_enabled("time_capsule")
@@ -217,12 +231,12 @@ class MessageTimeCapsule(discord.Cog):
         """Schedule a collection message"""
         try:
             if ctx.channel.type != discord.ChannelType.text:
-                await ctx.respond("This command can only be used in text channels.", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "only_text_channels"), ephemeral=True)
                 return
 
             time_parsed = parse(time)
             if time_parsed is None:
-                await ctx.respond("Invalid time format.", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "invalid_time_format"), ephemeral=True)
                 return
 
             target_time = datetime.datetime.now() + datetime.timedelta(seconds=time_parsed)
@@ -244,10 +258,11 @@ class MessageTimeCapsule(discord.Cog):
 
             client['CollectionMessageCapsule'].update_one({"_id": add.inserted_id}, {"$set": {"MessageID": str(sent_msg.id)}})
 
-            await ctx.respond(f"Collection message scheduled on `{target_time_str}`.", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "collection_scheduled", time=target_time_str),
+                              ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond("An error occurred while scheduling the collection message.", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @tasks.loop(minutes=1)
     async def check_dm_messages(self):
