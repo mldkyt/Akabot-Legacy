@@ -26,8 +26,8 @@ from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 from utils.module_toggling import is_module_enabled
-from utils.per_user_settings import get_per_user_setting
 from utils.per_server_settings import set_setting, get_setting
+from utils.per_user_settings import get_per_user_setting
 
 akabot_logger = logging.getLogger("akabot")
 
@@ -115,7 +115,7 @@ class BirthdayAnnouncements(discord.Cog):
     async def set_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         set_setting(ctx.guild.id, "birthday_announcements_channel", str(channel.id))
         await ctx.respond(
-            trl(ctx.user.id, ctx.guild.id, "birthday_announcements_channel_set", append_tip=True).format(
+            trl(ctx.user.id, ctx.guild.id, "birthday_announcements_channel_set", append_tip=True,
                 channel=channel.mention),
             ephemeral=True)
 

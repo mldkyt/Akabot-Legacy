@@ -36,12 +36,13 @@ from utils.leveling import calc_multiplier, get_xp, add_xp, get_level_for_xp, ge
     mult_get, update_roles_for_member
 from utils.logging_util import log_into_logs
 from utils.module_toggling import is_module_enabled
-from utils.per_user_settings import get_per_user_setting, set_per_user_setting
 from utils.per_server_settings import get_setting, set_setting
+from utils.per_user_settings import get_per_user_setting, set_per_user_setting
 from utils.tips import append_tip_to_message
 from utils.tzutil import get_now_for_server
 
 akabot_logger = logging.getLogger("akabot")
+
 
 class Leveling(discord.Cog):
     def __init__(self, bot: discord.Bot) -> None:
@@ -71,7 +72,8 @@ class Leveling(discord.Cog):
 
                 logging.debug(
                     "Settings: Extra: %d, Extra Trigger: %d, Calculated Multiplications: %d, Calculated XP Addition: %d",
-                    extra, extra_trigger, len(msg.content) // extra_trigger, extra * (len(msg.content) // extra_trigger))
+                    extra, extra_trigger, len(msg.content) // extra_trigger,
+                                          extra * (len(msg.content) // extra_trigger))
                 logging.debug("Adding %d XP to %s (Message length: %d)", xp, msg.author.name, len(msg.content))
 
                 before_level = get_level_for_xp(msg.guild.id, get_xp(msg.guild.id, msg.author.id))
@@ -94,8 +96,9 @@ class Leveling(discord.Cog):
                 # or it will send it when the member goes to a non-blocklisted
                 # channel
                 await queue_send_message(msg,
-                    content=trl(msg.author.id, msg.guild.id, "leveling_level_up").format(mention=msg.author.mention,
-                                                                                 level=str(after_level)), delete_after=5)
+                                         content=trl(msg.author.id, msg.guild.id, "leveling_level_up",
+                                                     mention=msg.author.mention,
+                                                     level=str(after_level)), delete_after=5)
         except Exception as e:
             akabot_logger.exception("An error occured:")
 
@@ -130,19 +133,19 @@ class Leveling(discord.Cog):
                 if start_date > now or end_date < now:
                     continue
 
-                msg += trl(ctx.user.id, ctx.guild.id, "leveling_level_multiplier_row").format(name=i['Name'],
-                                                                                              multiplier=i[
-                                                                                                  'Multiplier'],
-                                                                                              start=i['StartDate'],
-                                                                                              end=i['EndDate'])
+                msg += trl(ctx.user.id, ctx.guild.id, "leveling_level_multiplier_row", name=i['Name'],
+                           multiplier=i[
+                               'Multiplier'],
+                           start=i['StartDate'],
+                           end=i['EndDate'])
 
             if user == ctx.user:
                 icon = get_per_user_setting(ctx.user.id, 'leveling_icon', '')
-                response = trl(ctx.user.id, ctx.guild.id, "leveling_level_info_self").format(icon=icon, level=level,
-                                                                                             level_xp=level_xp,
-                                                                                             next_level_xp=next_level_xp,
-                                                                                             next_level=level + 1,
-                                                                                             multiplier=multiplier)
+                response = trl(ctx.user.id, ctx.guild.id, "leveling_level_info_self", icon=icon, level=level,
+                               level_xp=level_xp,
+                               next_level_xp=next_level_xp,
+                               next_level=level + 1,
+                               multiplier=multiplier)
 
                 if len(msg) > 0:
                     response += trl(ctx.user.id, ctx.guild.id, "leveling_level_multiplier_title")
@@ -152,11 +155,11 @@ class Leveling(discord.Cog):
             else:
                 icon = get_per_user_setting(user.id, 'leveling_icon', '')
                 response = (
-                    trl(ctx.user.id, ctx.guild.id, "leveling_level_info_another").format(icon=icon, user=f'<@{user.id}>',
-                                                                                         level=level, level_xp=level_xp,
-                                                                                         next_level_xp=next_level_xp,
-                                                                                         next_level=level + 1,
-                                                                                         multiplier=multiplier))
+                    trl(ctx.user.id, ctx.guild.id, "leveling_level_info_another", icon=icon, user=f'<@{user.id}>',
+                        level=level, level_xp=level_xp,
+                        next_level_xp=next_level_xp,
+                        next_level=level + 1,
+                        multiplier=multiplier))
 
                 if len(msg) > 0:
                     response += trl(ctx.user.id, ctx.guild.id, "leveling_level_multiplier_title")
@@ -188,8 +191,8 @@ class Leveling(discord.Cog):
             multiplier_list_msg = ""
 
             for i in multiplier_list:
-                multiplier_list_msg += trl(ctx.user.id, ctx.guild.id, "leveling_level_multiplier_row").format(
-                    name=i['Name'], multiplier=i['Multiplier'], start=i['StartDate'], end=i['EndDate'])
+                multiplier_list_msg += trl(ctx.user.id, ctx.guild.id, "leveling_level_multiplier_row", name=i['Name'],
+                                           multiplier=i['Multiplier'], start=i['StartDate'], end=i['EndDate'])
 
             if len(multiplier_list) != 0:
                 multiplier_list_msg = trl(ctx.user.id, ctx.guild.id,
@@ -215,9 +218,12 @@ class Leveling(discord.Cog):
     @commands_ext.guild_only()
     @discord.option(name="initial", description="The XP given to any user for any message, of any length and any type.",
                     type=int)
-    @discord.option(name="extra", description="The XP given any user with more effort in their message. (Message Intent only)", type=int)
+    @discord.option(name="extra",
+                    description="The XP given any user with more effort in their message. (Message Intent only)",
+                    type=int)
     @discord.option(name="extra_requirement",
-                    description="Requirement of letters in a message for it to be considered high effort. (Message Intent only)", type=int)
+                    description="Requirement of letters in a message for it to be considered high effort. (Message Intent only)",
+                    type=int)
     @analytics("leveling multiplier")
     @blocklist()
     async def set_per_message(self, ctx: discord.ApplicationContext, initial: int, extra: int, extra_requirement: int):
@@ -238,9 +244,9 @@ class Leveling(discord.Cog):
         set_setting(ctx.guild.id, 'leveling_extra_xp', str(extra))
         set_setting(ctx.guild.id, 'leveling_extra_xp_trigger', str(extra_requirement))
         await ctx.respond(
-            trl(ctx.user.id, ctx.guild.id, "leveling_set_per_message_success", append_tip=True).format(initial=initial,
-                                                                                                       extra=extra,
-                                                                                                       extra_requirement=extra_requirement),
+            trl(ctx.user.id, ctx.guild.id, "leveling_set_per_message_success", append_tip=True, initial=initial,
+                extra=extra,
+                extra_requirement=extra_requirement),
             ephemeral=True)
 
     @leveling_subcommand.command(name='multiplier', description='Set the leveling multiplier')
@@ -269,8 +275,8 @@ class Leveling(discord.Cog):
             await log_into_logs(ctx.guild, logging_embed)
 
             # Send response
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_set_multiplier_success", append_tip=True).format(
-                multiplier=multiplier), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_set_multiplier_success", append_tip=True,
+                                  multiplier=multiplier), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
@@ -297,7 +303,7 @@ class Leveling(discord.Cog):
             # Verify if the multiplier already exists
             if mult_exists(ctx.guild.id, name):
                 await ctx.respond(
-                    trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_already_exists").format(name=name),
+                    trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_already_exists", name=name),
                     ephemeral=True)
                 return
 
@@ -331,8 +337,8 @@ class Leveling(discord.Cog):
 
             # Send response
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "leveling_add_multiplier_success", append_tip=True).format(name=name,
-                                                                                                          multiplier=multiplier),
+                trl(ctx.user.id, ctx.guild.id, "leveling_add_multiplier_success", append_tip=True, name=name,
+                    multiplier=multiplier),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -351,13 +357,13 @@ class Leveling(discord.Cog):
         try:
             if not mult_exists(ctx.guild.id, old_name):
                 await ctx.respond(
-                    trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_doesnt_exist").format(name=old_name),
+                    trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_doesnt_exist", name=old_name),
                     ephemeral=True)
                 return
 
             if mult_exists(ctx.guild.id, new_name):
                 await ctx.respond(
-                    trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_already_exists").format(name=new_name),
+                    trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_already_exists", name=new_name),
                     ephemeral=True)
                 return
 
@@ -377,8 +383,8 @@ class Leveling(discord.Cog):
 
             # Send response
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "leveling_rename_multiplier_success", append_tip=True).format(
-                    old_name=old_name, new_name=new_name), ephemeral=True)
+                trl(ctx.user.id, ctx.guild.id, "leveling_rename_multiplier_success", append_tip=True, old_name=old_name,
+                    new_name=new_name), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
@@ -419,8 +425,8 @@ class Leveling(discord.Cog):
 
             # Send response
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_success", append_tip=True).format(name=name,
-                                                                                                      multiplier=multiplier),
+                trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_success", append_tip=True, name=name,
+                    multiplier=multiplier),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -439,7 +445,7 @@ class Leveling(discord.Cog):
     async def change_multiplier_start_date(self, ctx: discord.ApplicationContext, name: str, start_date: str):
         try:
             if not mult_exists(ctx.guild.id, name):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_doesnt_exist").format(name=name),
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_doesnt_exist", name=name),
                                   ephemeral=True)
                 return
 
@@ -474,8 +480,8 @@ class Leveling(discord.Cog):
 
             # Send response
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "leveling_start_date_success", append_tip=True).format(name=name,
-                                                                                                      start_date=start_date),
+                trl(ctx.user.id, ctx.guild.id, "leveling_start_date_success", append_tip=True, name=name,
+                    start_date=start_date),
                 ephemeral=True)
 
         except Exception as e:
@@ -494,7 +500,7 @@ class Leveling(discord.Cog):
     async def change_multiplier_end_date(self, ctx: discord.ApplicationContext, name: str, end_date: str):
         try:
             if not mult_exists(ctx.guild.id, name):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_doesnt_exist").format(name=name),
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_doesnt_exist", name=name),
                                   ephemeral=True)
                 return
 
@@ -528,8 +534,8 @@ class Leveling(discord.Cog):
 
             # Send response
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "leveling_end_date_success", append_tip=True).format(name=name,
-                                                                                                    end_date=end_date),
+                trl(ctx.user.id, ctx.guild.id, "leveling_end_date_success", append_tip=True, name=name,
+                    end_date=end_date),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -546,7 +552,7 @@ class Leveling(discord.Cog):
     async def remove_multiplier(self, ctx: discord.ApplicationContext, name: str):
         try:
             if not mult_exists(ctx.guild.id, name):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_doesnt_exist").format(name=name),
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_multiplier_doesnt_exist", name=name),
                                   ephemeral=True)
                 return
 
@@ -568,7 +574,7 @@ class Leveling(discord.Cog):
 
             # Send response
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "leveling_remove_multiplier_success", append_tip=True).format(name=name),
+                trl(ctx.user.id, ctx.guild.id, "leveling_remove_multiplier_success", append_tip=True, name=name),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -585,7 +591,7 @@ class Leveling(discord.Cog):
         try:
             multiplier = calc_multiplier(ctx.guild.id)
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "leveling_get_multiplier_response", append_tip=True).format(
+                trl(ctx.user.id, ctx.guild.id, "leveling_get_multiplier_response", append_tip=True,
                     multiplier=multiplier), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -604,7 +610,7 @@ class Leveling(discord.Cog):
             old_xp = get_setting(ctx.guild.id, 'leveling_xp_per_level', '500')
             set_setting(ctx.guild.id, 'leveling_xp_per_level', str(xp))
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "leveling_set_xp_per_level_success", append_tip=True).format(xp=xp),
+                trl(ctx.user.id, ctx.guild.id, "leveling_set_xp_per_level_success", append_tip=True, xp=xp),
                 ephemeral=True)
 
             # Logging embed
@@ -643,21 +649,21 @@ class Leveling(discord.Cog):
             logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"), value=f"{ctx.user.mention}")
             if old_role_id == '0':
                 logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_role"),
-                                        value=trl(0, ctx.guild.id, "leveling_set_reward_log_role_added").format(
-                                            reward=role.mention))
+                                        value=trl(0, ctx.guild.id, "leveling_set_reward_log_role_added",
+                                                  reward=role.mention))
             else:
                 logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_role"),
-                                        value=trl(0, ctx.guild.id, "leveling_set_reward_log_role_changed").format(
-                                            old_reward=old_role.mention if old_role is not None else old_role_id,
-                                            new_reward=role.mention))
+                                        value=trl(0, ctx.guild.id, "leveling_set_reward_log_role_changed",
+                                                  old_reward=old_role.mention if old_role is not None else old_role_id,
+                                                  new_reward=role.mention))
 
             # Send into logs
             await log_into_logs(ctx.guild, logging_embed)
 
             # Send response
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "leveling_set_reward_success", append_tip=True).format(level=level,
-                                                                                                      reward=role.mention),
+                trl(ctx.user.id, ctx.guild.id, "leveling_set_reward_success", append_tip=True, level=level,
+                    reward=role.mention),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -695,7 +701,7 @@ class Leveling(discord.Cog):
 
             # Send response
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "leveling_remove_reward_success", append_tip=True).format(level=level),
+                trl(ctx.user.id, ctx.guild.id, "leveling_remove_reward_success", append_tip=True, level=level),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -719,7 +725,7 @@ class Leveling(discord.Cog):
 
             if success:
                 await ctx.respond(
-                    trl(ctx.user.id, ctx.guild.id, "leveling_set_icon_success", append_tip=True).format(icon=icon),
+                    trl(ctx.user.id, ctx.guild.id, "leveling_set_icon_success", append_tip=True, icon=icon),
                     ephemeral=True)
             else:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "leveling_set_icon_error"), ephemeral=True)
@@ -759,8 +765,9 @@ class Leveling(discord.Cog):
                 user_obj = ctx.guild.get_member(int(user['UserID']))
                 if user_obj is None:
                     continue
-                leaderboard_message += trl(ctx.user.id, ctx.guild.id, "leveling_leaderboard_row").format(
-                    position=i, user=user_obj.mention, level=get_level_for_xp(ctx.guild.id, user['XP']), xp=user['XP'])
+                leaderboard_message += trl(ctx.user.id, ctx.guild.id, "leveling_leaderboard_row", position=i,
+                                           user=user_obj.mention, level=get_level_for_xp(ctx.guild.id, user['XP']),
+                                           xp=user['XP'])
                 i += 1
                 insert_last = True
 

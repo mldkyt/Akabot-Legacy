@@ -357,7 +357,7 @@ class PrivateTemporaryVC(discord.Cog):
         try:
             client['PrivateTemporaryVCCreators'].insert_one({'ChannelID': str(channel.id), 'GuildID': str(channel.guild.id)})
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, 'temporary_vc_creator_channel_add').format(channel=channel.mention),
+                trl(ctx.user.id, ctx.guild.id, 'temporary_vc_creator_channel_add', channel=channel.mention),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -373,12 +373,11 @@ class PrivateTemporaryVC(discord.Cog):
             if client['PrivateTemporaryVCCreators'].delete_one(
                     {'ChannelID': str(channel.id), 'GuildID': str(channel.guild.id)}).deleted_count > 0:
                 await ctx.respond(
-                    trl(ctx.user.id, ctx.guild.id, 'temporary_vc_creator_channel_remove').format(
-                        channel=channel.mention),
+                    trl(ctx.user.id, ctx.guild.id, 'temporary_vc_creator_channel_remove', channel=channel.mention),
                     ephemeral=True)
             else:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'temporary_vc_error_channel_not_in_creator').format(
-                    channel=channel.mention), ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'temporary_vc_error_channel_not_in_creator',
+                                      channel=channel.mention), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
@@ -489,7 +488,7 @@ class PrivateTemporaryVC(discord.Cog):
     async def change_default_name(self, ctx: discord.ApplicationContext, name: str):
         try:
             set_setting(ctx.guild.id, 'temporary_vc_name', name)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'temporary_vc_name_format_change').format(name=name),
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'temporary_vc_name_format_change', name=name),
                               ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")

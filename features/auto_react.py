@@ -27,6 +27,7 @@ from utils.languages import get_translation_for_key_localized as trl
 
 akabot_logger = logging.getLogger("akabot")
 
+
 class AutoReact(discord.Cog):
     def __init__(self, bot: discord.Bot) -> None:
         self.bot = bot
@@ -65,7 +66,7 @@ class AutoReact(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "auto_react_add_success").format(trigger=trigger, emoji=str(emoji)),
+                trl(ctx.user.id, ctx.guild.id, "auto_react_add_success", trigger=trigger, emoji=str(emoji)),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -92,10 +93,9 @@ class AutoReact(discord.Cog):
                 # Format: **{id}**: {trigger} -> {reply}
 
                 # current_group_msg += f"**ID: `{i[0]}`**: Trigger: `{i[2]}` -> Will react with `{i[3]}`\n"
-                current_group_msg += trl(ctx.user.id, ctx.guild.id, "auto_react_list_row").format(id=str(i['_id']),
-                                                                                                  trigger=i[
-                                                                                                      'TriggerText'],
-                                                                                                  emoji=i['Emoji'])
+                current_group_msg += trl(ctx.user.id, ctx.guild.id, "auto_react_list_row", id=str(i['_id']),
+                                         trigger=i['TriggerText'],
+                                         emoji=i['Emoji'])
                 current_group += 1
 
                 # Split message group

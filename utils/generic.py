@@ -27,39 +27,34 @@ def pretty_time_delta(seconds: int | float, user_id: int, server_id: int, show_s
     hours, seconds = divmod(seconds, 3600)
     minutes, seconds = divmod(seconds, 60)
     if days > 0:
-        # return trl(user_id, server_id, "pretty_time_delta_4").format(days=days, hours=hours, minutes=minutes,
-        # seconds=seconds)
         if not show_minutes:
-            return trl(user_id, server_id, "pretty_time_delta_4_no_minutes").format(days=days, hours=hours)
+            return trl(user_id, server_id, "pretty_time_delta_4_no_minutes", days=days, hours=hours)
         elif not show_seconds:
-            return trl(user_id, server_id, "pretty_time_delta_4_no_seconds").format(days=days, hours=hours,
-                                                                                    minutes=minutes)
+            return trl(user_id, server_id, "pretty_time_delta_4_no_seconds", days=days, hours=hours, minutes=minutes)
         else:
-            return trl(user_id, server_id, "pretty_time_delta_4").format(days=days, hours=hours, minutes=minutes,
+            return trl(user_id, server_id, "pretty_time_delta_4", days=days, hours=hours, minutes=minutes,
                                                                          seconds=seconds)
     elif hours > 0:
-        # return trl(user_id, server_id, "pretty_time_delta_3").format(hours=hours, minutes=minutes, seconds=seconds)
         if not show_minutes:
-            return trl(user_id, server_id, "pretty_time_delta_3_no_minutes").format(hours=hours)
+            return trl(user_id, server_id, "pretty_time_delta_3_no_minutes", hours=hours)
         elif not show_seconds:
-            return trl(user_id, server_id, "pretty_time_delta_3_no_seconds").format(hours=hours, minutes=minutes)
+            return trl(user_id, server_id, "pretty_time_delta_3_no_seconds", hours=hours, minutes=minutes)
         else:
-            return trl(user_id, server_id, "pretty_time_delta_3").format(hours=hours, minutes=minutes, seconds=seconds)
+            return trl(user_id, server_id, "pretty_time_delta_3", hours=hours, minutes=minutes, seconds=seconds)
     elif minutes > 0:
-        # return trl(user_id, server_id, "pretty_time_delta_2").format(minutes=minutes, seconds=seconds)
         if not show_minutes:
             return trl(user_id, server_id, "pretty_time_delta_less_than_an_hour")
         elif not show_seconds:
-            return trl(user_id, server_id, "pretty_time_delta_2_no_seconds").format(minutes=minutes)
+            return trl(user_id, server_id, "pretty_time_delta_2_no_seconds", minutes=minutes)
         else:
-            return trl(user_id, server_id, "pretty_time_delta_2").format(minutes=minutes, seconds=seconds)
+            return trl(user_id, server_id, "pretty_time_delta_2", minutes=minutes, seconds=seconds)
     else:
         if not show_minutes:
             return trl(user_id, server_id, "pretty_time_delta_less_than_an_hour")
         elif not show_seconds:
             return trl(user_id, server_id, "pretty_time_delta_less_than_a_minute")
         else:
-            return trl(user_id, server_id, "pretty_time_delta_1").format(seconds=seconds)
+            return trl(user_id, server_id, "pretty_time_delta_1", seconds=seconds)
 
 
 def pretty_time(seconds_since_epoch: int | float) -> str:

@@ -52,7 +52,7 @@ class AdminCommands(discord.Cog):
             active_akabot_users = client['AnalyticsAkabotUsers'].count_documents({'LastBotUse': {'$gt': datetime.datetime.now() - datetime.timedelta(days=7)}})
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "bot_status_message").format(servers=str(servers),
+                trl(ctx.user.id, ctx.guild.id, "bot_status_message", servers=str(servers),
                                                                             channels=str(channels),
                                                                             activechannel=str(active_channels),
                                                                             activeuser=str(active_users),
@@ -60,4 +60,4 @@ class AdminCommands(discord.Cog):
                                                                             users=str(members)), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured in /server_count:")
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic").format(e), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

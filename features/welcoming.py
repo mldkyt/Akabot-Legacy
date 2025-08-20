@@ -124,8 +124,10 @@ class Welcoming(discord.Cog):
             self.cache.remove_from_cache(member)
 
             emb = discord.Embed(
-                title=trl(0, member.guild.id, "welcome_grace_period_log_title").format(minutes=str(grace_period_minutes)),
-                description=trl(0, member.guild.id, "welcome_grace_period_log_description").format(minutes=str(grace_period_minutes), mention=member.mention, displayname=member.display_name, name=member.name, id=str(member.id)),
+                title=trl(0, member.guild.id, "welcome_grace_period_log_title", minutes=str(grace_period_minutes)),
+                description=trl(0, member.guild.id, "welcome_grace_period_log_description",
+                                minutes=str(grace_period_minutes), mention=member.mention,
+                                displayname=member.display_name, name=member.name, id=str(member.id)),
                 color=discord.Color.red()
             )
 
@@ -232,7 +234,7 @@ class Welcoming(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "welcome_channel_set", append_tip=True).format(channel=channel.mention),
+                trl(ctx.user.id, ctx.guild.id, "welcome_channel_set", append_tip=True, channel=channel.mention),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -265,7 +267,7 @@ class Welcoming(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "welcome_type_set", append_tip=True).format(type=message_type),
+                trl(ctx.user.id, ctx.guild.id, "welcome_type_set", append_tip=True, type=message_type),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -295,7 +297,7 @@ class Welcoming(discord.Cog):
             await log_into_logs(ctx.guild, logging_embed)
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "welcome_title_set", append_tip=True).format(title=title),
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "welcome_title_set", append_tip=True, title=title),
                               ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -325,7 +327,7 @@ class Welcoming(discord.Cog):
             await log_into_logs(ctx.guild, logging_embed)
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "welcome_text_sent", append_tip=True).format(text=text),
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "welcome_text_sent", append_tip=True, text=text),
                               ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -362,7 +364,9 @@ class Welcoming(discord.Cog):
             await log_into_logs(ctx.guild, emb)
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "welcome_grace_period_set", append_tip=True).format(minutes=minutes), ephemeral=True)
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, "welcome_grace_period_set", append_tip=True, minutes=minutes),
+                ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
@@ -422,7 +426,7 @@ class Welcoming(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "goodbye_channel_set", append_tip=True).format(channel=channel.mention),
+                trl(ctx.user.id, ctx.guild.id, "goodbye_channel_set", append_tip=True, channel=channel.mention),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -455,7 +459,7 @@ class Welcoming(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "goodbye_type_set", append_tip=True).format(type=message_type),
+                trl(ctx.user.id, ctx.guild.id, "goodbye_type_set", append_tip=True, type=message_type),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -485,7 +489,7 @@ class Welcoming(discord.Cog):
             await log_into_logs(ctx.guild, logging_embed)
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "goodbye_title_set", append_tip=True).format(title=title),
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "goodbye_title_set", append_tip=True, title=title),
                               ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -515,7 +519,7 @@ class Welcoming(discord.Cog):
             await log_into_logs(ctx.guild, logging_embed)
 
             # Respond
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "goodbye_text_set", append_tip=True).format(text=text),
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "goodbye_text_set", append_tip=True, text=text),
                               ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")

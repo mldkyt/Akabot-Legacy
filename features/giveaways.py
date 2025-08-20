@@ -36,6 +36,7 @@ from utils.tzutil import get_now_for_server
 
 akabot_logger = logging.getLogger("akabot")
 
+
 class Giveaways(discord.Cog):
     giveaways_group = discord.SlashCommandGroup(name="giveaways")
 
@@ -65,7 +66,7 @@ class Giveaways(discord.Cog):
             if days + hours < 0 or days < 0 or hours < 0 or minutes < 0 or winners < 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "giveaways_error_negative_parameters"), ephemeral=True)
                 return
-            
+
             # Check if we didn't hit limit of giveaways
             res = client['Giveaways'].count_documents({'GuildID': str(ctx.guild.id)})
             if res > int(get_key("Max_Giveaways", "3")):
@@ -77,16 +78,18 @@ class Giveaways(discord.Cog):
             end_date = end_date + datetime.timedelta(days=days, hours=hours, minutes=minutes)
 
             # Send message
-            msg1 = await ctx.channel.send(trl(0, ctx.guild.id, "giveaways_giveaway_text").format(item=item))
+            msg1 = await ctx.channel.send(trl(0, ctx.guild.id, "giveaways_giveaway_text", item=item))
             await msg1.add_reaction("🎉")
 
             res = client['Giveaways'].insert_one(
-                {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'MessageID': str(msg1.id), 'Item': item,
+                {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'MessageID': str(msg1.id),
+                 'Item': item,
                  'EndDate': end_date.isoformat(), 'Winners': winners})
 
             # Send success message
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "giveaways_new_success", append_tip=True).format(
-                id=str(res.inserted_id)), ephemeral=True)
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, "giveaways_new_success", append_tip=True, id=str(res.inserted_id)),
+                ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
@@ -138,9 +141,9 @@ class Giveaways(discord.Cog):
                 time_remaining = time_remaining.total_seconds()
                 time_remaining = pretty_time_delta(time_remaining, user_id=ctx.user.id, server_id=ctx.guild.id)
 
-                message += trl(ctx.user.id, ctx.guild.id, "giveaways_list_line").format(id=giveaway_id, item=item,
-                                                                                        winners=winners,
-                                                                                        time=time_remaining)
+                message += trl(ctx.user.id, ctx.guild.id, "giveaways_list_line", id=giveaway_id, item=item,
+                               winners=winners,
+                               time=time_remaining)
 
             if len(res) == 0:
                 message += trl(ctx.user.id, ctx.guild.id, "giveaways_list_empty")
@@ -151,7 +154,7 @@ class Giveaways(discord.Cog):
             await ctx.respond(message, ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic").format(e), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @discord.Cog.listener()
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
@@ -196,14 +199,14 @@ class Giveaways(discord.Cog):
 
             # Get channel and send message
             if len(winners) == 1:
-                msg2 = trl(0, chan.guild.id, "giveaways_winner").format(item=res['Item'], mention=f"<@{winners[0]}>")
+                msg2 = trl(0, chan.guild.id, "giveaways_winner", item=res['Item'], mention=f"<@{winners[0]}>")
                 await chan.send(msg2)
             else:
                 mentions = ", ".join([f"<@{j}>" for j in winners])
                 last_mention = mentions.rfind(", ")
                 last_mention = mentions[last_mention + 2:]
                 mentions = mentions[:last_mention]
-                msg2 = trl(0, chan.guild.id, "giveaways_winners").format(item=res['Item'], mentions=mentions,
+                msg2 = trl(0, chan.guild.id, "giveaways_winners", item=res['Item'], mentions=mentions,
                                                                          last_mention=last_mention)
                 await chan.send(msg2)
 

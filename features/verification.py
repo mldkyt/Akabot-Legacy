@@ -24,11 +24,11 @@ import discord.ext.commands
 import utils.english_words
 import utils.logging_util
 import utils.per_server_settings
-from utils.per_server_settings import get_setting, set_setting
 from utils.analytics import analytics
 from utils.blocklist import blocklist
 from utils.languages import get_translation_for_key_localized as trl
 from utils.logging_util import log_into_logs
+from utils.per_server_settings import get_setting, set_setting
 
 akabot_logger = logging.getLogger("akabot")
 
@@ -95,7 +95,7 @@ class VerificationTextReverse(discord.ui.View):
 
     def message_content(self) -> str:
         # Message
-        return trl(self.user_id, 0, "verification_reverse_word").format(word=self.english_word)
+        return trl(self.user_id, 0, "verification_reverse_word", word=self.english_word)
 
     async def respond(self, ctx: discord.ApplicationContext):
         try:
@@ -148,7 +148,7 @@ class VerificationEnglishWord(discord.ui.View):
         self.add_item(self.answer_btn)
 
     def message_content(self) -> str:
-        return trl(self.user_id, 0, "verification_english_word").format(length=str(self.length))
+        return trl(self.user_id, 0, "verification_english_word", length=str(self.length))
 
     async def respond(self, ctx: discord.ApplicationContext):
         try:
@@ -167,7 +167,7 @@ class VerificationEnglishWordModal(discord.ui.Modal):
         self.user_id = user_id
 
         self.text_1 = discord.ui.InputText(
-            label=trl(user_id, 0, "verification_form_english_word").format(length=str(self.length)), required=True,
+            label=trl(user_id, 0, "verification_form_english_word", length=str(self.length)), required=True,
             min_length=self.length, max_length=self.length)
         self.add_item(self.text_1)
 
@@ -229,7 +229,7 @@ class VerificationMath(discord.ui.View):
 
     def message_content(self) -> str:
         # Create a message
-        return trl(self.user_id, 0, "verification_math").format(a=self.a, b=self.b, o=self.op)
+        return trl(self.user_id, 0, "verification_math", a=self.a, b=self.b, o=self.op)
 
     async def respond(self, ctx: discord.ApplicationContext):
         # Respond with modal
@@ -376,7 +376,7 @@ class Verification(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "verification_set_difficulty_response", append_tip=True).format(
+                trl(ctx.user.id, ctx.guild.id, "verification_set_difficulty_response", append_tip=True,
                     difficulty=difficulty),
                 ephemeral=True)
         except Exception as e:

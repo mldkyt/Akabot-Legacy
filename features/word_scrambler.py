@@ -163,15 +163,13 @@ class WordScrambler(discord.Cog):
 
             if role is not None:
                 msg = await ctx.channel.send(
-                    trl(ctx.user.id, ctx.guild.id, "word_scramble_message_ping", append_tip=True).format(
+                    trl(ctx.user.id, ctx.guild.id, "word_scramble_message_ping", append_tip=True,
                         word=scrambled_word,
                         mention=role.mention
                     ))
             else:
                 msg = await ctx.channel.send(
-                    trl(ctx.user.id, ctx.guild.id, "word_scramble_message", append_tip=True).format(
-                        word=scrambled_word
-                    ))
+                    trl(ctx.user.id, ctx.guild.id, "word_scramble_message", append_tip=True, word=scrambled_word))
 
             start_word_scrambler(ctx.channel.id, msg.id, word)
 
@@ -253,9 +251,9 @@ class WordScrambler(discord.Cog):
             sett[str(channel.id)] = {"chance": chance, "min": min_characters, "max": max_characters, "context": context}
 
             set_setting(ctx.guild.id, "word_scramble_channels", sett)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_set", append_tip=True).format(
-                chance=chance, min_length=min_characters, max_length=max_characters, context=context
-            ), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_set", append_tip=True, chance=chance,
+                                  min_length=min_characters, max_length=max_characters, context=context),
+                              ephemeral=True)
         except Exception as e:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_set_failed", append_tip=True),
                               ephemeral=True)
@@ -270,9 +268,9 @@ class WordScrambler(discord.Cog):
             # await ctx.respond(
             #     "Current XP per game: " + str(get_setting(ctx.guild.id, "leveling_xp_per_word_scrambler", 100)),
             #     ephemeral=True)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_xp_current", append_tip=True).format(
-                xp=str(get_setting(ctx.guild.id, "leveling_xp_per_word_scrambler", 100))
-            ), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_xp_current", append_tip=True,
+                                  xp=str(get_setting(ctx.guild.id, "leveling_xp_per_word_scrambler", 100))),
+                              ephemeral=True)
             return
 
         else:
@@ -282,9 +280,8 @@ class WordScrambler(discord.Cog):
                 return
 
             set_setting(ctx.guild.id, "leveling_xp_per_word_scrambler", xp)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_xp_update", append_tip=True).format(
-                xp=xp
-            ), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_xp_update", append_tip=True, xp=xp),
+                              ephemeral=True)
 
     @word_scramble_commands.command(name="remove_channel", description="Remove a channel from word scramble")
     @is_module_enabled("word_scramble")
@@ -323,15 +320,14 @@ class WordScrambler(discord.Cog):
             # await ctx.respond("Current role: " + str(get_setting(ctx.guild.id, "word_scramble_ping_role", "None")),
             #                   ephemeral=True)
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "word_scramble_notification_role_current", append_tip=True).format(
-                    role=str(get_setting(ctx.guild.id, "word_scramble_ping_role", "None"))
-                ), ephemeral=True)
+                trl(ctx.user.id, ctx.guild.id, "word_scramble_notification_role_current", append_tip=True,
+                    role=str(get_setting(ctx.guild.id, "word_scramble_ping_role", "None"))), ephemeral=True)
             return
 
         set_setting(ctx.guild.id, "word_scramble_ping_role", role.id)
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "word_scramble_notification_role_set", append_tip=True).format(
-            role=role.mention
-        ), ephemeral=True)
+        await ctx.respond(
+            trl(ctx.user.id, ctx.guild.id, "word_scramble_notification_role_set", append_tip=True, role=role.mention),
+            ephemeral=True)
 
     @discord.Cog.listener()
     async def on_message(self, msg: discord.Message):
@@ -360,17 +356,14 @@ class WordScrambler(discord.Cog):
 
                 xp = get_setting(msg.guild.id, "leveling_xp_per_word_scrambler", 100)
 
-                await orig.edit(content=trl(0, msg.author.id, "word_scramble_message_won").format(
-                    word=msg.content, mention=msg.author.mention
-                ))
+                await orig.edit(content=trl(0, msg.author.id, "word_scramble_message_won", word=msg.content,
+                                            mention=msg.author.mention))
                 if xp == 0:
-                    rep = await msg.reply(trl(msg.author.id, msg.guild.id, "word_scramble_message_won_reply").format(
-                        word=msg.content
-                    ))
+                    rep = await msg.reply(
+                        trl(msg.author.id, msg.guild.id, "word_scramble_message_won_reply", word=msg.content))
                 else:
-                    rep = await msg.reply(trl(msg.author.id, msg.guild.id, "word_scramble_message_won_reply_xp").format(
-                        word=msg.content, xp=xp
-                    ))
+                    rep = await msg.reply(
+                        trl(msg.author.id, msg.guild.id, "word_scramble_message_won_reply_xp", word=msg.content, xp=xp))
 
                 await rep.delete(delay=5)
 
@@ -387,7 +380,7 @@ class WordScrambler(discord.Cog):
 
                 if before_level != after_level and msg.channel.can_send():
                     msg2 = await msg.channel.send(
-                        trl(msg.author.id, msg.guild.id, "leveling_level_up").format(mention=msg.author.mention,
+                        trl(msg.author.id, msg.guild.id, "leveling_level_up", mention=msg.author.mention,
                                                                                      level=str(after_level)))
                     await msg2.delete(delay=5)
 
@@ -436,15 +429,11 @@ class WordScrambler(discord.Cog):
 
                     if role is not None:
                         msg = await channel.send(
-                            trl(0, guild.id, "word_scramble_message_ping", append_tip=True).format(
-                                word=scrambled_word,
-                                mention=role.mention
-                            ))
+                            trl(0, guild.id, "word_scramble_message_ping", append_tip=True, word=scrambled_word,
+                                mention=role.mention))
                     else:
                         msg = await channel.send(
-                            trl(0, guild.id, "word_scramble_message", append_tip=True).format(
-                                word=scrambled_word
-                            ))
+                            trl(0, guild.id, "word_scramble_message", append_tip=True, word=scrambled_word))
 
                     start_word_scrambler(channel_id, msg.id, word)
 
@@ -460,7 +449,5 @@ class WordScrambler(discord.Cog):
                 continue
 
             message = await channel.fetch_message(int(game["MessageID"]))
-            await message.edit(content=trl(0, channel.guild.id, "word_scramble_message_timeout").format(
-                word=game['Word']
-            ))
+            await message.edit(content=trl(0, channel.guild.id, "word_scramble_message_timeout", word=game['Word']))
             end_word_scrambler(int(game["ChannelID"]))

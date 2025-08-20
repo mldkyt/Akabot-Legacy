@@ -89,15 +89,14 @@ class StatisticChannels(discord.Cog):
     @statistic_channels_grp.command(name="help", description="Formatting help")
     async def statistic_channel_help(self, ctx: discord.ApplicationContext):
         try:
-            await ctx.respond(_(ctx.user.id, ctx.guild.id, "statistic_channels_help", append_tip=True).format(
-                members=ctx.guild.member_count,
+            await ctx.respond(
+                _(ctx.user.id, ctx.guild.id, "statistic_channels_help", append_tip=True, members=ctx.guild.member_count,
                 bots=len([x for x in ctx.guild.members if x.bot]),
                 guild_name=ctx.guild.name,
                 guild_id=ctx.guild.id,
                 guild_owner=ctx.guild.owner.display_name,
                 guild_owner_id=ctx.guild.owner.id,
-                guild_owner_name=ctx.guild.owner.name
-            ),
+                  guild_owner_name=ctx.guild.owner.name),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -118,11 +117,10 @@ class StatisticChannels(discord.Cog):
             for i in range(0, len(statistic_channels), 10):
                 c = ""
                 for j in statistic_channels[i:i + 10]:
-                    c = c + _(ctx.user.id, ctx.guild.id, "statistic_channels_list_row").format(
-                        channel=ctx.guild.get_channel(int(j['ChannelID'])).mention,
+                    c = c + _(ctx.user.id, ctx.guild.id, "statistic_channels_list_row",
+                              channel=ctx.guild.get_channel(int(j['ChannelID'])).mention,
                         formatted=format_text(ctx.guild, j['StatisticText']),
-                        template=j['StatisticText']
-                    ) + "\n"
+                              template=j['StatisticText']) + "\n"
 
                 pg.append(c)
 

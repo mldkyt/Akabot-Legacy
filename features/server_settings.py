@@ -38,8 +38,8 @@ class ServerSettings(discord.Cog):
         try:
             lang_code = language_name_to_code(lang)
             set_setting(ctx.guild.id, 'language', lang_code)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "server_language_response", append_tip=True).format(
-                lang=get_language_name(lang_code, completeness=False)), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "server_language_response", append_tip=True,
+                                  lang=get_language_name(lang_code, completeness=False)), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
@@ -65,7 +65,7 @@ class ServerSettings(discord.Cog):
             if re.match(r'^[+-]?\d+\.0$', tz_formatted):
                 tz_formatted = tz_formatted[:-2]
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "server_tz_response", append_tip=True).format(tz=tz_formatted),
+                trl(ctx.user.id, ctx.guild.id, "server_tz_response", append_tip=True, tz=tz_formatted),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")

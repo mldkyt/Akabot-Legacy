@@ -81,7 +81,7 @@ class PerUserSettings(discord.Cog):
             else:
                 state = trl(ctx.user.id, ctx.guild.id, "per_user_chat_streak_state_disabled")
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "per_user_chat_streak_response", append_tip=True).format(state=state),
+                trl(ctx.user.id, ctx.guild.id, "per_user_chat_streak_response", append_tip=True, state=state),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -95,7 +95,9 @@ class PerUserSettings(discord.Cog):
         try:
             set_per_user_setting(ctx.user.id, 'chat_streaks_reply_to_user', state)
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "per_user_chat_streak_replies_response_on" if state else "per_user_chat_streak_replies_response_off", append_tip=True).format(state=state),
+                trl(ctx.user.id, ctx.guild.id,
+                    "per_user_chat_streak_replies_response_on" if state else "per_user_chat_streak_replies_response_off",
+                    append_tip=True, state=state),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -111,8 +113,8 @@ class PerUserSettings(discord.Cog):
             lang_code = language_name_to_code(lang)
 
             set_per_user_setting(ctx.user.id, 'language', lang_code)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "per_user_language_set", append_tip=True).format(
-                lang=get_language_name(lang_code, completeness=False)), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "per_user_language_set", append_tip=True,
+                                  lang=get_language_name(lang_code, completeness=False)), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
@@ -139,8 +141,9 @@ class PerUserSettings(discord.Cog):
             client['UserBirthday'].update_one({'UserID': str(ctx.author.id)},
                                               {'$set': {'Birth.Year': year, 'Birth.Month': month, 'Birth.Day': day}},
                                               upsert=True)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'birthday_set', append_tip=True).format(
-                birthday=f'{year}/{month}/{day}'), ephemeral=True)
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, 'birthday_set', append_tip=True, birthday=f'{year}/{month}/{day}'),
+                ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

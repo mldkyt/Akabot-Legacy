@@ -17,7 +17,7 @@ class Counting(discord.Cog):
             await message.add_reaction("❌")
             if data['Count'] > 2:
                 await message.reply(
-                    trl(0, message.guild.id, "counting_failed").format(user=message.author.mention,
+                    trl(0, message.guild.id, "counting_failed", user=message.author.mention,
                                                                        count=str(data["Count"] - 1)))
 
             client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id), },

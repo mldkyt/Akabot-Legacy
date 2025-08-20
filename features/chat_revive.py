@@ -123,15 +123,15 @@ class ChatRevive(discord.Cog):
                                     value=f"{revival_role.mention}", inline=False)
             logging_embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "chat_revive_log_set_revival_time"),
                                     value=trl(ctx.user.id, ctx.guild.id,
-                                              "chat_revive_log_set_revival_time_value").format(
-                                        time=str(revival_minutes)), inline=True)
+                                              "chat_revive_log_set_revival_time_value", time=str(revival_minutes)),
+                                    inline=True)
 
             # Send to logs
             await log_into_logs(ctx.guild, logging_embed)
 
             # Send back response
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "chat_revive_set_response_success").format(channel=channel.mention),
+                trl(ctx.user.id, ctx.guild.id, "chat_revive_set_response_success", channel=channel.mention),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -159,7 +159,7 @@ class ChatRevive(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "chat_revive_remove_success").format(channel=channel.mention),
+                trl(ctx.user.id, ctx.guild.id, "chat_revive_remove_success", channel=channel.mention),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -177,14 +177,14 @@ class ChatRevive(discord.Cog):
 
             if not result:
                 await ctx.respond(
-                    trl(ctx.user.id, ctx.guild.id, "chat_revive_list_empty").format(channel=channel.mention),
+                    trl(ctx.user.id, ctx.guild.id, "chat_revive_list_empty", channel=channel.mention),
                     ephemeral=True)
                 return
 
             role = ctx.guild.get_role(int(result['RoleID']))
 
             embed = discord.Embed(
-                title=trl(ctx.user.id, ctx.guild.id, "chat_revive_list_title").format(name=channel.name),
+                title=trl(ctx.user.id, ctx.guild.id, "chat_revive_list_title", name=channel.name),
                 color=discord.Color.blurple())
             embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "chat_revive_list_role"), value=role.mention)
             embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "chat_revive_list_time"),
