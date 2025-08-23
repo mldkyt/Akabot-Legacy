@@ -666,5 +666,7 @@
     "module_enabled": "Module `{module_name}` was enabled.",
     "module_disabled": "Module `{module_name}` was disabled.",
     "anonymous_quefessions_reply_title": "Anonymous Quefession Reply",
-    "anonymous_quefessions_reply_sent": "Reply sent!"
+  "anonymous_quefessions_reply_sent": "Reply sent!",
+  "any_count_saved": "Any count settings for counting were saved.",
+  "any_count_invalid_min_count_frequency": "The minimum count frequency is invalid"
 }
