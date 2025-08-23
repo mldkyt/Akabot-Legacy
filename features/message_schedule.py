@@ -44,8 +44,8 @@ class MessageSchedule(discord.Cog):
             inserted = client['ScheduledMessages'].insert_one(
                 {'GuildID': str(ctx.guild.id), 'ChannelID': str(ctx.channel.id), 'Type': 'Daily', 'Content': text})
 
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_daily_added", append_tip=True).format(
-                id=str(inserted.inserted_id)), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_daily_added", append_tip=True,
+                                  id=str(inserted.inserted_id)), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
@@ -67,8 +67,8 @@ class MessageSchedule(discord.Cog):
 
             day_of_week_word = number_to_day_of_week(day_of_week)
 
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_weekly_added", append_tip=True).format(
-                day_of_week=day_of_week_word, id=str(inserted.inserted_id)), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_schedule_weekly_added", append_tip=True,
+                                  day_of_week=day_of_week_word, id=str(inserted.inserted_id)), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
@@ -89,7 +89,7 @@ class MessageSchedule(discord.Cog):
                  'Content': text})
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "message_schedule_monthly_added", append_tip=True).format(day=day,
+                trl(ctx.user.id, ctx.guild.id, "message_schedule_monthly_added", append_tip=True, day=day,
                                                                                                          id=str(
                                                                                                              inserted.inserted_id)),
                 ephemeral=True)
@@ -114,7 +114,7 @@ class MessageSchedule(discord.Cog):
                  'Month': month, 'Content': text})
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "message_schedule_yearly_added", append_tip=True).format(month=month,
+                trl(ctx.user.id, ctx.guild.id, "message_schedule_yearly_added", append_tip=True, month=month,
                                                                                                         day=day, id=str(
                         inserted.inserted_id)), ephemeral=True)
         except Exception as e:
@@ -194,7 +194,7 @@ class MessageSchedule(discord.Cog):
                     brief_content = i['Content'][:60] + '...'
 
                 message_content += (
-                            trl(ctx.user.id, ctx.guild.id, "message_schedule_list_row").format(channel=channel.mention,
+                        trl(ctx.user.id, ctx.guild.id, "message_schedule_list_row", channel=channel.mention,
                                                                                                id=str(i['_id']),
                                                                                                date=date,
                                                                                                brief_content=brief_content,

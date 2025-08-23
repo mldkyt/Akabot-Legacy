@@ -152,8 +152,8 @@ class V2SuggestionView(View):
             downvoters = ['No downvoters']
 
         await interaction.response.send_message(
-            trl(interaction.user.id, interaction.guild.id, 'suggestions_v2_information', append_tip=True)
-            .format(message=message, author=author.mention, upvotes=str(len(upvotes)), downvotes=str(len(downvotes)),
+            trl(interaction.user.id, interaction.guild.id, 'suggestions_v2_information', append_tip=True,
+                message=message, author=author.mention, upvotes=str(len(upvotes)), downvotes=str(len(downvotes)),
                     percent=f"{percent:.0f}",
                     upvoters=', '.join(upvoters), downvoters=', '.join(downvoters)),
             ephemeral=True, view=V2SuggestionAuthorExtraView(msg_id=data['MessageID'],
@@ -297,8 +297,8 @@ class Suggestions(discord.Cog):
         try:
             if client['SuggestionChannels'].count_documents({'ChannelID': str(ctx.guild.id)}) == 0:
                 client['SuggestionChannels'].insert_one({'GuildID': str(ctx.guild.id), 'ChannelID': str(channel.id)})
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'suggestions_channel_added', append_tip=True).format(
-                    channel=channel.mention), ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'suggestions_channel_added', append_tip=True,
+                                      channel=channel.mention), ephemeral=True)
             else:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'suggestions_channel_already_exists'), ephemeral=True)
         except Exception as e:
@@ -315,8 +315,8 @@ class Suggestions(discord.Cog):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "suggestions_channel_not_found"), ephemeral=True)
             else:
                 client['SuggestionChannels'].delete_one({'ChannelID': str(ctx.guild.id)})
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "suggestions_channel_removed", append_tip=True).format(
-                    channel=channel.mention), ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "suggestions_channel_removed", append_tip=True,
+                                      channel=channel.mention), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
@@ -341,7 +341,7 @@ class Suggestions(discord.Cog):
     async def cmd_choose_emoji(self, ctx: discord.ApplicationContext, emoji: str):
         try:
             set_setting(ctx.guild.id, 'suggestion_emoji', emoji)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "suggestions_emoji_set").format(emoji=emoji),
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "suggestions_emoji_set", emoji=emoji),
                               ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -354,12 +354,12 @@ class Suggestions(discord.Cog):
     async def cmd_message_reminder(self, ctx: discord.ApplicationContext, enabled: bool, message: str):
         try:
             if len(message) < 1:
-                await ctx.respond("Invalid message input.", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "invalid_message_input"), ephemeral=True)
             set_setting(ctx.guild.id, 'suggestion_reminder_enabled', str(enabled).lower())
             set_setting(ctx.guild.id, 'suggestion_reminder_message', message)
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, 'suggestions_message_reminder_set', append_tip=True).format(
-                    enabled=enabled, message=message),
+                trl(ctx.user.id, ctx.guild.id, 'suggestions_message_reminder_set', append_tip=True, enabled=enabled,
+                    message=message),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -371,7 +371,7 @@ class Suggestions(discord.Cog):
     @commands.cooldown(1, 300, commands.BucketType.guild)  # Cooldown to prevent abuse
     async def cmd_update_message(self, ctx: discord.ApplicationContext):
         if get_key('Message_Intent', "false") == "false":
-            await ctx.respond("This instance of Akabot doesn\'t support the message intent.", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "no_message_intent"), ephemeral=True)
             return
 
         await ctx.defer(ephemeral=True)

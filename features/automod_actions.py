@@ -159,7 +159,7 @@ class AutomodActions(discord.Cog):
 
             if not automod_rule:
                 valid_rules = ', '.join([f"{rule.name}" for rule in automod_actions])
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_rule_doesnt_exist").format(rules=valid_rules),
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "automod_rule_doesnt_exist", rules=valid_rules),
                                   ephemeral=True)
                 return
 
@@ -184,7 +184,7 @@ class AutomodActions(discord.Cog):
             action_id = db_add_automod_action(ctx.guild.id, automod_rule.id, rule_name, action,
                                               additional=message_reason)
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "automod_added", append_tip=True).format(id=str(action_id)),
+                trl(ctx.user.id, ctx.guild.id, "automod_added", append_tip=True, id=str(action_id)),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -236,7 +236,7 @@ class AutomodActions(discord.Cog):
 
             actions = '\n'.join([f"`{action[0]}`: {action[2]}: {action[3]}" for action in automod_actions])
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "automod_actions_list", append_tip=True).format(actions=actions),
+                trl(ctx.user.id, ctx.guild.id, "automod_actions_list", append_tip=True, actions=actions),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")

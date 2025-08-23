@@ -218,8 +218,8 @@ class SendMoneyConfirmation(discord.ui.View):
         else:
             member = member.display_name
 
-        await interaction.edit(view=None, content=trl(self.source, 0, 'economy_transfer_to_user', append_tip=True)
-                               .format(amount=str(self.amount), member=member))
+        await interaction.edit(view=None, content=trl(self.source, 0, 'economy_transfer_to_user', append_tip=True,
+                                                      amount=str(self.amount), member=member))
 
     @discord.ui.button(label='Cancel', style=discord.ButtonStyle.success)
     async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -254,16 +254,16 @@ class GambleView(discord.ui.View):
         self.amount = int(
             self.amount * (random.randint(amount_increase_min_percentage, amount_increase_max_percentage) / 100))
         self.chance /= float(get_setting(self.guild, "economy_gambling_factor", "1.1"))
-        await interaction.edit(view=self, content=trl(self.user, 0, 'economy_gamble_process', append_tip=True).format(
-            amount=str(self.amount)))
+        await interaction.edit(view=self, content=trl(self.user, 0, 'economy_gamble_process', append_tip=True,
+                                                      amount=str(self.amount)))
 
     @discord.ui.button(label='Withdraw', style=discord.ButtonStyle.success)
     async def withdraw(self, button: discord.ui.Button, interaction: discord.Interaction):
         add_akacoins(self.user, self.amount)
 
         self.stop()
-        await interaction.edit(view=None, content=trl(self.user, 0, 'economy_gamble_withdraw', append_tip=True).format(
-            amount=str(self.amount)))
+        await interaction.edit(view=None, content=trl(self.user, 0, 'economy_gamble_withdraw', append_tip=True,
+                                                      amount=str(self.amount)))
 
 
 class Economy(discord.Cog):
@@ -284,7 +284,7 @@ class Economy(discord.Cog):
             return
 
         await ctx.respond(
-            trl(ctx.user.id, ctx.guild.id, "economy_daily_claim", append_tip=True).format(amount=str(added)),
+            trl(ctx.user.id, ctx.guild.id, "economy_daily_claim", append_tip=True, amount=str(added)),
             ephemeral=True)
 
     @economics_subcommands.command(name='weekly', description='Claim weekly reward')
@@ -297,7 +297,7 @@ class Economy(discord.Cog):
             return
 
         await ctx.respond(
-            trl(ctx.user.id, ctx.guild.id, 'economy_weekly_claim', append_tip=True).format(amount=str(added)),
+            trl(ctx.user.id, ctx.guild.id, 'economy_weekly_claim', append_tip=True, amount=str(added)),
             ephemeral=True)
 
     @economics_subcommands.command(name='work', description='Work and earn money')
@@ -311,7 +311,7 @@ class Economy(discord.Cog):
             return
 
         await ctx.respond(
-            trl(ctx.user.id, ctx.guild.id, 'economy_work_worked', append_tip=True).format(amount=str(added)),
+            trl(ctx.user.id, ctx.guild.id, 'economy_work_worked', append_tip=True, amount=str(added)),
             ephemeral=True)
 
     @economics_subcommands.command(name='balance', description='View your balance')
@@ -319,8 +319,9 @@ class Economy(discord.Cog):
     async def balance(self, ctx: discord.ApplicationContext):
         wallet, bank = get_akacoins(ctx.author.id)
 
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_balance", append_tip=True)
-                          .format(wallet=str(wallet), bank=str(bank)), ephemeral=True)
+        await ctx.respond(
+            trl(ctx.user.id, ctx.guild.id, "economy_balance", append_tip=True, wallet=str(wallet), bank=str(bank)),
+            ephemeral=True)
 
     economics_admin_subcommands = economics_subcommands.create_subgroup(name='admin',
                                                                         description='Economy admin commands')
@@ -334,13 +335,15 @@ class Economy(discord.Cog):
 
         source_data = client['Economy'].find_one({'UserID': str(ctx.user.id)})
         if source_data['Wallet'] < amount:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_no_money", append_tip=True)
-                              .format(wallet=str(source_data['Wallet']), amount=str(amount)), ephemeral=True)
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, "economy_no_money", append_tip=True, wallet=str(source_data['Wallet']),
+                    amount=str(amount)), ephemeral=True)
             return
 
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_pay_confirmation", append_tip=True)
-                          .format(amount=str(amount), target=target.display_name), ephemeral=True,
-                          view=SendMoneyConfirmation(ctx.user.id, target.id, amount))
+        await ctx.respond(
+            trl(ctx.user.id, ctx.guild.id, "economy_pay_confirmation", append_tip=True, amount=str(amount),
+                target=target.display_name), ephemeral=True,
+            view=SendMoneyConfirmation(ctx.user.id, target.id, amount))
 
     @economics_subcommands.command(name='gamble', description='Gamble with money')
     @is_module_enabled("economy")
@@ -348,12 +351,13 @@ class Economy(discord.Cog):
     async def gamble(self, ctx: discord.ApplicationContext, amount: int):
         data = client['Economy'].find_one({'UserID': str(ctx.user.id)})
         if data['Wallet'] < amount:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_no_money", append_tip=True)
-                              .format(wallet=str(data['Wallet']), amount=str(amount)), ephemeral=True)
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, "economy_no_money", append_tip=True, wallet=str(data['Wallet']),
+                    amount=str(amount)), ephemeral=True)
             return
 
         await ctx.respond(
-            trl(ctx.user.id, ctx.guild.id, "economy_gamble_start", append_tip=True).format(amount=str(amount)),
+            trl(ctx.user.id, ctx.guild.id, "economy_gamble_start", append_tip=True, amount=str(amount)),
             ephemeral=True,
             view=GambleView(ctx.guild.id, ctx.user.id, amount))
 
@@ -373,8 +377,8 @@ class Economy(discord.Cog):
             }
 
         if chance > chance_setting and target_data['Wallet'] < chance_min_money:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_rob_success_no_money", append_tip=True)
-                              .format(target=target.display_name), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_rob_success_no_money", append_tip=True,
+                                  target=target.display_name), ephemeral=True)
         elif chance > chance_setting:
             stolen_min_percentage = int(get_setting(ctx.guild.id, "economy_rob_stolen_percentage_min", "10"))
             stolen_max_percentage = int(get_setting(ctx.guild.id, "economy_rob_stolen_percentage_max", "25"))
@@ -382,19 +386,21 @@ class Economy(discord.Cog):
             stolen = int(target_data['Wallet'] * (random.randint(stolen_min_percentage, stolen_max_percentage) / 100))
             rem_akacoins(target.id, stolen)
             add_akacoins(ctx.author.id, stolen)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_rob_success", append_tip=True)
-                              .format(target=target.display_name, stolen=str(stolen)), ephemeral=True)
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, "economy_rob_success", append_tip=True, target=target.display_name,
+                    stolen=str(stolen)), ephemeral=True)
         elif target_data['Wallet'] < chance_min_money:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_rob_fail_no_money", append_tip=True)
-                              .format(target=target.display_name), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_rob_fail_no_money", append_tip=True,
+                                  target=target.display_name), ephemeral=True)
         else:
             fine_min_percentage = int(get_setting(ctx.guild.id, "economy_rob_fine_percentage_min", "10"))
             fine_max_percentage = int(get_setting(ctx.guild.id, "economy_rob_fine_percentage_max", "200"))
 
             fine = int(random.randint(fine_min_percentage, fine_max_percentage) * (target_data['Wallet'] / 100))
             rem_akacoins(ctx.user.id, fine)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_rob_fail", append_tip=True)
-                              .format(target=target.display_name, fine=str(fine)), ephemeral=True)
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, "economy_rob_fail", append_tip=True, target=target.display_name,
+                    fine=str(fine)), ephemeral=True)
 
     @economics_subcommands.command(name='leaderboard', description='View the server leaderboard')
     @is_module_enabled("economy")
@@ -415,8 +421,8 @@ class Economy(discord.Cog):
             else:
                 member = member.display_name
 
-            cur_page += trl(ctx.user.id, ctx.guild.id, "economy_lb_row") \
-                .format(index=str(i + 1), name=member, amount=str(v['Wallet'] + v['Bank']))
+            cur_page += trl(ctx.user.id, ctx.guild.id, "economy_lb_row", index=str(i + 1), name=member,
+                            amount=str(v['Wallet'] + v['Bank']))
 
             if (i + 1) % 10 == 0:
                 p.append(cur_page)
@@ -443,9 +449,9 @@ class Economy(discord.Cog):
             return
 
         for i, v in enumerate(records):
-            cur_page += trl(ctx.user.id, ctx.guild.id, "economy_shop_row").format(index=str(i + 1),
-                                                                                  identifier=v['Identifier'],
-                                                                                  price=str(v['Price']))
+            cur_page += trl(ctx.user.id, ctx.guild.id, "economy_shop_row", index=str(i + 1),
+                            identifier=v['Identifier'],
+                            price=str(v['Price']))
 
             if (i + 1) % 10 == 0:
                 p.append(cur_page)
@@ -460,7 +466,8 @@ class Economy(discord.Cog):
     @economics_subcommands.command(name='buy', description='Buy an item')
     @is_module_enabled("economy")
     async def buy(self, ctx: discord.ApplicationContext, identifier: str):
-        if client['Inventory'].count_documents({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)}) > 0:
+        if client['Inventory'].count_documents(
+                {'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)}) > 0:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_buy_own", append_tip=True), ephemeral=True)
             return
 
@@ -489,8 +496,8 @@ class Economy(discord.Cog):
             if role:
                 await ctx.user.add_roles(role)
 
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_buy_success", append_tip=True)
-                          .format(identifier=identifier), ephemeral=True)
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_buy_success", append_tip=True, identifier=identifier),
+                          ephemeral=True)
 
     @economics_subcommands.command(name='inventory', description='View items in inventory')
     @is_module_enabled("economy")
@@ -514,11 +521,11 @@ class Economy(discord.Cog):
             trade_str = trl(ctx.user.id, ctx.guild.id, "economy_item_tradeable") if v['AllowTrade'] \
                 else trl(ctx.user.id, ctx.guild.id, "economy_item_not_tradeable")
 
-            cur_page += trl(ctx.user.id, ctx.guild.id, "economy_shop_row").format(index=str(i + 1),
-                                                                                  identifier=v['Identifier'],
-                                                                                  price=str(v['Price']),
-                                                                                  sell_str=sell_str,
-                                                                                  trade_str=trade_str)
+            cur_page += trl(ctx.user.id, ctx.guild.id, "economy_shop_row", index=str(i + 1),
+                            identifier=v['Identifier'],
+                            price=str(v['Price']),
+                            sell_str=sell_str,
+                            trade_str=trade_str)
 
             if (i + 1) % 10 == 0:
                 p.append(cur_page)
@@ -533,7 +540,8 @@ class Economy(discord.Cog):
     @economics_subcommands.command(name='sell', description='Sell an item that is sellable.')
     @is_module_enabled("economy")
     async def sell(self, ctx: discord.ApplicationContext, identifier: str):
-        inventory = client['Inventory'].find_one({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
+        inventory = client['Inventory'].find_one(
+            {'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
         if not inventory:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_sell_not_own", append_tip=True), ephemeral=True)
             return
@@ -544,7 +552,8 @@ class Economy(discord.Cog):
             return
 
         add_akacoins(ctx.user.id, inventory['Price'])
-        client['Inventory'].delete_one({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
+        client['Inventory'].delete_one(
+            {'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
 
         if inventory['Type'] == 'role':
             shop_item = client['Shop'].find_one({'Identifier': identifier, 'GuildID': str(ctx.guild.id)})
@@ -552,8 +561,9 @@ class Economy(discord.Cog):
             if role:
                 await ctx.user.remove_roles(role)
 
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_sell_success", append_tip=True)
-                          .format(identifier=identifier), ephemeral=True)
+        await ctx.respond(
+            trl(ctx.user.id, ctx.guild.id, "economy_sell_success", append_tip=True, identifier=identifier),
+            ephemeral=True)
 
     @economics_subcommands.command(name='send', description='Send an item to another player.')
     @is_module_enabled("economy")
@@ -562,7 +572,8 @@ class Economy(discord.Cog):
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_send_self", append_tip=True), ephemeral=True)
             return
 
-        inventory = client['Inventory'].find_one({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
+        inventory = client['Inventory'].find_one(
+            {'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
         if not inventory:
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_sell_not_own", append_tip=True), ephemeral=True)
             return
@@ -572,7 +583,8 @@ class Economy(discord.Cog):
                               ephemeral=True)
             return
 
-        client['Inventory'].delete_one({'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
+        client['Inventory'].delete_one(
+            {'Identifier': identifier, 'UserID': str(ctx.user.id), 'GuildID': str(ctx.guild.id)})
         client['Inventory'].insert_one({
             'GuildID': str(ctx.guild.id),
             'UserID': str(to.id),
@@ -590,8 +602,8 @@ class Economy(discord.Cog):
                 await ctx.user.remove_roles(role)
                 await to.add_roles(role)
 
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_send_success", append_tip=True)
-                          .format(identifier=identifier, target=to.display_name), ephemeral=True)
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_send_success", append_tip=True, identifier=identifier,
+                              target=to.display_name), ephemeral=True)
 
     @economics_subcommands.command(name='transfer', description='Transfer money between the bank and wallet')
     @is_module_enabled("economy")
@@ -600,8 +612,9 @@ class Economy(discord.Cog):
         limit = int(get_setting(ctx.guild.id, 'economy_transfer_limit', "-1"))
 
         if limit != -1 and amount > limit:
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_transfer_limit", append_tip=True)
-                              .format(limit=str(limit)), ephemeral=True)
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, "economy_transfer_limit", append_tip=True, limit=str(limit)),
+                ephemeral=True)
             return
 
         cooldown = datetime.datetime.now() + datetime.timedelta(
@@ -614,8 +627,8 @@ class Economy(discord.Cog):
             data = client['Economy'].find_one({'UserID': str(ctx.user.id)})
             if data['Bank'] < amount:
                 await ctx.respond(
-                    trl(ctx.user.id, ctx.guild.id, "economy_transfer_no_money_in_bank", append_tip=True)
-                    .format(bank=str(data['Bank']), amount=str(amount)),
+                    trl(ctx.user.id, ctx.guild.id, "economy_transfer_no_money_in_bank", append_tip=True,
+                        bank=str(data['Bank']), amount=str(amount)),
                     ephemeral=True)
                 return
 
@@ -636,14 +649,15 @@ class Economy(discord.Cog):
                 }
             })
 
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_transfer_wallet", append_tip=True)
-                              .format(amount=str(amount)), ephemeral=True)
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, "economy_transfer_wallet", append_tip=True, amount=str(amount)),
+                ephemeral=True)
         elif into == 'bank':
             data = client['Economy'].find_one({'UserID': str(ctx.user.id)})
             if data['Wallet'] < amount:
                 await ctx.respond(
-                    trl(ctx.user.id, ctx.guild.id, "economy_transfer_no_money_in_wallet", append_tip=True)
-                    .format(wallet=str(data['Wallet']), amount=str(amount)),
+                    trl(ctx.user.id, ctx.guild.id, "economy_transfer_no_money_in_wallet", append_tip=True,
+                        wallet=str(data['Wallet']), amount=str(amount)),
                     ephemeral=True)
                 return
 
@@ -664,8 +678,9 @@ class Economy(discord.Cog):
                 }
             })
 
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_transfer_bank", append_tip=True)
-                              .format(amount=str(amount)), ephemeral=True)
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, "economy_transfer_bank", append_tip=True, amount=str(amount)),
+                ephemeral=True)
 
     @economics_admin_subcommands.command(name='add', description='Add AkaCoins to a specific user')
     @is_module_enabled("economy")
@@ -675,8 +690,8 @@ class Economy(discord.Cog):
                         location: str = 'wallet'):
         add_akacoins(user.id, amount, location=location)
 
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_admin_add", append_tip=True)
-                          .format(amount=str(amount), name=user.display_name, location=location), ephemeral=True)
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_admin_add", append_tip=True, amount=str(amount),
+                              name=user.display_name, location=location), ephemeral=True)
 
     @economics_admin_subcommands.command(name='remove', description='Remove AkaCoins from a specific user')
     @is_module_enabled("economy")
@@ -686,8 +701,8 @@ class Economy(discord.Cog):
                            location: str = 'wallet'):
         rem_akacoins(user.id, amount, location=location)
 
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_admin_remove", append_tip=True)
-                          .format(amount=str(amount), name=user.display_name, location=location), ephemeral=True)
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_admin_remove", append_tip=True, amount=str(amount),
+                              name=user.display_name, location=location), ephemeral=True)
 
     @economics_admin_subcommands.command(name='set', description='Set AkaCoins for a specific user')
     @is_module_enabled("economy")
@@ -697,8 +712,8 @@ class Economy(discord.Cog):
                         location: str = 'wallet'):
         set_akacoins(user.id, amount, location=location)
 
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_admin_set", append_tip=True)
-                          .format(amount=str(amount), name=user.display_name, location=location), ephemeral=True)
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_admin_set", append_tip=True, amount=str(amount),
+                              name=user.display_name, location=location), ephemeral=True)
 
     @economics_admin_subcommands.command(name='balance', description='Get another user\'s balance.')
     @is_module_enabled("economy")
@@ -707,8 +722,8 @@ class Economy(discord.Cog):
         wallet, bank = get_akacoins(user.id)
 
         await ctx.respond(
-            trl(ctx.user.id, ctx.guild.id, "economy_admin_balance", append_tip=True)
-            .format(name=user.display_name, wallet=str(wallet), bank=str(bank)),
+            trl(ctx.user.id, ctx.guild.id, "economy_admin_balance", append_tip=True, name=user.display_name,
+                wallet=str(wallet), bank=str(bank)),
             ephemeral=True)
 
     @economics_admin_subcommands.command(name='reset', description='Reset AkaCoins for a specific user')
@@ -719,8 +734,9 @@ class Economy(discord.Cog):
         set_akacoins(user.id, 0, 'wallet')
         set_akacoins(user.id, 0, 'bank')
 
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_admin_reset", append_tip=True)
-                          .format(name=user.display_name), ephemeral=True)
+        await ctx.respond(
+            trl(ctx.user.id, ctx.guild.id, "economy_admin_reset", append_tip=True, name=user.display_name),
+            ephemeral=True)
 
     @economics_admin_subcommands.command(name='add_role_on_sale',
                                          description='Put a role on sale, so people can purchase it.')
@@ -751,8 +767,9 @@ class Economy(discord.Cog):
             else trl(ctx.user.id, ctx.guild.id, "economy_item_not_sellable")
         trade_str = trl(ctx.user.id, ctx.guild.id, "economy_item_tradeable") if allow_trade \
             else trl(ctx.user.id, ctx.guild.id, "economy_item_not_tradeable")
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_admin_role_on_sale", append_tip=True)
-                          .format(role=role.mention, price=str(price), sell_str=sell_str, trade_str=trade_str),
+        await ctx.respond(
+            trl(ctx.user.id, ctx.guild.id, "economy_admin_role_on_sale", append_tip=True, role=role.mention,
+                price=str(price), sell_str=sell_str, trade_str=trade_str),
                           ephemeral=True)
 
     @economics_admin_subcommands.command(name='remove_role_from_sale',
@@ -766,8 +783,9 @@ class Economy(discord.Cog):
             'Type': 'role'
         })
 
-        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "economy_admin_role_removed", append_tip=True)
-                          .format(role=role.mention), ephemeral=True)
+        await ctx.respond(
+            trl(ctx.user.id, ctx.guild.id, "economy_admin_role_removed", append_tip=True, role=role.mention),
+            ephemeral=True)
 
     @economics_admin_subcommands.command(name='set_transfer_limits',
                                          description='Set transfer (bank <=> wallet) limits.')
@@ -780,8 +798,8 @@ class Economy(discord.Cog):
         set_setting(ctx.guild.id, 'economy_cooldown_hours', str(cooldown_hours))
 
         await ctx.respond(
-            trl(ctx.user.id, ctx.guild.id, "economy_admin_role_set_limits", append_tip=True)
-            .format(amount=str(amount), cooldown_minutes=str(cooldown_minutes), cooldown_hours=str(cooldown_hours)),
+            trl(ctx.user.id, ctx.guild.id, "economy_admin_role_set_limits", append_tip=True, amount=str(amount),
+                cooldown_minutes=str(cooldown_minutes), cooldown_hours=str(cooldown_hours)),
             ephemeral=True)
 
     @economics_admin_subcommands.command(name='set_gambling', description="Set various gambling settings")
@@ -810,7 +828,7 @@ class Economy(discord.Cog):
             set_setting(ctx.guild.id, "economy_gambling_amount_increase_max_percentage",
                         str(amount_increase_max_percentage))
 
-        await ctx.respond("Settings were saved.", ephemeral=True)
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "settings_saved"), ephemeral=True)
 
     @economics_admin_subcommands.command(name='set_daily_weekly', description="Set various daily/weekly settings")
     @is_module_enabled("economy")
@@ -830,7 +848,7 @@ class Economy(discord.Cog):
         if weekly_max != -1:
             set_setting(ctx.guild.id, "economy_weekly_max", str(weekly_max))
 
-        await ctx.respond("Settings were saved.", ephemeral=True)
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "settings_saved"), ephemeral=True)
 
     @economics_admin_subcommands.command(name='set_work', description="Set various work settings")
     @is_module_enabled("economy")
@@ -857,7 +875,7 @@ class Economy(discord.Cog):
         if bonus_chance_lose != -1:
             set_setting(ctx.guild.id, "economy_work_bonus_chance_lose", str(bonus_chance_lose))
 
-        await ctx.respond("Settings were saved.", ephemeral=True)
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "settings_saved"), ephemeral=True)
 
     @economics_admin_subcommands.command(name='set_rob', description="Set various rob settings")
     @is_module_enabled("economy")
@@ -884,4 +902,4 @@ class Economy(discord.Cog):
         if fine_percentage_max != -1:
             set_setting(ctx.guild.id, "economy_rob_fine_percentage_max", str(fine_percentage_max))
 
-        await ctx.respond("Settings were saved.", ephemeral=True)
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "settings_saved"), ephemeral=True)

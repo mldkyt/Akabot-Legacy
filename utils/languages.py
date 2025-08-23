@@ -19,13 +19,22 @@ import json
 import logging
 import os.path
 
-from utils.per_user_settings import get_per_user_setting, set_per_user_setting
+import i18n
+
 from utils.per_server_settings import get_setting, set_setting
+from utils.per_user_settings import get_per_user_setting, set_per_user_setting
 from utils.tips import append_tip_to_message
 
 akabot_logger = logging.getLogger("akabot")
 
-def get_translation_for_key_localized(user_id: int, guild_id: int, key: str, append_tip=False) -> str:
+i18n.set('file_format', 'json')
+i18n.set('filename_format', '{locale}.{format}')
+i18n.set('skip_locale_root_data', True)
+i18n.set('fallback', 'en')
+i18n.load_path.append("lang")
+
+
+def get_translation_for_key_localized(user_id: int, guild_id: int, key: str, append_tip=False, **kwargs) -> str:
     """Get translation for a key in the user's language, server language, or English
 
     Args:
@@ -37,26 +46,14 @@ def get_translation_for_key_localized(user_id: int, guild_id: int, key: str, app
     Returns:
         str: Translation
     """
-    translation = ""
     language = get_language(guild_id, user_id)
+    i18n.set('locale', language)
 
-    with open(f"lang/{language}.json", encoding='utf8') as f:
-        translations: dict = json.load(f)
-
-    with open('lang/en.json', encoding='utf8') as f:
-        en_translations: dict = json.load(f)
-
-    translation = translations.get(key, translation) or en_translations.get(key, translation) or f"lang.en.{key}"
-
-    if translation == f"lang.en.{key}":
-        akabot_logger.warning(f"Missing translation for key {key} in language {language}")
-    elif translation == "":
-        akabot_logger.warning(f"Translation for key {key} is empty in language {language}")
-    elif key in en_translations and en_translations[key] == translation and language != "en":
-        akabot_logger.warning(f"Translation for key {key} in language {language} is the same as English")
+    translation = i18n.t(key, **kwargs)
 
     if append_tip and get_per_user_setting(user_id, "tips_enabled", "true") == "true":
         return append_tip_to_message(guild_id, user_id, translation, language)
+
     return translation
 
 

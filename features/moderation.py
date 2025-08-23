@@ -28,14 +28,15 @@ from utils.config import get_key
 from utils.generic import pretty_time_delta
 from utils.languages import get_translation_for_key_localized as trl, get_language
 from utils.logging_util import log_into_logs
-from utils.per_user_settings import get_per_user_setting
 from utils.per_server_settings import get_setting, set_setting
+from utils.per_user_settings import get_per_user_setting
 from utils.tips import append_tip_to_message
 from utils.tzutil import get_now_for_server
 from utils.warning import add_warning, db_get_warning_actions, db_add_warning_action, db_get_warnings, \
     db_remove_warning_action, db_remove_warning
 
 akabot_logger = logging.getLogger("akabot")
+
 
 def is_a_moderator(ctx: discord.ApplicationContext):
     roles = client['ModeratorRoles'].find({'GuildID': str(ctx.guild.id)})
@@ -56,7 +57,7 @@ class UnbanView(discord.ui.View):
     async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
         await self.guild.unban(self.user, reason=self.reason)
         await interaction.respond(
-            trl(interaction.user.id, self.guild.id, "moderation_unban_response", append_tip=True).format(
+            trl(interaction.user.id, self.guild.id, "moderation_unban_response", append_tip=True,
                 mention=self.user.mention, reason=self.reason), ephemeral=True)
         self.stop()
 
@@ -104,8 +105,8 @@ class Moderation(discord.Cog):
 
             try:
                 await user.send(
-                    trl(0, ctx.guild.id, "moderation_kick_dm").format(guild=ctx.guild.name, reason=reason,
-                                                                      moderator=ctx.user.display_name))
+                    trl(0, ctx.guild.id, "moderation_kick_dm", guild=ctx.guild.name, reason=reason,
+                        moderator=ctx.user.display_name))
             except Exception as e:
                 akabot_logger.exception("An error occured:")  # TO HANDLE LATER
                 pass
@@ -113,7 +114,7 @@ class Moderation(discord.Cog):
             await user.kick(reason=reason)
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "moderation_kick_response", append_tip=True).format(mention=user.mention,
+                trl(ctx.user.id, ctx.guild.id, "moderation_kick_response", append_tip=True, mention=user.mention,
                                                                                                    reason=reason))
 
             log_embed = discord.Embed(title="User Kicked",
@@ -163,7 +164,7 @@ class Moderation(discord.Cog):
 
             try:
                 await user.send(
-                    trl(ctx.user.id, ctx.guild.id, "moderation_ban_dm").format(guild=ctx.guild.name, reason=reason,
+                    trl(ctx.user.id, ctx.guild.id, "moderation_ban_dm", guild=ctx.guild.name, reason=reason,
                                                                                moderator=ctx.user.display_name))
             except Exception as e:
                 akabot_logger.exception("An error occured:")
@@ -172,7 +173,7 @@ class Moderation(discord.Cog):
             await ctx.guild.ban(user, reason=reason, delete_message_seconds=604800)
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "moderation_ban_response", append_tip=True).format(mention=user.mention,
+                trl(ctx.user.id, ctx.guild.id, "moderation_ban_response", append_tip=True, mention=user.mention,
                                                                                                   reason=reason))
 
             log_embed = discord.Embed(title="User Banned",
@@ -207,14 +208,16 @@ class Moderation(discord.Cog):
             async for member in ctx.guild.bans():
                 if userid != "" and userid == str(member.user.id):
                     await ctx.respond(
-                        trl(ctx.user.id, ctx.guild.id, "moderation_unban_ask", append_tip=True).format(
-                            mention=member.user.mention, reason=reason), ephemeral=True, view=UnbanView(ctx.guild, member.user, reason))
+                        trl(ctx.user.id, ctx.guild.id, "moderation_unban_ask", append_tip=True,
+                            mention=member.user.mention, reason=reason), ephemeral=True,
+                        view=UnbanView(ctx.guild, member.user, reason))
                     break
 
                 if username != "" and username in member.user.name:
                     await ctx.respond(
-                        trl(ctx.user.id, ctx.guild.id, "moderation_unban_ask", append_tip=True).format(
-                            mention=member.user.mention, reason=reason), ephemeral=True, view=UnbanView(ctx.guild, member.user, reason))
+                        trl(ctx.user.id, ctx.guild.id, "moderation_unban_ask", append_tip=True,
+                            mention=member.user.mention, reason=reason), ephemeral=True,
+                        view=UnbanView(ctx.guild, member.user, reason))
                     break
             else:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_unban_fail", append_tip=True),
@@ -279,8 +282,8 @@ class Moderation(discord.Cog):
 
             if dm_has_updated:
                 try:
-                    await user.send(trl(0, ctx.guild.id, "moderation_timeout_dm_changing")
-                                    .format(guild=ctx.guild.name, time=pretty_time_delta(total_seconds, user_id=user.id,
+                    await user.send(trl(0, ctx.guild.id, "moderation_timeout_dm_changing", guild=ctx.guild.name,
+                                        time=pretty_time_delta(total_seconds, user_id=user.id,
                                                                                          server_id=ctx.guild.id),
                                             moderator=ctx.user.display_name, reason=reason))
                 except Exception as e:
@@ -289,7 +292,7 @@ class Moderation(discord.Cog):
             else:
                 try:
                     await user.send(
-                        trl(0, ctx.guild.id, "moderation_timeout_dm").format(guild=ctx.guild.name, reason=reason,
+                        trl(0, ctx.guild.id, "moderation_timeout_dm", guild=ctx.guild.name, reason=reason,
                                                                              moderator=ctx.user.display_name))
                 except Exception as e:
                     akabot_logger.exception("An error occured:")
@@ -298,8 +301,8 @@ class Moderation(discord.Cog):
             await user.timeout_for(datetime.timedelta(seconds=total_seconds), reason=reason)
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "moderation_timeout_response", append_tip=True).format(
-                    mention=user.mention, reason=reason))
+                trl(ctx.user.id, ctx.guild.id, "moderation_timeout_response", append_tip=True, mention=user.mention,
+                    reason=reason))
 
             log_embed = discord.Embed(title="User Timed Out",
                                       description=f"{user.mention} has been timed out by {ctx.user.mention} for {reason}")
@@ -348,15 +351,15 @@ class Moderation(discord.Cog):
 
             try:
                 await user.send(
-                    trl(ctx.user.id, ctx.guild.id, "moderation_remove_timeout_dm")
-                    .format(guild=ctx.guild.name, reason=reason, moderator=ctx.user.display_name))
+                    trl(ctx.user.id, ctx.guild.id, "moderation_remove_timeout_dm", guild=ctx.guild.name, reason=reason,
+                        moderator=ctx.user.display_name))
             except discord.Forbidden:
                 pass
 
             await user.remove_timeout(reason=reason)
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "moderation_remove_timeout_response", append_tip=True).format(
+                trl(ctx.user.id, ctx.guild.id, "moderation_remove_timeout_response", append_tip=True,
                     mention=user.mention,
                     reason=reason))
 
@@ -391,7 +394,7 @@ class Moderation(discord.Cog):
             ephemerality = get_setting(ctx.guild.id, "moderation_ephemeral", "true")
             await ctx.defer(ephemeral=ephemerality == "true")
             if amount > int(get_key("Moderation_MaxPurge", "1000")):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_purge_max_messages").format(amount),
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_purge_max_messages", amount),
                                   ephemeral=True)
                 return
 
@@ -410,7 +413,7 @@ class Moderation(discord.Cog):
                 await ctx.channel.delete_messages(chunk)
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "moderation_purge_response", append_tip=True).format(
+                trl(ctx.user.id, ctx.guild.id, "moderation_purge_response", append_tip=True,
                     messages=str(len(messages))),
                 ephemeral=True)
 
@@ -444,7 +447,7 @@ class Moderation(discord.Cog):
             warning_id = await add_warning(user, ctx.guild, reason)
             ephemerality = get_setting(ctx.guild.id, "moderation_ephemeral", "true")
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "warn_add_response", append_tip=True).format(mention=user.mention,
+                trl(ctx.user.id, ctx.guild.id, "warn_add_response", append_tip=True, mention=user.mention,
                                                                                             reason=reason,
                                                                                             id=str(warning_id)),
                 ephemeral=ephemerality == "true")
@@ -482,14 +485,14 @@ class Moderation(discord.Cog):
 
             if warning_id not in [str(warning['_id']) for warning in warnings]:
                 await ctx.respond(
-                    trl(ctx.user.id, ctx.guild.id, "warn_remove_error_warning_not_found").format(id=warning_id),
+                    trl(ctx.user.id, ctx.guild.id, "warn_remove_error_warning_not_found", id=warning_id),
                     ephemeral=True)
                 return
 
             db_remove_warning(ctx.guild.id, warning_id)
             ephemerality = get_setting(ctx.guild.id, "moderation_ephemeral", "true")
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "warn_remove_response", append_tip=True).format(id=warning_id,
+                trl(ctx.user.id, ctx.guild.id, "warn_remove_response", append_tip=True, id=warning_id,
                                                                                                user=user.mention),
                 ephemeral=ephemerality == "true")
 
@@ -519,12 +522,12 @@ class Moderation(discord.Cog):
 
             warnings = db_get_warnings(ctx.guild.id, user.id)
             if not warnings:
-                await ctx.respond(f'{user.mention} has no warnings.', ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "no_warnings", user=user.mention), ephemeral=True)
                 return
 
-            warning_str = trl(ctx.user.id, ctx.guild.id, "warn_list_title").format(user=user.mention)
+            warning_str = trl(ctx.user.id, ctx.guild.id, "warn_list_title", user=user.mention)
             for warning in warnings:
-                warning_str += trl(ctx.user.id, ctx.guild.id, "warn_list_line").format(id=str(warning['_id']),
+                warning_str += trl(ctx.user.id, ctx.guild.id, "warn_list_line", id=str(warning['_id']),
                                                                                        reason=warning['Reason'],
                                                                                        date=warning['Timestamp'])
 
@@ -573,7 +576,7 @@ class Moderation(discord.Cog):
             set_setting(ctx.guild.id, 'warning_message', message)
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "warn_set_message_response", append_tip=True).format(message=message),
+                trl(ctx.user.id, ctx.guild.id, "warn_set_message_response", append_tip=True, message=message),
                 ephemeral=True)
 
             log_embed = discord.Embed(title="Warning Message Set",
@@ -603,7 +606,7 @@ class Moderation(discord.Cog):
         try:
             db_add_warning_action(ctx.guild.id, action, warnings)
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "warn_actions_add_response", append_tip=True).format(action=action,
+                trl(ctx.user.id, ctx.guild.id, "warn_actions_add_response", append_tip=True, action=action,
                                                                                                     warnings=warnings),
                 ephemeral=True)
 
@@ -635,7 +638,7 @@ class Moderation(discord.Cog):
 
             action_str = trl(ctx.user.id, ctx.guild.id, "warn_actions_list_title")
             for action in actions:
-                action_str += trl(ctx.user.id, ctx.guild.id, "warn_actions_list_line").format(id=action[0],
+                action_str += trl(ctx.user.id, ctx.guild.id, "warn_actions_list_line", id=action[0],
                                                                                               action=action[1],
                                                                                               warnings=action[2])
 
@@ -716,14 +719,15 @@ class Moderation(discord.Cog):
     async def add_moderator_role(self, ctx: discord.ApplicationContext, role: discord.Role):
         try:
             if client['ModeratorRoles'].count_documents({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)}) > 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_moderator_role_already_exists").format(
-                    role=role.mention), ephemeral=True)
+                await ctx.respond(
+                    trl(ctx.user.id, ctx.guild.id, "moderation_moderator_role_already_exists", role=role.mention),
+                    ephemeral=True)
                 return
 
             client['ModeratorRoles'].insert_one({'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)})
 
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "moderation_add_moderator_role_response").format(role=role.mention),
+                trl(ctx.user.id, ctx.guild.id, "moderation_add_moderator_role_response", role=role.mention),
                 ephemeral=True)
 
             log_embed = discord.Embed(title="Moderator Role Added",
@@ -743,11 +747,12 @@ class Moderation(discord.Cog):
         try:
             if client['ModeratorRoles'].delete_one(
                     {'GuildID': str(ctx.guild.id), 'RoleID': str(role.id)}).deleted_count > 0:
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "moderation_remove_moderator_role_response").format(
-                    role=role.mention), ephemeral=True)
+                await ctx.respond(
+                    trl(ctx.user.id, ctx.guild.id, "moderation_remove_moderator_role_response", role=role.mention),
+                    ephemeral=True)
             else:
                 await ctx.respond(
-                    trl(ctx.user.id, ctx.guild.id, "moderation_moderator_role_doesnt_exist").format(role=role.mention),
+                    trl(ctx.user.id, ctx.guild.id, "moderation_moderator_role_doesnt_exist", role=role.mention),
                     ephemeral=True)
 
             log_embed = discord.Embed(title="Moderator Role Removed",
@@ -773,8 +778,8 @@ class Moderation(discord.Cog):
 
             message = trl(ctx.user.id, ctx.guild.id, "moderation_moderator_roles_title")
 
-            role_mentions = [trl(ctx.user.id, ctx.guild.id, "moderation_moderator_roles_line").format(
-                role=ctx.guild.get_role(int(role['RoleID'])).mention) for role in roles]
+            role_mentions = [trl(ctx.user.id, ctx.guild.id, "moderation_moderator_roles_line",
+                                 role=ctx.guild.get_role(int(role['RoleID'])).mention) for role in roles]
             message += "\n".join(role_mentions)
             await ctx.respond(message, ephemeral=True)
         except Exception as e:

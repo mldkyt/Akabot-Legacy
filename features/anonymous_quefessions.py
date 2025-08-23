@@ -80,7 +80,7 @@ class ReportTextModal(Modal):
         super().__init__(
             InputText(label=trl(int(author[2]), message.guild.id, "quefessions_report_description_label"),
                       placeholder=trl(int(author[2]), message.guild.id, "quefessions_report_description_placeholder")),
-            title=trl(int(author[2]), message.guild.id, 'quefessions_report_title').format(user=author[0]))
+            title=trl(int(author[2]), message.guild.id, 'quefessions_report_title', user=author[0]))
 
         self.author = author
         self.mod_message = message
@@ -97,11 +97,12 @@ class ReportTextModal(Modal):
 
             log_embed = Embed(
                 title=trl(0, interaction.guild.id, 'quefessions_log_report_title'),
-                description=trl(0, interaction.guild.id, 'quefessions_log_report_description').format(
-                    jump_url=self.mod_message.jump_url, author=self.author[0], author_username=self.author[1],
-                    author_id=self.author[2], reporter=interaction.user.display_name,
-                    reporter_username=interaction.user.name, reporter_id=interaction.user.id,
-                    original_content=self.original_content),
+                description=trl(0, interaction.guild.id, 'quefessions_log_report_description',
+                                jump_url=self.mod_message.jump_url, author=self.author[0],
+                                author_username=self.author[1],
+                                author_id=self.author[2], reporter=interaction.user.display_name,
+                                reporter_username=interaction.user.name, reporter_id=interaction.user.id,
+                                original_content=self.original_content),
             )
 
             await log_into_logs(interaction.guild, log_embed, view=LogsView(self.mod_message))
@@ -113,12 +114,14 @@ class ReportTextModal(Modal):
             await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'command_error_generic'),
                                       ephemeral=True)
 
+
 class ReplyModal(discord.ui.Modal):
     def __init__(self, message: discord.Message):
         super().__init__(title=trl(message.author.id, message.guild.id, "quefessions_reply_title"))
 
         self.message_field = InputText(label=trl(message.author.id, message.guild.id, "quefessions_reply_label"),
-                      placeholder=trl(message.author.id, message.guild.id, "quefessions_reply_placeholder"), min_length=1, max_length=1000)
+                                       placeholder=trl(message.author.id, message.guild.id,
+                                                       "quefessions_reply_placeholder"), min_length=1, max_length=1000)
         self.add_item(self.message_field)
 
         self.message = message
@@ -151,10 +154,13 @@ class ReplyModal(discord.ui.Modal):
                 'AuthorID': str(data.author.id)
             })
 
-            await interaction.respond(trl(self.message.author.id, self.message.guild.id, "anonymous_quefessions_reply_sent"), ephemeral=True)
+            await interaction.respond(
+                trl(self.message.author.id, self.message.guild.id, "anonymous_quefessions_reply_sent"), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occurred in ReplyModal callback:")
-            await interaction.respond(trl(self.message.author.id, self.message.guild.id, "command_error_generic"), ephemeral=True)
+            await interaction.respond(trl(self.message.author.id, self.message.guild.id, "command_error_generic"),
+                                      ephemeral=True)
+
 
 class CreateButtonView(View):
     def __init__(self):
@@ -213,6 +219,7 @@ class AdminView(View):
         except Exception as e:
             akabot_logger.exception("An error occured:")
 
+
 class AdminBanSelectTypeView(View):
     def __init__(self, message: Message):
         super().__init__()
@@ -255,7 +262,8 @@ class AdminGuildBanConfirm(View):
 
             member = interaction.guild.get_member(int(data['MemberID']))
 
-            await member.ban(reason=trl(0, interaction.guild.id, 'quefessions_ban_reason'), delete_message_seconds=604800)
+            await member.ban(reason=trl(0, interaction.guild.id, 'quefessions_ban_reason'),
+                             delete_message_seconds=604800)
 
             self.stop()
             self.disable_all_items()
@@ -440,7 +448,6 @@ class InfoButtonView(View):
         btn_report.callback = self.report_quefession
         self.add_item(btn_report)
 
-
     async def reply_anonymously(self, interaction: discord.Interaction):
         try:
             reply_modal = ReplyModal(interaction.message)
@@ -484,7 +491,8 @@ class InfoButtonView(View):
             await interaction.respond(fmt, ephemeral=True, view=AdminView(message=message))
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await interaction.respond(trl(interaction.user.id, interaction.guild.id, "command_error_generic"), ephemeral=True)
+            await interaction.respond(trl(interaction.user.id, interaction.guild.id, "command_error_generic"),
+                                      ephemeral=True)
 
     async def report_quefession(self, button: Button, interaction: Interaction):
         try:
@@ -506,16 +514,19 @@ class InfoButtonView(View):
             if get_key("Message_Intent", "false") == "true":
                 channel = interaction.guild.get_channel(int(data['ChannelID']))
                 if channel is None:
-                    await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'), ephemeral=True)
+                    await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
+                                              ephemeral=True)
                     return
 
                 message = await channel.fetch_message(int(data['MessageID']))
                 if message is None:
-                    await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'), ephemeral=True)
+                    await interaction.respond(trl(interaction.user.id, interaction.guild.id, 'quefessions_not_found'),
+                                              ephemeral=True)
                     return
 
-                await interaction.response.send_modal(modal=ReportTextModal(author, interaction.message, message.content))
-            else: 
+                await interaction.response.send_modal(
+                    modal=ReportTextModal(author, interaction.message, message.content))
+            else:
                 await interaction.response.send_modal(modal=ReportTextModal(author, interaction.message, data['Text']))
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -564,7 +575,9 @@ class AnonymousQuefessions(Cog):
     @has_guild_permissions(manage_guild=True)
     async def set_quefessions(self, ctx: ApplicationContext, enabled: bool):
         if get_key("Message_Intent", "false") == "false":
-            await ctx.respond("Sorry, this instance doesn\'t have message intent. Please use the `/create_quefessions_sending_msg` command instead.", ephemeral=True)
+            await ctx.respond(
+                "Sorry, this instance doesn\'t have message intent. Please use the `/create_quefessions_sending_msg` command instead.",
+                ephemeral=True)
             return
 
         try:
@@ -596,7 +609,8 @@ class AnonymousQuefessions(Cog):
     @guild_only()
     async def create_quefessions_sending_msg(self, ctx: ApplicationContext):
         if get_key("Message_Intent", "false") == "true":
-            await ctx.respond("This instance has message intent. Please use the `/set_quefessions` command instead.", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "this_instance_has_message_intent"),
+                              ephemeral=True)
             return
 
         try:

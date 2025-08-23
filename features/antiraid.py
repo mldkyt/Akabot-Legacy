@@ -29,6 +29,7 @@ from utils.per_server_settings import get_setting, set_setting
 
 akabot_logger = logging.getLogger("akabot")
 
+
 class ViolationCounters:
     past_actions = []
 
@@ -121,7 +122,7 @@ class AntiRaid(discord.Cog):
                 await message.delete()
                 if self.message_send_violation_counters.count_actions('message_send', message.author) == 0:
                     await message.channel.send(
-                        trl(message.author.id, message.guild.id, "antiraid_dontspam_message").format(
+                        trl(message.author.id, message.guild.id, "antiraid_dontspam_message",
                             user_id=message.author.id), delete_after=5)
                     self.message_send_violation_counters.add_action('message_send', message.author, 5)
                 return
@@ -163,8 +164,8 @@ class AntiRaid(discord.Cog):
 
             # Send response to user
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "antiraid_join_threshold_changed", append_tip=True).format(
-                    people=str(people), per=str(per)),
+                trl(ctx.user.id, ctx.guild.id, "antiraid_join_threshold_changed", append_tip=True, people=str(people),
+                    per=str(per)),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -202,7 +203,7 @@ class AntiRaid(discord.Cog):
 
             # Send response to user
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "antiraid_message_threshold_changed", append_tip=True).format(
+                trl(ctx.user.id, ctx.guild.id, "antiraid_message_threshold_changed", append_tip=True,
                     messages=str(messages),
                     per=str(per)),
                 ephemeral=True)
@@ -224,8 +225,8 @@ class AntiRaid(discord.Cog):
             embed = discord.Embed(title=trl(ctx.user.id, ctx.guild.id, "antiraid_settings"),
                                   color=discord.Color.blurple())
             embed.add_field(name=trl(ctx.user.id, ctx.guild.id, "logging_join_threshold"),
-                            value=trl(ctx.user.id, ctx.guild.id, "antiraid_settings_join_threshold_value").format(
-                                joins=join_threshold, seconds=join_threshold_per), inline=True)
+                            value=trl(ctx.user.id, ctx.guild.id, "antiraid_settings_join_threshold_value",
+                                      joins=join_threshold, seconds=join_threshold_per), inline=True)
 
             await ctx.respond(embed=embed, ephemeral=True)
         except Exception as e:

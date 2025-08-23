@@ -17,6 +17,7 @@
 
 
 import logging
+
 import discord
 from discord.ext import commands, tasks
 
@@ -272,22 +273,19 @@ class Tickets(discord.Cog):
     async def send_message(self, ctx: discord.ApplicationContext, message: str, button_label: str):
         try:
             if get_setting(ctx.guild.id, "ticket_category", "0") == "0":
-                await ctx.respond("Please set a ticket category first!", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "set_a_ticket_category_first"), ephemeral=True)
                 return
 
             if not ctx.guild.get_channel(int(get_setting(ctx.guild.id, "ticket_category", "0"))):
-                await ctx.respond("The ticket category has been deleted. Please set a new one.", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "ticket_category_deleted"), ephemeral=True)
                 return
 
             if not ctx.guild.me.guild_permissions.manage_channels or not ctx.guild.me.guild_permissions.manage_roles:
-                await ctx.respond(
-                    "I need the Manage Channels (to create channels) and Manage Roles (to set permissions on ticket "
-                    "channels) permissions to create tickets.",
-                    ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "ticket_permissions_needed"), ephemeral=True)
                 return
 
             await ctx.channel.send(message, view=TicketCreateView(button_label))
-            await ctx.respond("Message sent!", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "message_sent"), ephemeral=True)
 
             log_embed = discord.Embed(title="Ticket Message Sent",
                                       description=f"Ticket message sent by {ctx.user.mention} in {ctx.channel.mention}")
@@ -309,7 +307,7 @@ class Tickets(discord.Cog):
     async def set_category(self, ctx: discord.ApplicationContext, category: discord.CategoryChannel):
         try:
             set_setting(ctx.guild.id, "ticket_category", str(category.id))
-            await ctx.respond("Category set!", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "category_set"), ephemeral=True)
 
             log_embed = discord.Embed(title="Ticket Category Set",
                                       description=f"Ticket category set by {ctx.user.mention} to {category.name}")
@@ -330,7 +328,7 @@ class Tickets(discord.Cog):
     async def set_hide_time(self, ctx: discord.ApplicationContext, hours: int):
         try:
             set_setting(ctx.guild.id, "ticket_hide_time", str(hours))
-            await ctx.respond("Hide time set!", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "hide_time_set"), ephemeral=True)
 
             log_embed = discord.Embed(title="Ticket Hide Time Set",
                                       description=f"Ticket hide time set by {ctx.user.mention} to {hours} hours")
@@ -349,7 +347,7 @@ class Tickets(discord.Cog):
     async def set_auto_archive_time(self, ctx: discord.ApplicationContext, hours: int):
         try:
             set_setting(ctx.guild.id, "ticket_archive_time", str(hours))
-            await ctx.respond("Auto archive time set!", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_archive_time_set"), ephemeral=True)
 
             log_embed = discord.Embed(title="Ticket Archive Time Set",
                                       description=f"Ticket archive time set by {ctx.user.mention} to {hours} hours")

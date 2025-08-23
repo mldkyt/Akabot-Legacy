@@ -21,7 +21,7 @@ import discord
 from discord.ext import tasks, pages
 
 from utils.denylist import akabot_logger
-from utils.languages import get_translation_for_key_localized as _
+from utils.languages import get_translation_for_key_localized as trl
 from utils.statistic_channels import db_get_statistic_channels, db_set_statistic_channel, db_remove_statistic_channel, \
     db_get_all_statistic_channels
 
@@ -81,27 +81,27 @@ class StatisticChannels(discord.Cog):
                                              statistic_text: str):
         try:
             db_set_statistic_channel(ctx.guild.id, channel.id, statistic_text)
-            await ctx.respond("Settings updated.", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "settings_saved"), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond(_(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @statistic_channels_grp.command(name="help", description="Formatting help")
     async def statistic_channel_help(self, ctx: discord.ApplicationContext):
         try:
-            await ctx.respond(_(ctx.user.id, ctx.guild.id, "statistic_channels_help", append_tip=True).format(
-                members=ctx.guild.member_count,
-                bots=len([x for x in ctx.guild.members if x.bot]),
-                guild_name=ctx.guild.name,
-                guild_id=ctx.guild.id,
-                guild_owner=ctx.guild.owner.display_name,
-                guild_owner_id=ctx.guild.owner.id,
-                guild_owner_name=ctx.guild.owner.name
-            ),
+            await ctx.respond(
+                trl(ctx.user.id, ctx.guild.id, "statistic_channels_help", append_tip=True,
+                    members=ctx.guild.member_count,
+                    bots=len([x for x in ctx.guild.members if x.bot]),
+                    guild_name=ctx.guild.name,
+                    guild_id=ctx.guild.id,
+                    guild_owner=ctx.guild.owner.display_name,
+                    guild_owner_id=ctx.guild.owner.id,
+                    guild_owner_name=ctx.guild.owner.name),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond(_(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @statistic_channels_grp.command(name="list", description="List statistic channels")
     async def list_statistic_channels(self, ctx: discord.ApplicationContext):
@@ -109,7 +109,7 @@ class StatisticChannels(discord.Cog):
             statistic_channels = db_get_statistic_channels(ctx.guild.id)
 
             if len(statistic_channels) == 0:
-                await ctx.respond(_(ctx.user.id, ctx.guild.id, "statistic_channels_list_empty", append_tip=True),
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "statistic_channels_list_empty", append_tip=True),
                                   ephemeral=True)
                 return
 
@@ -118,11 +118,10 @@ class StatisticChannels(discord.Cog):
             for i in range(0, len(statistic_channels), 10):
                 c = ""
                 for j in statistic_channels[i:i + 10]:
-                    c = c + _(ctx.user.id, ctx.guild.id, "statistic_channels_list_row").format(
-                        channel=ctx.guild.get_channel(int(j['ChannelID'])).mention,
-                        formatted=format_text(ctx.guild, j['StatisticText']),
-                        template=j['StatisticText']
-                    ) + "\n"
+                    c = c + trl(ctx.user.id, ctx.guild.id, "statistic_channels_list_row",
+                                channel=ctx.guild.get_channel(int(j['ChannelID'])).mention,
+                                formatted=format_text(ctx.guild, j['StatisticText']),
+                                template=j['StatisticText']) + "\n"
 
                 pg.append(c)
 
@@ -130,16 +129,16 @@ class StatisticChannels(discord.Cog):
             await paginator.respond(ctx.interaction, ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond(_(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @statistic_channels_grp.command(name="remove", description="Remove statistic channel")
     async def delete_statistic_channel(self, ctx: discord.ApplicationContext):
         try:
             db_remove_statistic_channel(ctx.guild.id, ctx.channel.id)
-            await ctx.respond(_(ctx.user.id, ctx.guild.id, 'statistic_channel_remove'), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'statistic_channel_remove'), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond(_(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, 'command_error_generic'), ephemeral=True)
 
     @tasks.loop(minutes=1)
     async def update_statistic_channels(self):

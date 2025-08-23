@@ -3,11 +3,10 @@ import logging
 
 import discord
 import markovify
-from markovify import NewlineText
-
 from discord.ext import commands
 
 from database import client
+from utils.languages import get_translation_for_key_localized as trl
 
 akabot_logger = logging.getLogger("akabot")
 
@@ -109,7 +108,7 @@ class MarkovBot(discord.Cog):
             })
 
             if data is not None:
-                await ctx.respond("Channel has markov posts already enabled", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "markov_already_enabled"), ephemeral=True)
                 return
 
             client['MarkovChannel'].insert_one({
@@ -119,10 +118,10 @@ class MarkovBot(discord.Cog):
                 'Messages': messages
             })
 
-            await ctx.respond("Enabled generation of Markov posts, send 10 messages for the first one to generate", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "markov_enabled"), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond("An error occurred", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @markov_commands.command()
     @commands.guild_only()
@@ -135,15 +134,14 @@ class MarkovBot(discord.Cog):
             })
 
             if data is None:
-                await ctx.respond("Channel has markov posts already disabled", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "markov_already_disabled"), ephemeral=True)
                 return
 
             client['MarkovChannel'].delete_one({
                 'ChannelID': str(channel.id)
             })
 
-            await ctx.respond("Disabled generation of Markov posts", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "markov_disabled"), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond("An error occurred", ephemeral=True)
-
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)

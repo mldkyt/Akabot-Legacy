@@ -35,6 +35,7 @@ from utils.tzutil import get_now_for_server
 
 akabot_logger = logging.getLogger("akabot")
 
+
 def enable(guild_id: str, channel_id: str):
     if client['ChatSummary'].count_documents(
             {'GuildID': guild_id, 'ChannelID': channel_id}) == 0:
@@ -56,6 +57,7 @@ def enable(guild_id: str, channel_id: str):
             'MessageCount': 0,
             'Keywords': []
         })
+
 
 def disable(guild_id: str, channel_id: str):
     client['ChatSummary'].delete_one({
@@ -170,23 +172,22 @@ async def normal_chat_summary(channel, date, guild, i, summary_title: str = ""):
 
     pages = []
 
-    chat_summary_message = trl(0, guild.id, chat_summary_title_key).format(date=date)
+    chat_summary_message = trl(0, guild.id, chat_summary_title_key, date=date)
     chat_summary_message += '\n'
-    chat_summary_message += trl(0, guild.id, "chat_summary_messages").format(
-        messages=str(i['MessageCount']))
+    chat_summary_message += trl(0, guild.id, "chat_summary_messages", messages=str(i['MessageCount']))
     top_members = {k: v for k, v in sorted(i['Messages'].items(), key=lambda item: item[1], reverse=True)}
     j = 0  # idk
     for k, v in top_members.items():
         j += 1
         member = guild.get_member(int(k))
         if member is not None:
-            chat_summary_message += trl(0, guild.id, "chat_summary_line").format(position=j,
-                                                                                 name=member.display_name,
-                                                                                 messages=v)
+            chat_summary_message += trl(0, guild.id, "chat_summary_line", position=j,
+                                        name=member.display_name,
+                                        messages=v)
         else:
-            chat_summary_message += trl(0, guild.id, "chat_summary_line_unknown_user").format(position=j,
-                                                                                              id=k,
-                                                                                              messages=v)
+            chat_summary_message += trl(0, guild.id, "chat_summary_line_unknown_user", position=j,
+                                        id=k,
+                                        messages=v)
 
         if j % int(get_setting(guild.id, chat_summary_top_count_key, chat_summary_top_count_default)) == 0:
             pages.append(chat_summary_message)
@@ -427,8 +428,7 @@ class ChatSummary(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "chat_summary_dateformat_set", append_tip=True).format(
-                    format=date_format),
+                trl(ctx.user.id, ctx.guild.id, "chat_summary_dateformat_set", append_tip=True, format=date_format),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -469,11 +469,9 @@ class ChatSummary(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "chat_summary_top_count_set", append_tip=True).format(
-                    normal=str(normal_count),
+                trl(ctx.user.id, ctx.guild.id, "chat_summary_top_count_set", append_tip=True, normal=str(normal_count),
                     monthly=str(monthly_count),
-                    yearly=str(yearly_count)
-                ), ephemeral=True)
+                    yearly=str(yearly_count)), ephemeral=True)
 
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -532,8 +530,9 @@ class ChatSummary(discord.Cog):
             # Create logging embed
             logging_embed = discord.Embed(title=trl(0, ctx.guild.id, "chat_summary_count_consencutive_log_title"))
             logging_embed.add_field(name=trl(0, ctx.guild.id, "chat_summary_count_consencutive_log_count_consencutive"),
-                                    value="{old} -> {new}".format(old=("Yes" if old_count_counsencutive == "True" else "No"),
-                                                                  new=("Yes" if countconsencutive else "No")))
+                                    value="{old} -> {new}".format(
+                                        old=("Yes" if old_count_counsencutive == "True" else "No"),
+                                        new=("Yes" if countconsencutive else "No")))
             logging_embed.add_field(name=trl(0, ctx.guild.id, "logging_user"),
                                     value=f"{ctx.user.mention}")
 
@@ -542,7 +541,8 @@ class ChatSummary(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "chat_summary_count_consencutive_on", append_tip=True) if countconsencutive else
+                trl(ctx.user.id, ctx.guild.id, "chat_summary_count_consencutive_on",
+                    append_tip=True) if countconsencutive else
                 trl(ctx.user.id, ctx.guild.id, "chat_summary_count_consencutive_off", append_tip=True),
                 ephemeral=True)
         except Exception as e:
@@ -557,7 +557,8 @@ class ChatSummary(discord.Cog):
     @blocklist()
     async def chatsummary_add_kwd(self, ctx: discord.ApplicationContext, kwd: str):
         if get_key('Message_Intent', "false") == "false":
-            await ctx.respond("This instance doesn\'t support message intent. Keywords aren\'t available.", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "keywords_not_available"),
+                              ephemeral=True)
             return
 
         if 1 < len(kwd.split(' ')) < 1:
@@ -593,7 +594,8 @@ class ChatSummary(discord.Cog):
     @blocklist()
     async def chatsummary_remove_kwd(self, ctx: discord.ApplicationContext, kwd: str):
         if get_key('Message_Intent', "false") == "false":
-            await ctx.respond("This instance doesn\'t support message intent. Keywords aren\'t available.", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "keywords_not_available"),
+                              ephemeral=True)
             return
 
         logging.debug('Removing keyword %s', kwd)

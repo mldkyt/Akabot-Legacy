@@ -1,9 +1,12 @@
 
 import datetime
 import logging
+
 import discord
-from database import client
 from discord.ext import tasks
+
+from database import client
+from utils.languages import get_translation_for_key_localized as trl
 
 akabot_logger = logging.getLogger("akabot")
 
@@ -52,10 +55,10 @@ class StickyMessage(discord.Cog):
 
             await self.move_message_down(ctx.channel)
 
-            await ctx.respond(f"Sticky message set", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "sticky_message_set"), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond("Failed to set sticky message", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @sticky_message_group.command(name="remove", description="Remove sticky message")
     async def remove_sticky_message(self, ctx: discord.ApplicationContext):
@@ -64,7 +67,7 @@ class StickyMessage(discord.Cog):
                 'ChannelID': str(ctx.channel.id)
             })
             if not existing_settings:
-                await ctx.respond("No sticky message set", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "no_sticky_message_set"), ephemeral=True)
                 return
             
             if 'ExistingMessageID' in existing_settings:
@@ -75,10 +78,10 @@ class StickyMessage(discord.Cog):
             client['StickyMessages'].delete_one({
                 'ChannelID': str(ctx.channel.id)
             })
-            await ctx.respond(f"Sticky message removed", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "sticky_message_removed"), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond("Failed to remove sticky message", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     async def move_message_down(self, channel: discord.TextChannel):
         try:

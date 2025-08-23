@@ -3,6 +3,7 @@ import logging
 import discord
 
 from database import client
+from utils.languages import get_translation_for_key_localized as trl
 from utils.module_toggling import is_module_enabled
 from utils.per_server_settings import get_setting
 
@@ -26,7 +27,7 @@ class VoiceChannelAlerts(discord.Cog):
                     'Member': str(ctx.user.id)
                 })
 
-                await ctx.respond("Subscribed to all notifications! :3", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "subscribed_all"), ephemeral=True)
                 return
 
             if not subscribed and current_subscribed:
@@ -34,16 +35,16 @@ class VoiceChannelAlerts(discord.Cog):
                     'Member': str(ctx.user.id)
                 })
 
-                await ctx.respond("Unsubscribed from ALL notifications! :3", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "unsubscribed_all"), ephemeral=True)
                 return
 
             if subscribed and current_subscribed:
-                await ctx.respond("You are already subscribed to all notifications! :3", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "already_subscribed_all"), ephemeral=True)
             else:
-                await ctx.respond("You aren't subscribed to any notifications! :3", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "already_unsubscribed_all"), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond("Something went wrong! :3", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @command_grp.command(name="sub_user", description="Subscribe to notifications from a specific user")
     @is_module_enabled("voice_channel_alerts")
@@ -53,7 +54,7 @@ class VoiceChannelAlerts(discord.Cog):
                 'Member': str(ctx.user.id),
                 'Target': str(user.id)
             }) > 0:
-                await ctx.respond(f"You are already subscribed to notifications from {user.mention}! :3", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "already_subscribed_user"), ephemeral=True)
                 return
 
             client['vc_notifs_user'].insert_one({
@@ -61,10 +62,10 @@ class VoiceChannelAlerts(discord.Cog):
                 'Target': str(user.id)
             })
 
-            await ctx.respond(f"Subscribed to notifications from {user.mention}! :3", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "subscribed_user", mention=user.mention), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond("Something went wrong! :3", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @command_grp.command(name="unsub_user", description="Unsubscribe from notifications from a specific user")
     @is_module_enabled("voice_channel_alerts")
@@ -74,7 +75,8 @@ class VoiceChannelAlerts(discord.Cog):
                 'Member': str(ctx.user.id),
                 'Target': str(user.id)
             }) == 0:
-                await ctx.respond(f"You are not subscribed to notifications from {user.mention}! :3", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "not_subscribed_user", mention=user.mention),
+                                  ephemeral=True)
                 return
 
             client['vc_notifs_user'].delete_one({
@@ -82,10 +84,10 @@ class VoiceChannelAlerts(discord.Cog):
                 'Target': str(user.id)
             })
 
-            await ctx.respond(f"Unsubscribed from {user.mention} notifications! :3", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "unsubscribed_user", mention=user.mention), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond("Something went wrong! :3", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @command_grp.command(name="sub_channel", description="Subscribe to notifications from a specific channel")
     @is_module_enabled("voice_channel_alerts")
@@ -95,7 +97,8 @@ class VoiceChannelAlerts(discord.Cog):
                 'Member': str(ctx.user.id),
                 'Target': str(channel.id)
             }) > 0:
-                await ctx.respond(f"You are already subscribed to notifications from {channel.mention}! :3", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "already_subscribed_channel", channel=channel.mention),
+                                  ephemeral=True)
                 return
 
             client['vc_notifs_channel'].insert_one({
@@ -103,10 +106,11 @@ class VoiceChannelAlerts(discord.Cog):
                 'Target': str(channel.id)
             })
 
-            await ctx.respond(f"Subscribed to notifications from {channel.mention}! :3", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "subscribed_channel", channel=channel.mention),
+                              ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond("Something went wrong! :3", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
 
     @command_grp.command(name="unsub_channel", description="Unsubscribe from notifications from a specific channel")
     @is_module_enabled("voice_channel_alerts")
@@ -116,7 +120,8 @@ class VoiceChannelAlerts(discord.Cog):
                 'Member': str(ctx.user.id),
                 'Target': str(channel.id)
             }) == 0:
-                await ctx.respond(f"You are not subscribed to notifications from {channel.mention}! :3", ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "already_subscribed_channel", channel=channel.mention),
+                                  ephemeral=True)
                 return
 
             client['vc_notifs_channel'].delete_one({
@@ -124,10 +129,11 @@ class VoiceChannelAlerts(discord.Cog):
                 'Target': str(channel.id)
             })
 
-            await ctx.respond(f"Unsubscribed from {channel.mention} notifications! :3", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "not_subscribed_channel", channel=channel.mention),
+                              ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
-            await ctx.respond("Something went wrong! :3", ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.channel.id, "command_error_generic"), ephemeral=True)
 
     @discord.Cog.listener()
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
@@ -143,9 +149,9 @@ class VoiceChannelAlerts(discord.Cog):
                     try:
                         dm_target = member.guild.get_member(int(i['Member']))
                         if dm_target is not None:
-                            await dm_target.send("# Haiii :3\n"
-                                                 f"{member.mention} has joined {after.channel.mention}\n"
-                                                 f"-# You received this DM because you're subscribed to ALL notifications!")
+                            await dm_target.send(
+                                trl(dm_target.id, 0, "channel_notification_dm_all", member=member.mention,
+                                    channel=after.channel.mention))
                             sent_to.append(i['Member'])
                     except discord.Forbidden:
                         pass
@@ -159,9 +165,9 @@ class VoiceChannelAlerts(discord.Cog):
 
                         dm_target = member.guild.get_member(int(i['Member']))
                         if dm_target is not None:
-                            await dm_target.send("# Haiii :3\n"
-                                                 f"{member.mention} has joined {after.channel.mention}\n"
-                                                 f"-# You received this DM because you're subscribed to {member.mention}'s VC notifications!")
+                            await dm_target.send(
+                                trl(dm_target.id, 0, "channel_notification_dm_user", member=member.mention,
+                                    channel=after.channel.mention))
                             sent_to.append(i['Member'])
                     except discord.Forbidden:
                         pass
@@ -175,9 +181,9 @@ class VoiceChannelAlerts(discord.Cog):
 
                         dm_target = member.guild.get_member(int(i['Member']))
                         if dm_target is not None:
-                            await dm_target.send("# Haiii :3\n"
-                                                 f"{member.mention} has joined {after.channel.mention}\n"
-                                                 f"-# You received this DM because you're subscribed to {after.channel.mention}'s VC notifications!")
+                            await dm_target.send(
+                                trl(dm_target.id, 0, "channel_notification_dm_channel", member=member.mention,
+                                    channel=after.channel.mention))
                             sent_to.append(i['Member'])
                     except discord.Forbidden:
                         pass

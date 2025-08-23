@@ -28,12 +28,13 @@ from utils.denylist import queue_send_message
 from utils.languages import get_translation_for_key_localized as trl, get_language
 from utils.logging_util import log_into_logs
 from utils.module_toggling import is_module_enabled
-from utils.per_user_settings import get_per_user_setting
 from utils.per_server_settings import get_setting, set_setting
+from utils.per_user_settings import get_per_user_setting
 from utils.tips import append_tip_to_message
 from utils.tzutil import get_server_midnight_time
 
 akabot_logger = logging.getLogger("akabot")
+
 
 class ChatStreakStorage:
     """Chat Streaks Storage.
@@ -210,7 +211,7 @@ class ChatStreaks(discord.Cog):
                 reply_to_user = get_per_user_setting(message.author.id, "chat_streaks_reply_to_user", True) == True
 
                 await queue_send_message(message, content=trl(message.author.id, message.guild.id,
-                                                              "chat_streaks_expired").format(streak=old_streak),
+                                                              "chat_streaks_expired", streak=old_streak),
                                          delete_after=int(
                                              get_setting(message.guild.id, 'chat_streaks_delete_sent_message_expired',
                                                          '60')), reply_to_message=reply_to_user)
@@ -231,7 +232,7 @@ class ChatStreaks(discord.Cog):
                 reply_to_user = get_per_user_setting(message.author.id, "chat_streaks_reply_to_user", True) == True
 
                 await queue_send_message(message, content=trl(message.author.id, message.guild.id,
-                                                              "chat_streaks_updated").format(streak=new_streak),
+                                                              "chat_streaks_updated", streak=new_streak),
                                          delete_after=int(
                                              get_setting(message.guild.id, 'chat_streaks_delete_sent_message_updated',
                                                          '10')), reply_to_message=reply_to_user)
@@ -264,7 +265,7 @@ class ChatStreaks(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "chat_streaks_reset_success", append_tip=True).format(user=user.mention),
+                trl(ctx.user.id, ctx.guild.id, "chat_streaks_reset_success", append_tip=True, user=user.mention),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -282,8 +283,8 @@ class ChatStreaks(discord.Cog):
         try:
             (_, streak, _) = self.streak_storage.set_streak(ctx.guild.id, user.id)
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "chat_streaks_streak_admin", append_tip=True).format(user=user.mention,
-                                                                                                    streak=str(streak)),
+                trl(ctx.user.id, ctx.guild.id, "chat_streaks_streak_admin", append_tip=True, user=user.mention,
+                    streak=str(streak)),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -318,7 +319,7 @@ class ChatStreaks(discord.Cog):
         try:
             (_, streak, _) = self.streak_storage.set_streak(ctx.guild.id, ctx.user.id)
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "chat_streaks_streak", append_tip=True).format(streak=streak),
+                trl(ctx.user.id, ctx.guild.id, "chat_streaks_streak", append_tip=True, streak=streak),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -349,9 +350,9 @@ class ChatStreaks(discord.Cog):
 
                 days = int(row['MaxStreak'])
 
-                message += trl(ctx.user.id, ctx.guild.id, "chat_streak_leaderboard_line").format(position=i,
-                                                                                                 user=member.mention,
-                                                                                                 days=str(days))
+                message += trl(ctx.user.id, ctx.guild.id, "chat_streak_leaderboard_line", position=i,
+                               user=member.mention,
+                               days=str(days))
 
                 i += 1
                 lb_last = True

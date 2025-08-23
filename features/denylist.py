@@ -18,11 +18,12 @@ class ChannelDenylist(discord.Cog):
     async def add_to_denylist(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
             if is_denylisted(channel.id):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "denylist_already_added").format(mention=channel.mention), ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "denylist_already_added", mention=channel.mention),
+                                  ephemeral=True)
                 return
 
             add_channel_to_denylist(channel.id)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "denylist_added").format(mention=channel.mention), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "denylist_added", mention=channel.mention), ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
 
@@ -30,11 +31,13 @@ class ChannelDenylist(discord.Cog):
     async def remove_to_denylist(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         try:
             if not is_denylisted(channel.id):
-                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "denylist_already_removed").format(mention=channel.mention), ephemeral=True)
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "denylist_already_removed", mention=channel.mention),
+                                  ephemeral=True)
                 return
 
             remove_channel_from_denylist(channel.id)
-            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "denylist_removed").format(mention=channel.mention), ephemeral=True)
+            await ctx.respond(trl(ctx.user.id, ctx.guild.id, "denylist_removed", mention=channel.mention),
+                              ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
 

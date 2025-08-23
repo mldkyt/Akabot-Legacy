@@ -26,6 +26,7 @@ from utils.languages import get_translation_for_key_localized as trl
 
 akabot_logger = logging.getLogger("akabot")
 
+
 class AutoResponse(discord.Cog):
     def __init__(self, bot: discord.Bot) -> None:
         super().__init__()
@@ -46,7 +47,7 @@ class AutoResponse(discord.Cog):
 
             # Respond
             await ctx.respond(
-                trl(ctx.user.id, ctx.guild.id, "auto_response_add_success").format(trigger=trigger, reply=reply),
+                trl(ctx.user.id, ctx.guild.id, "auto_response_add_success", trigger=trigger, reply=reply),
                 ephemeral=True)
         except Exception as e:
             akabot_logger.exception("An error occured:")
@@ -73,11 +74,9 @@ class AutoResponse(discord.Cog):
             for i in all_settings:
                 # Format: **{id}**: {trigger} -> {reply}
                 # current_group_msg += f"**ID: `{i[0]}`**: Trigger: `{i[2]}` -> Will say `{i[3]}`\n"
-                current_group_msg += trl(ctx.user.id, ctx.guild.id, "auto_response_list_row").format(id=str(i['_id']),
-                                                                                                     trigger=i[
-                                                                                                         'TriggerText'],
-                                                                                                     reply=i[
-                                                                                                         'ReplyText'])
+                current_group_msg += trl(ctx.user.id, ctx.guild.id, "auto_response_list_row", id=str(i['_id']),
+                                         trigger=i['TriggerText'],
+                                         reply=i['ReplyText'])
                 current_group += 1
 
                 # Split message group
@@ -101,15 +100,17 @@ class AutoResponse(discord.Cog):
     @discord_commands_ext.has_permissions(manage_messages=True)
     @discord_commands_ext.bot_has_permissions(read_message_history=True, add_reactions=True)
     @discord.default_permissions(manage_messages=True)
-    async def edit_trigger_auto_response(self, ctx: discord.ApplicationContext, auto_response_id: str, new_trigger: str):
+    async def edit_trigger_auto_response(self, ctx: discord.ApplicationContext, auto_response_id: str,
+                                         new_trigger: str):
         try:
             if not ObjectId.is_valid(auto_response_id):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
                                   ephemeral=True)
                 return
 
-            result = client['AutoResponse'].update_one({'_id': ObjectId(auto_response_id), 'GuildID': str(ctx.guild.id)},
-                                                       {'$set': {'TriggerText': new_trigger}})
+            result = client['AutoResponse'].update_one(
+                {'_id': ObjectId(auto_response_id), 'GuildID': str(ctx.guild.id)},
+                {'$set': {'TriggerText': new_trigger}})
 
             if result.matched_count == 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
@@ -133,7 +134,8 @@ class AutoResponse(discord.Cog):
                                   ephemeral=True)
                 return
 
-            result = client['AutoResponse'].delete_one({'_id': ObjectId(auto_response_id), 'GuildID': str(ctx.guild.id)})
+            result = client['AutoResponse'].delete_one(
+                {'_id': ObjectId(auto_response_id), 'GuildID': str(ctx.guild.id)})
 
             if result.deleted_count == 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
@@ -150,15 +152,17 @@ class AutoResponse(discord.Cog):
     @discord_commands_ext.has_permissions(manage_messages=True)
     @discord_commands_ext.bot_has_permissions(read_message_history=True, add_reactions=True)
     @discord.default_permissions(manage_messages=True)
-    async def edit_response_auto_response(self, ctx: discord.ApplicationContext, auto_response_id: str, new_response: str):
+    async def edit_response_auto_response(self, ctx: discord.ApplicationContext, auto_response_id: str,
+                                          new_response: str):
         try:
             if not ObjectId.is_valid(auto_response_id):
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),
                                   ephemeral=True)
                 return
 
-            result = client['AutoResponse'].update_one({'_id': ObjectId(auto_response_id), 'GuildID': str(ctx.guild.id)},
-                                                       {'$set': {'ReplyText': new_response}})
+            result = client['AutoResponse'].update_one(
+                {'_id': ObjectId(auto_response_id), 'GuildID': str(ctx.guild.id)},
+                {'$set': {'ReplyText': new_response}})
 
             if result.matched_count == 0:
                 await ctx.respond(trl(ctx.user.id, ctx.guild.id, "auto_response_setting_not_found"),

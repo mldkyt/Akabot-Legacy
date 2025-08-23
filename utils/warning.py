@@ -59,24 +59,24 @@ async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -
                 # try dm user
                 try:
                     await user.send(
-                        trl(user.id, guild.id, "warn_actions_auto_kick_dm").format(name=guild.name,
-                                                                                   warnings=action['Warnings']))
+                        trl(user.id, guild.id, "warn_actions_auto_kick_dm", name=guild.name,
+                            warnings=action['Warnings']))
                 except Exception as e:
                     akabot_logger.exception("An error occured:")
                     pass
                 await user.kick(
-                    reason=trl(user.id, guild.id, "warn_actions_auto_kick_reason").format(warnings=action['Warnings']))
+                    reason=trl(user.id, guild.id, "warn_actions_auto_kick_reason", warnings=action['Warnings']))
             elif action['Action'] == 'ban':
                 # try dm user
                 try:
                     await user.send(
-                        trl(user.id, guild.id, "warn_actions_auto_ban_dm").format(name=guild.name,
+                        trl(user.id, guild.id, "warn_actions_auto_ban_dm", name=guild.name,
                                                                                   warnings=action['Warnings']))
                 except Exception as e:
                     akabot_logger.exception("An error occured:")
                     pass
                 await user.ban(
-                    reason=trl(user.id, guild.id, "warn_actions_auto_ban_reason").format(warnings=action['Warnings']),
+                    reason=trl(user.id, guild.id, "warn_actions_auto_ban_reason", warnings=action['Warnings']),
                     delete_message_seconds=604800)
             elif action['Action'].startswith('timeout'):
                 time = action['Action'].split(' ')[1]
@@ -93,7 +93,7 @@ async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -
                 # try dm
                 try:
                     await user.send(
-                        trl(user.id, guild.id, "warn_actions_auto_timeout_dm").format(name=guild.name,
+                        trl(user.id, guild.id, "warn_actions_auto_timeout_dm", name=guild.name,
                                                                                       warnings=action['Warnings'],
                                                                                       time=pretty_time_delta(
                                                                                           total_seconds,
@@ -104,8 +104,8 @@ async def add_warning(user: discord.Member, guild: discord.Guild, reason: str) -
                     pass
 
                 await user.timeout_for(datetime.timedelta(seconds=total_seconds),
-                                       reason=trl(user.id, guild.id, "warn_actions_auto_timeout_reason").format(
-                                           warnings=action['Warnings']))
+                                       reason=trl(user.id, guild.id, "warn_actions_auto_timeout_reason",
+                                                  warnings=action['Warnings']))
 
     return warning_id
 
