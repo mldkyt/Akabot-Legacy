@@ -727,5 +727,7 @@
   "private_channel_type_changed": "Type changed to `%{type}`.",
   "no_message_intent": "This instance of Akabot doesn't support the message intent.",
   "category_set": "Category set!",
-  "akabot_instance_limits": "# Understanding the limits of this Akabot instance\n- **Announcement Channels**: %{announcement_channel_usage} out of %{announcement_channel_limit} (%{announcement_channel_percentage}%)\n- **Chat Summary Channels**: %{chat_summary_usage} out of %{chat_summary_limit} channels (%{chat_summary_percentage}%)\n- **Roles on Join**: %{roles_on_join_usage} out of %{roles_on_join_limit} roles (%{roles_on_join_percentage}%)\n- **Giveaways**: %{giveaways_usage} out of %{giveaways_limit} running giveaways (%{giveaways_percentage}%)\n- **Automod Actions**: %{automod_actions_usage} out of %{automod_actions_limit} Automod rules (%{automod_actions_percentage}%)"
+  "akabot_instance_limits": "# Understanding the limits of this Akabot instance\n- **Announcement Channels**: %{announcement_channel_usage} out of %{announcement_channel_limit} (%{announcement_channel_percentage}%)\n- **Chat Summary Channels**: %{chat_summary_usage} out of %{chat_summary_limit} channels (%{chat_summary_percentage}%)\n- **Roles on Join**: %{roles_on_join_usage} out of %{roles_on_join_limit} roles (%{roles_on_join_percentage}%)\n- **Giveaways**: %{giveaways_usage} out of %{giveaways_limit} running giveaways (%{giveaways_percentage}%)\n- **Automod Actions**: %{automod_actions_usage} out of %{automod_actions_limit} Automod rules (%{automod_actions_percentage}%)",
+  "any_count_saved": "Any count settings for counting were saved.",
+  "any_count_invalid_min_count_frequency": "The minimum count frequency is invalid"
 }

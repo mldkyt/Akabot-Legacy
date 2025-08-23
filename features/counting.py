@@ -6,6 +6,43 @@ import discord
 from database import client
 from utils.denylist import akabot_logger
 from utils.languages import get_translation_for_key_localized as trl
+from utils.per_server_settings import get_setting, set_setting
+
+
+def attempt_to_parse_number(guild_id: int, text: str) -> list[int]:
+    if not get_setting(guild_id, "counting_any_count", False):
+        if not text.isnumeric():
+            return []
+
+        return [int(text)]
+
+    numbers_in_message = []
+
+    # Simple number parsing first
+    for i in re.finditer(r'([0-9]+)', text):
+        numbers_in_message.append(int(i.groups()[0]))
+
+    # Count of words
+    if get_setting(guild_id, "counting_words", False):
+        numbers_in_message.append(len(text.split(" ")))
+
+    if get_setting(guild_id, "counting_word_frequency", False):
+        # Count of words that repeat
+        words = {}
+        for i in text.split(" "):
+            if not i in words:
+                words[i] = 0
+            words[i] += 1
+
+        a = get_setting(guild_id, "counting_word_frequency_minimal", 2)
+        for k in words.keys():
+            if words[k] < a:
+                del words[k]
+
+        words = {k: v for k, v in sorted(words.items(), key=lambda x: x[1], reverse=True)}
+        numbers_in_message.extend([i for i in words.values()])
+
+    return numbers_in_message
 
 
 class Counting(discord.Cog):
@@ -55,7 +92,12 @@ class Counting(discord.Cog):
     async def on_message(self, message: discord.Message):
 
         try:
+            if message.guild is None or message.channel is None:
+                return
             if message.author.bot:
+                return
+            if isinstance(message.channel, discord.DMChannel) or isinstance(message.channel, discord.GroupChannel) or \
+                isinstance(message.channel, discord.PartialMessageable) or isinstance(message.channel, discord.Thread):
                 return
 
             client["Counting"].update_one({'GuildID': str(message.guild.id), 'ChannelID': str(message.channel.id)},
@@ -66,15 +108,11 @@ class Counting(discord.Cog):
             if data is None:
                 return
 
-            if re.match("^[0-9]+$", message.content.strip()) is None:
-                await self.handle_fail(message, data)
-                return
-
-            if (data["Count"] - 1) != int(message.content.strip()):
-                await self.handle_fail(message, data)
-                return
-
             if data["LastMember"] == str(message.author.id):
+                await self.handle_fail(message, data)
+                return
+
+            if not any([i == (data['Count'] - 1) for i in attempt_to_parse_number(message.guild.id, message.content)]):
                 await self.handle_fail(message, data)
                 return
 
@@ -91,7 +129,7 @@ class Counting(discord.Cog):
                                                                    reason="Webhook for counting messages. Created automatically.")
 
                 # Send message using webhook
-                await webhook.send(content=str(data['Count'] - 1), username=message.author.display_name,
+                await webhook.send(content=message.content, username=message.author.display_name,
                                    avatar_url=message.author.display_avatar.url)
 
                 # Delete the message
@@ -153,3 +191,27 @@ class Counting(discord.Cog):
         except Exception as e:
             akabot_logger.exception("An error occured:")
             await ctx.respond(trl(ctx.user.id, ctx.guild.id, "command_error_generic"), ephemeral=True)
+
+    @counting.command(name="any_count_settings", description="Set any count settings")
+    @discord.option(name="any_count", description="Enable any counting mode", type=bool)
+    @discord.option(name="count_words", description="The total count of words is a number", type=bool)
+    @discord.option(name="count_words_frequency", description="Count the occurrences of each word", type=bool)
+    @discord.option(name="words_frequency_minimal", description="Minimum occurrences needed for each word", type=int)
+    async def any_count_settings(self, ctx: discord.ApplicationContext, any_count: bool | None = None,
+                                 count_words: bool | None = None,
+                                 count_words_frequency: bool | None = None, words_frequency_minimal: int | None = None):
+
+        if words_frequency_minimal is not None:
+            if 1 > words_frequency_minimal or words_frequency_minimal > 10:
+                await ctx.respond(trl(ctx.user.id, ctx.guild.id, "any_count_invalid_min_count_frequency"), ephemeral=True)
+                return
+
+        if any_count is not None:
+            set_setting(ctx.guild.id, "counting_any_count", any_count)
+        if count_words is not None:
+            set_setting(ctx.guild.id, "counting_words", count_words)
+        if count_words_frequency is not None:
+            set_setting(ctx.guild.id, "counting_word_frequency", count_words_frequency)
+        if words_frequency_minimal is not None:
+            set_setting(ctx.guild.id, "counting_word_frequency_minimal", words_frequency_minimal)
+        await ctx.respond(trl(ctx.user.id, ctx.guild.id, "any_count_saved"), ephemeral=True)
