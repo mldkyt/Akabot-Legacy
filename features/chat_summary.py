@@ -16,8 +16,9 @@
 #
 
 import datetime
-import discord
 import logging
+
+import discord
 from discord.ext import commands as commands_ext
 from discord.ext import tasks
 from discord.ext.pages import Paginator
@@ -221,7 +222,8 @@ async def normal_chat_summary(channel, date, guild, i, summary_title: str = ""):
     except Exception as e:
         akabot_logger.exception("An error occured:")
     client[db].update_one({'GuildID': str(guild.id), 'ChannelID': str(channel.id)},
-                          {'$set': {'Messages': {}, 'MessageCount': 0, 'KeywordsCounting': {}}})
+                          {'$set': {'Messages': {}, 'MessageCount': 0, 'KeywordsCounting': {},
+                                    'LastMessageAuthor': ''}})
 
 
 class ChatSummary(discord.Cog):
