@@ -440,12 +440,14 @@ class ChatSummary(discord.Cog):
     @commands_ext.guild_only()
     @discord.default_permissions(manage_guild=True)
     @commands_ext.has_permissions(manage_guild=True)
+    @discord.option(name='enable_special', description='Enable the monthly and yearly chat summaries')
     @discord.option(name='normal_count', description='The normal Chat Summary count of people')
     @discord.option(name='monthly_count', description='The monthly Chat Summary count of people')
     @discord.option(name='yearly_count', description='The yearly Chat Summary count of people')
     @analytics("chatsummary top_count")
     @blocklist()
-    async def summary_top_count(self, ctx: discord.ApplicationContext, normal_count: int = -1, monthly_count: int = -1,
+    async def summary_top_count(self, ctx: discord.ApplicationContext, enable_special: bool = None,
+                                normal_count: int = -1, monthly_count: int = -1,
                                 yearly_count: int = -1):
         try:
             # Old settings
@@ -467,6 +469,22 @@ class ChatSummary(discord.Cog):
             set_setting(ctx.guild.id, "chatsummary_top_count", normal_count)
             set_setting(ctx.guild.id, "chatsummary_yearly_top_count", yearly_count)
             set_setting(ctx.guild.id, "chatsummary_monthly_top_count", monthly_count)
+
+            if enable_special is not None:
+                # Check if the settings was switched on compared to old settings and delete all data (to avoid making a really big chat summary)
+                old_chatsummary_mode = get_setting(ctx.guild.id, "chatsummary_mode", "normal")
+                if old_chatsummary_mode == "normal" and enable_special:
+                    # Delete all data related to Yearly and Monthly
+                    for db in ['YearlyChatSummary', 'MonthlyChatSummary']:
+                        client[db].update_one({
+                            'GuildID': str(ctx.guild.id),
+                            'ChannelID': str(ctx.channel.id)
+                        }, {
+                            '$set': {'Messages': {}, 'MessageCount': 0, 'KeywordsCounting': {},
+                                     'LastMessageAuthor': ''}
+                        })
+
+                set_setting(ctx.guild.id, "chatsummary_mode", "special" if enable_special else "normal")
 
             # Respond
             await ctx.respond(
