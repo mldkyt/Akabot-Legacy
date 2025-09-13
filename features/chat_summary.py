@@ -16,9 +16,8 @@
 #
 
 import datetime
-import logging
-
 import discord
+import logging
 from discord.ext import commands as commands_ext
 from discord.ext import tasks
 from discord.ext.pages import Paginator
@@ -76,10 +75,10 @@ def disable(guild_id: str, channel_id: str):
 
 def inc(msg: discord.Message):
     data = client['ChatSummary'].find_one({'GuildID': str(msg.guild.id), 'ChannelID': str(msg.channel.id)})
-    if get_setting(msg.guild.id, "chatsummary_countconsencutive", "True") == "False":
-        if data is None:
-            raise ValueError("This value should not be null, but it was! ChatSummary")
+    if data is None:
+        return
 
+    if get_setting(msg.guild.id, "chatsummary_countconsencutive", "True") == "False":
         if 'LastMessageAuthor' in data and data['LastMessageAuthor'] == str(msg.author.id):
             return
 
