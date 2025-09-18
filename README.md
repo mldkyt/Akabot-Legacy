@@ -89,7 +89,7 @@ You can check the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information o
   Akabot. Additionally, you can ask here for help!
 - Developer's account: [@Lunya@fedi.lunya.pet](https://fedi.lunya.pet/) - You can ask here for help. I check fedi
   as one of the few social media and I'll respond.
-- E-mail: [lunya.pet@proton.me](mailto:lunya.pet@proton.me) - I respond quickly here. Please make sure your e-mail has a
+- E-mail: [lunya@murena.io](mailto:lunya@murena.io) - I respond quickly here. Please make sure your e-mail has a
   subject.
 
 ## Setting up a development environment
