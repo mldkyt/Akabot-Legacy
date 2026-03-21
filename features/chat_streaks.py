@@ -19,12 +19,14 @@ import datetime
 import logging
 
 import discord
+from discord import Interaction, Cog
 from discord.ext import commands as commands_ext, pages
+from discord.ui import View, button, Button
 
 from database import client
 from utils.analytics import analytics
 from utils.blocklist import blocklist
-from utils.denylist import queue_send_message
+from utils.denylist import queue_send_message, denylist_view_db
 from utils.languages import get_translation_for_key_localized as trl, get_language
 from utils.logging_util import log_into_logs
 from utils.module_toggling import is_module_enabled
@@ -107,11 +109,30 @@ class ChatStreakStorage:
                          'StartTime': get_server_midnight_time(guild_id)}})
 
 
+class ChatStreaksLearnMore(View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @button(label="Learn More...", custom_id="learn_more_chat_streaks")
+    async def learn_more(self, button: Button, interaction: Interaction):
+        await interaction.respond("""# Chat Streaks
+This is your current chat streak. The chat streak increases every consencutive day you send a message, and gets reset when you miss a day.
+## Turning off the notification
+You can disable the notification by running /user_settings chat_streaks_alerts and selecting a different setting.
+## Checking your streak
+Run /streak""", ephemeral=True)
+
+
 class ChatStreaks(discord.Cog):
     def __init__(self, bot: discord.Bot) -> None:
         super().__init__()
         self.bot = bot
         self.streak_storage = ChatStreakStorage()
+
+    @Cog.listener()
+    async def on_ready(self):
+        self.bot.add_view(ChatStreaksLearnMore())
+        denylist_view_db.register_view(ChatStreaksLearnMore())
 
     async def check_chat_streak_rewards(self, guild_id: int, member_id: int, streak: int):
         try:
@@ -235,7 +256,8 @@ class ChatStreaks(discord.Cog):
                                                               "chat_streaks_updated", streak=new_streak),
                                          delete_after=int(
                                              get_setting(message.guild.id, 'chat_streaks_delete_sent_message_updated',
-                                                         '10')), reply_to_message=reply_to_user)
+                                                         '10')), reply_to_message=reply_to_user,
+                                         view=ChatStreaksLearnMore())
         except Exception as e:
             akabot_logger.exception("An error occured:")
 
