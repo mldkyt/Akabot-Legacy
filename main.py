@@ -46,7 +46,7 @@ from utils import module_toggling
 
 load_dotenv()
 
-from features import welcoming, leveling, antiraid, chat_streaks, chat_revive, chat_summary, reaction_roles, \
+from features import user_pins, welcoming, leveling, antiraid, chat_streaks, chat_revive, chat_summary, reaction_roles, \
     logging_mod, admin_cmds, giveaways, feedback_cmd, moderation, verification, roles_on_join, \
     heartbeat, automod_actions, per_user_settings, server_settings, \
     auto_react, auto_response, tickets, birthday_announcements, \
@@ -195,6 +195,7 @@ bot.add_cog(message_schedule.MessageSchedule(bot))
 bot.add_cog(voice_channel_alerts.VoiceChannelAlerts(bot))
 bot.add_cog(module_toggling_mod.ModuleToggling(bot))
 bot.add_cog(private_temporary_vc.PrivateTemporaryVC(bot))
+bot.add_cog(user_pins.UserPins(bot))
 bot.add_cog(read_receipts.ReadReceipts(bot))
 
 if get_key('Message_Intent', "false") == "true":
