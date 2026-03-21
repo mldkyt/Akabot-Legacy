@@ -89,9 +89,9 @@ class PerUserSettings(discord.Cog):
 
     @user_settings_group.command(name='chat_streaks_ping_reply', description='Enable or disable ping when chat streaks reply to you')
     @discord.option(name='state', description='Enable or disable')
-    @analytics("user_settings chat_streaks_alerts")
+    @analytics("user_settings chat_streaks_ping_reply")
     @blocklist()
-    async def chat_streaks_alerts(self, ctx: discord.ApplicationContext, state: bool):
+    async def chat_streaks_ping_reply(self, ctx: discord.ApplicationContext, state: bool):
         try:
             set_per_user_setting(ctx.user.id, 'chat_streaks_reply_to_user', state)
             await ctx.respond(
