@@ -52,7 +52,7 @@ from features import welcoming, leveling, antiraid, chat_streaks, chat_revive, c
     auto_react, auto_response, tickets, birthday_announcements, \
     send_server_count, suggestions, temporary_vc, rp, word_scrambler, statistics_channels, \
     anonymous_quefessions, analytics, economy, message_time_capsule, sticky_message, counting, denylist, \
-    message_schedule, voice_channel_alerts, module_toggling_mod, private_temporary_vc, markov
+    message_schedule, voice_channel_alerts, module_toggling_mod, private_temporary_vc, markov, read_receipts
 from utils.config import get_key
 from utils.languages import get_translation_for_key_localized as trl
 
@@ -195,6 +195,7 @@ bot.add_cog(message_schedule.MessageSchedule(bot))
 bot.add_cog(voice_channel_alerts.VoiceChannelAlerts(bot))
 bot.add_cog(module_toggling_mod.ModuleToggling(bot))
 bot.add_cog(private_temporary_vc.PrivateTemporaryVC(bot))
+bot.add_cog(read_receipts.ReadReceipts(bot))
 
 if get_key('Message_Intent', "false") == "true":
     bot.add_cog(auto_react.AutoReact(bot))
