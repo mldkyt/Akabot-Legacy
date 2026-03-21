@@ -70,7 +70,7 @@ else:
 
 akabot_logger.setLevel(log_level)
 
-BOT_VERSION = get_key("Bot_Version", "1.4")
+BOT_VERSION = get_key("Bot_Version", "@VERSION@")
 
 intents = discord.Intents.default()
 intents.message_content = get_key('Message_Intent', "false") == "true"
