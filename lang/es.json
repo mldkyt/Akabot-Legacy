@@ -445,5 +445,17 @@
     "announcement_none_subscribed": "Ningún canal esta subscripto a los anuncios.",
     "announcement_file_not_utf8": "El archivo tiene que esta codificado en UTF-8.",
     "announcement_too_long": "El mensaje es demasiado largo. Por favor acortarlo.",
-    "announcement_not_set": "No se ha configurada un mensaje de anuncio."
+    "announcement_not_set": "No se ha configurada un mensaje de anuncio.",
+    "announcement_channel_not_found": "Canal de anuncios configurado en config.conf no encontrado.",
+    "announcement_sent_sending_to_subscribed": "Enviado al servidor principal, ahora enviando al resto de servidores.",
+    "announcement_sent": "Anuncio enviado.",
+    "logging_permissions_synced": "Permisos sincronizados",
+    "logging_added_overwrite_value": "Añadido: %{target}",
+    "logging_removed_overwrite_value": "Removido: %{target}",
+    "logging_no_changes": "Sin cambios",
+    "logging_overwrite_allowed": "Permitido",
+    "logging_overwrite_denied": "Denegado",
+    "birthday_invalid_year": "Año de nacimiento inválido.",
+    "birthday_invalid_month": "Mes de nacimiento inválido.",
+    "birthday_invalid_day": "Día de nacimiento inválido."
 }
