@@ -2,7 +2,7 @@
 name = "akabot"
 version = "0.1.0"
 description = "Add your description here"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "aiohttp==3.13.5",
     "certifi==2026.2.25",

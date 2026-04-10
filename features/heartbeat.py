@@ -26,7 +26,8 @@ akabot_logger = logging.getLogger("akabot")
 
 class Heartbeat(discord.Cog):
     def __init__(self) -> None:
-        self.interval_cnt = int(get_key("Heartbeat_Interval", '60'))
+        self.interval_set = int(get_key("Heartbeat_Interval", "60"))
+        self.interval_cnt = self.interval_set
         super().__init__()
 
         if get_key("Heartbeat_Enabled", "false") == "true":
@@ -36,7 +37,7 @@ class Heartbeat(discord.Cog):
     async def heartbeat_task(self):
         try:
             self.interval_cnt += 1
-            if self.interval_cnt >= int(get_key("Heartbeat_Interval", '60')):
+            if self.interval_cnt >= self.interval_set:
                 self.interval_cnt = 0
                 # Send heartbeat
                 method = get_key("Heartbeat_HTTPMethod", 'post').lower()

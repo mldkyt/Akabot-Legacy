@@ -3,7 +3,7 @@ import logging
 import discord
 
 from database import client
-from utils.denylist import is_denylisted, add_channel_to_denylist, remove_channel_from_denylist
+from utils.denylist import is_denylisted, add_channel_to_denylist, remove_channel_from_denylist, denylist_view_db
 from utils.languages import get_translation_for_key_localized as trl
 
 akabot_logger = logging.getLogger("akabot")
@@ -96,11 +96,14 @@ class ChannelDenylist(discord.Cog):
                         footer=embed_footer
                     ))
 
+                # View
+                view = denylist_view_db.get_view(data_msg['View'])
+
                 # Reply to the user in the different channel
                 if data_msg['ReplyToMessage']:
-                    sent_message = await msg.reply(content=data_msg['Message'], embeds=embeds)
+                    sent_message = await msg.reply(content=data_msg['Message'], embeds=embeds, view=view)
                 else:
-                    sent_message = await msg.channel.send(content=data_msg['Message'], embeds=embeds)
+                    sent_message = await msg.channel.send(content=data_msg['Message'], embeds=embeds, view=view)
 
                 # Remove from database
                 client['DenylistMessageQueue'].delete_one({
