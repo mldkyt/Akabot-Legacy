@@ -232,7 +232,7 @@ class ChatStreaks(discord.Cog):
                 reply_to_user = get_per_user_setting(message.author.id, "chat_streaks_reply_to_user", True) == True
 
                 await queue_send_message(message, content=trl(message.author.id, message.guild.id,
-                                                              "chat_streaks_updated", streak=new_streak),
+                                                              "chat_streaks_updated", streak=new_streak) + "\n-# Akabot is getting replaced with [Nekona](https://top.gg/bot/1426903542601613444) and will be shut down on June 30th, 2026.",
                                          delete_after=int(
                                              get_setting(message.guild.id, 'chat_streaks_delete_sent_message_updated',
                                                          '10')), reply_to_message=reply_to_user)

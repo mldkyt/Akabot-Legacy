@@ -212,7 +212,7 @@ async def normal_chat_summary(channel, date, guild, i, summary_title: str = ""):
                                                                                               count=v)
 
     try:
-        sent = await channel.send(pages[0], view=OpenPaginatorView())
+        sent = await channel.send(pages[0] + "\n-# Akabot is getting replaced with [Nekona](https://top.gg/bot/1426903542601613444) and will be shut down on June 30th, 2026.", view=OpenPaginatorView())
         client['ChatSummaryLeaderboard'].insert_one({
             'GuildID': str(guild.id),
             'ChannelID': str(channel.id),

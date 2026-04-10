@@ -9,6 +9,8 @@
 [![Gitea Release](https://img.shields.io/gitea/v/release/Lunya/Akabot?gitea_url=https%3A%2F%2Fgit.lunya.pet%2F)
 ](https://codeberg.org/Akabot/Akabot/releases)
 
+> [!WARNING]
+> Akabot is being replaced with Nekona. Please use Nekona instead. [Nekona](https://top.gg/bot/1426903542601613444), [source code](https://git.lunya.pet/lunya/nekona) 
 
 Akabot is a Discord bot that's made to be customizable and has a lot of features. It's made with Python and uses the
 `py-cord` library.

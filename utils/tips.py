@@ -59,4 +59,4 @@ def append_tip_to_message(guild_id: int, user_id: int, msg: str, lang: str) -> s
         return msg  # No tips available for this language
 
     tip = tips[random.randint(0, len(tips) - 1)]
-    return f"{msg}\n\n-# **Tip:** {tip}"
+    return f"{msg}\n\n-# **Tip:** {tip}" + "\n-# Akabot is getting replaced with [Nekona](https://top.gg/bot/1426903542601613444) and will be shut down on June 30th, 2026."
